@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'screens/home.dart';
+import 'screens/routines.dart';
+import 'screens/settings.dart';
 
 void main() {
   runApp(const MainApp());
@@ -9,18 +12,30 @@ class MainApp extends StatefulWidget {
 
   @override
   State<MainApp> createState() => _MainAppState();
+
+
 }
 
 class _MainAppState extends State<MainApp> {
+
+  late final List<Widget> _screens;
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      const HomeScreen(),
+      const RoutinesScreen(),
+      const SettingsScreen(),
+    ];
+  }
   int myIndex = 0;
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
         extendBody: true,
-        body: Center(
-          child: Text('Lets goo'),
-        ),
+        body: _screens[myIndex],
+
         bottomNavigationBar: SafeArea(
           top: false,
           child: Container(
