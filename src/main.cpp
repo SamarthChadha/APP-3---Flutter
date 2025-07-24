@@ -124,12 +124,11 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
   wm.setSaveConfigCallback(saveConfigCallback);
-
   // two PWM channels, 8-bit duty
   ledcSetup(0, 5000, 8); ledcAttachPin(LED_A_PIN, 0);
   ledcSetup(1, 5000, 8); ledcAttachPin(LED_B_PIN, 1);
 
-  WiFi.begin(SSID, PASSWORD);
+  WiFi.begin(ssid, pass);
   Serial.print("WiFi…");
   while (WiFi.status() != WL_CONNECTED) delay(500);
   Serial.println(WiFi.localIP());
@@ -223,7 +222,16 @@ void loop() {
       ledcWrite(1, brightnessB);
       Serial.printf("Long press mode — A: %d, B: %d\n", brightnessA, brightnessB);
     } else if (pressDuration>=5000) {
-
+      //wifi setup
+      Serial.println("Button pressed, starting WiFiManager...");
+      //wm.resetSettings();  // Reset to enable setup mode
+      wm.startConfigPortal("Circadian_WiFi_Config");
+      // Save config if needed
+      if (shouldSaveConfig) {
+        saveCredentials(wm.getWiFiSSID().c_str(), wm.getWiFiPass().c_str());
+        Serial.println("Credentials saved.");
+        ESP.restart();  // Restart to apply settings
+      }
     }
   }
 
