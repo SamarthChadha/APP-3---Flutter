@@ -4,6 +4,7 @@
 #include <ESPmDNS.h>
 #include <RotaryEncoder.h>
 
+
 const char* SSID     = "MAGS LAB";
 const char* PASSWORD = "vXJC@(Lw";
 

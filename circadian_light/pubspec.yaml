@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_3d_controller: ^1.3.1
   flutter_gl: ^0.0.21
   three_dart_jsm: ^0.0.1
 
@@ -21,3 +22,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/models/lamp.glb
+    - assets/models/Textured_Lamp_Small.glb
