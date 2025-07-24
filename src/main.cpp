@@ -3,10 +3,11 @@
 #include <ArduinoJson.h>
 #include <ESPmDNS.h>
 #include <RotaryEncoder.h>
+#include <WiFiManager.h>
+#include <EEPROM.h>
 
-
-const char* SSID     = "MAGS LAB";
-const char* PASSWORD = "vXJC@(Lw";
+// const char* SSID     = "MAGS LAB";
+// const char* PASSWORD = "vXJC@(Lw";
 
 #define LED_BUILTIN 2   // builtin LED (GPIO2)  [oai_citation:15‡Circuits4You](https://circuits4you.com/2018/02/02/esp32-led-blink-example/?utm_source=chatgpt.com)
 #define LED_A_PIN   16   // first LED group PWM
@@ -15,6 +16,9 @@ const char* PASSWORD = "vXJC@(Lw";
 #define ROTARY_DT 32
 #define ROTARY_CLK 33
 #define ROTARY_BTN 25
+
+
+
 
 const char* ESP_IP = "10.210.232.242";   // update if the ESP32 reboots with a new IP
 const char* WS_URL = "ws://10.210.232.242/ws";
@@ -33,19 +37,6 @@ unsigned long btnPressTime = 0;
 bool isOn = true;
 bool wasLongPress = false;
 int longPressState = 0; // 0 = warm, 1 = both, 2 = white
-
-// void blinkBuiltin(int times=7, int intervalMs=500) {
-//   for (int i = 0; i < times; i++) {
-//     // turn LED on for active-low
-//     digitalWrite(LED_BUILTIN, LOW);
-//     delay(intervalMs);
-//     // then turn it off
-//     digitalWrite(LED_BUILTIN, HIGH);
-//     delay(intervalMs);
-//   }
-//   // ensure it stays off when done
-//   digitalWrite(LED_BUILTIN, HIGH);
-// }
 
 void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
              AwsEventType type, void *arg, uint8_t *data, size_t len) {
