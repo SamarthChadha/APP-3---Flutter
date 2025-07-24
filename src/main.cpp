@@ -17,6 +17,14 @@
 #define ROTARY_CLK 33
 #define ROTARY_BTN 25
 
+WiFiManager wm;
+
+bool shouldSaveConfig = false;
+ 
+// Buffer for Wi-Fi credentials
+char ssid[32];
+char pass[32];
+
 
 
 
