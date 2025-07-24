@@ -26,6 +26,42 @@ char ssid[32];
 char pass[32];
 
 
+// Save SSID and password to EEPROM
+void saveCredentials(const char* newSSID, const char* newPass) {
+Serial.println("Saving WiFi credentials to EEPROM...");
+
+// Save SSID
+for (int i = 0; i < 32; i++) {
+  EEPROM.write(0 + i, newSSID[i]);
+}
+// Save Password
+for (int i = 0; i < 32; i++) {
+  EEPROM.write(100 + i, newPass[i]);
+}
+EEPROM.commit();
+}
+
+// Read SSID and password from EEPROM
+void readCredentials() {
+  Serial.println("Reading WiFi credentials from EEPROM...");
+  
+  for (int i = 0; i < 32; i++) {
+    ssid[i] = EEPROM.read(0 + i);
+  }
+  ssid[31] = '\0';
+ 
+  for (int i = 0; i < 32; i++) {
+    pass[i] = EEPROM.read(100 + i);
+  }
+  pass[31] = '\0';
+ 
+  Serial.println("SSID: ");
+  Serial.println(ssid);
+  Serial.println("Password: ");
+  Serial.println(pass);
+ 
+  delay(5000);
+}
 
 
 const char* ESP_IP = "10.210.232.242";   // update if the ESP32 reboots with a new IP
