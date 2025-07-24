@@ -25,6 +25,11 @@ bool shouldSaveConfig = false;
 char ssid[32];
 char pass[32];
 
+// Callback to save config after web server updates SSID and password
+void saveConfigCallback() {
+  Serial.println("Should save config");
+  shouldSaveConfig = true;
+}
 
 // Save SSID and password to EEPROM
 void saveCredentials(const char* newSSID, const char* newPass) {
@@ -118,6 +123,7 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
 void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
+  wm.setSaveConfigCallback(saveConfigCallback);
 
   // two PWM channels, 8-bit duty
   ledcSetup(0, 5000, 8); ledcAttachPin(LED_A_PIN, 0);
@@ -216,6 +222,8 @@ void loop() {
       ledcWrite(0, brightnessA);
       ledcWrite(1, brightnessB);
       Serial.printf("Long press mode — A: %d, B: %d\n", brightnessA, brightnessB);
+    } else if (pressDuration>=5000) {
+
     }
   }
 
