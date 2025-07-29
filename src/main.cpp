@@ -3,7 +3,8 @@
 #include <ArduinoJson.h>
 #include <ESPmDNS.h>
 #include <RotaryEncoder.h>
-#include <WiFiManager.h>
+#include <DNSServer.h>
+#include <ESPAsyncWiFiManager.h>
 #include <EEPROM.h>
 
 // const char* SSID     = "MAGS LAB";
@@ -17,7 +18,6 @@
 #define ROTARY_CLK 33
 #define ROTARY_BTN 25
 
-WiFiManager wm;
 
 bool shouldSaveConfig = false;
  
@@ -76,6 +76,8 @@ const char* WS_URL = "ws://10.210.232.242/ws";
 AsyncWebServer server(80);
 // Create AsyncWebSocket instance
 AsyncWebSocket ws("/ws");
+DNSServer dns;
+AsyncWiFiManager wm(&server, &dns);
 
 RotaryEncoder encoder(ROTARY_DT, ROTARY_CLK);
 bool btnPressed = false;
@@ -122,7 +124,12 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
 
 void setup() {
   Serial.begin(115200);
+  EEPROM.begin(512);  // Initialize EEPROM with 512 bytes
   pinMode(LED_BUILTIN, OUTPUT);
+  
+  // Read credentials before attempting WiFi connection
+  readCredentials();
+  
   wm.setSaveConfigCallback(saveConfigCallback);
   // two PWM channels, 8-bit duty
   ledcSetup(0, 5000, 8); ledcAttachPin(LED_A_PIN, 0);
@@ -130,8 +137,23 @@ void setup() {
 
   WiFi.begin(ssid, pass);
   Serial.print("WiFi…");
-  while (WiFi.status() != WL_CONNECTED) delay(500);
-  Serial.println(WiFi.localIP());
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+    delay(500);
+    Serial.print(".");
+    attempts++;
+  }
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println();
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\nWiFi connection failed, starting config portal");
+    wm.startConfigPortal("Circadian_WiFi_Config");
+  }
+  // TEMP: Force WiFi setup portal on boot for testing
+  // Remove this line after testing
+  wm.startConfigPortal("Circadian_WiFi_Config");
 
   // ----- mDNS (Step 5) -----
 if (!MDNS.begin("circadian-light")) {          // hostname = circadian-light.local
@@ -196,18 +218,17 @@ void loop() {
   if (lastBtnState == LOW && currentBtnState == HIGH) {
     // button just released
     unsigned long pressDuration = millis() - btnPressTime;
-    if (pressDuration < 500) {
-      // short press = toggle light on/off
-      isOn = !isOn;
-      if (isOn) {
-        ledcWrite(0, brightnessA);
-        ledcWrite(1, brightnessB);
-      } else {
-        ledcWrite(0, 0);
-        ledcWrite(1, 0);
+    if (pressDuration >= 5000) {
+      // WiFi setup (check this first)
+      Serial.println("Button pressed, starting WiFiManager...");
+      wm.startConfigPortal("Circadian_WiFi_Config");
+      if (shouldSaveConfig) {
+        saveCredentials(WiFi.SSID().c_str(), WiFi.psk().c_str());
+        Serial.println("Credentials saved.");
+        ESP.restart();
       }
     } else if (pressDuration >= 1500) {
-      // long press
+      // Long press
       wasLongPress = true;
       longPressState = (longPressState + 1) % 3;
       if (longPressState == 0) {
@@ -221,16 +242,15 @@ void loop() {
       ledcWrite(0, brightnessA);
       ledcWrite(1, brightnessB);
       Serial.printf("Long press mode — A: %d, B: %d\n", brightnessA, brightnessB);
-    } else if (pressDuration>=5000) {
-      //wifi setup
-      Serial.println("Button pressed, starting WiFiManager...");
-      //wm.resetSettings();  // Reset to enable setup mode
-      wm.startConfigPortal("Circadian_WiFi_Config");
-      // Save config if needed
-      if (shouldSaveConfig) {
-        saveCredentials(wm.getWiFiSSID().c_str(), wm.getWiFiPass().c_str());
-        Serial.println("Credentials saved.");
-        ESP.restart();  // Restart to apply settings
+    } else if (pressDuration < 500) {
+      // Short press = toggle light on/off
+      isOn = !isOn;
+      if (isOn) {
+        ledcWrite(0, brightnessA);
+        ledcWrite(1, brightnessB);
+      } else {
+        ledcWrite(0, 0);
+        ledcWrite(1, 0);
       }
     }
   }
