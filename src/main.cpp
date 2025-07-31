@@ -22,8 +22,8 @@
 bool shouldSaveConfig = false;
  
 // Buffer for Wi-Fi credentials
-char ssid[32];
-char pass[32];
+char ssid[64];   // SSID up to 63 chars + NUL
+char pass[64];   // WPA2 passphrase up to 63 chars + NUL
 
 // Callback to save config after web server updates SSID and password
 void saveConfigCallback() {
@@ -33,38 +33,35 @@ void saveConfigCallback() {
 
 // Save SSID and password to EEPROM
 void saveCredentials(const char* newSSID, const char* newPass) {
-Serial.println("Saving WiFi credentials to EEPROM...");
-
-// Save SSID
-for (int i = 0; i < 32; i++) {
-  EEPROM.write(0 + i, newSSID[i]);
-}
-// Save Password
-for (int i = 0; i < 32; i++) {
-  EEPROM.write(100 + i, newPass[i]);
-}
-EEPROM.commit();
+  Serial.println("Saving WiFi credentials to EEPROM...");
+  // Save SSID (64 bytes including NUL)
+  for (int i = 0; i < 64; i++) {
+    char c = (i < strlen(newSSID)) ? newSSID[i] : '\0';
+    EEPROM.write(0 + i, c);
+  }
+  // Save Password (64 bytes including NUL)
+  for (int i = 0; i < 64; i++) {
+    char c = (i < strlen(newPass)) ? newPass[i] : '\0';
+    EEPROM.write(100 + i, c);
+  }
+  EEPROM.commit();
 }
 
 // Read SSID and password from EEPROM
 void readCredentials() {
   Serial.println("Reading WiFi credentials from EEPROM...");
-  
-  for (int i = 0; i < 32; i++) {
+  for (int i = 0; i < 64; i++) {
     ssid[i] = EEPROM.read(0 + i);
   }
-  ssid[31] = '\0';
- 
-  for (int i = 0; i < 32; i++) {
+  ssid[63] = '\0';
+  for (int i = 0; i < 64; i++) {
     pass[i] = EEPROM.read(100 + i);
   }
-  pass[31] = '\0';
- 
+  pass[63] = '\0';
   Serial.println("SSID: ");
   Serial.println(ssid);
   Serial.println("Password: ");
   Serial.println(pass);
- 
   delay(5000);
 }
 
@@ -76,8 +73,95 @@ const char* WS_URL = "ws://10.210.232.242/ws";
 AsyncWebServer server(80);
 // Create AsyncWebSocket instance
 AsyncWebSocket ws("/ws");
-DNSServer dns;
-AsyncWiFiManager wm(&server, &dns);
+// --- Serial Wi-Fi provisioning helpers ---
+String readLine(uint32_t timeoutMs = 120000) {
+  String s;
+  uint32_t start = millis();
+  while (millis() - start < timeoutMs) {
+    while (Serial.available()) {
+      char c = Serial.read();
+      if (c == '\r') continue;
+      if (c == '\n') return s;
+      s += c;
+    }
+    delay(5);
+  }
+  return s; // may be empty on timeout
+}
+
+bool tryConnect(const char* s, const char* p, uint32_t timeoutMs = 20000) {
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect(true, true);
+  delay(200);
+  Serial.printf("Connecting to '%s'...\n", s);
+  WiFi.begin(s, (p && p[0]) ? p : nullptr);
+  uint32_t start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < timeoutMs) {
+    delay(500);
+    Serial.print('.');
+  }
+  Serial.println();
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("Connected! IP: ");
+    Serial.println(WiFi.localIP());
+    return true;
+  }
+  Serial.println("Failed to connect.");
+  return false;
+}
+
+void serialWifiProvision() {
+  Serial.println();
+  Serial.println("=== Wi-Fi Setup (Serial) ===");
+  Serial.println("Scanning for networks...");
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  delay(200);
+  int n = WiFi.scanNetworks();
+  if (n <= 0) {
+    Serial.println("No networks found. Press ENTER to rescan.");
+    readLine();
+    n = WiFi.scanNetworks();
+  }
+  // List networks
+  for (int i = 0, shown = 0; i < n; i++) {
+    String ss = WiFi.SSID(i);
+    if (ss.length() == 0) continue;
+    shown++;
+    Serial.printf("%2d) %s  (RSSI %d)%s\n", shown, ss.c_str(), WiFi.RSSI(i), WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? " [OPEN]" : "");
+  }
+  Serial.println("Enter the number of the network to use:");
+  int choice = -1;
+  while (choice < 1 || choice > n) {
+    String line = readLine();
+    choice = line.toInt();
+    if (choice < 1) Serial.println("Please enter a valid number.");
+  }
+  // Map back to the chosen SSID by counting non-empty entries
+  int index = -1, count = 0;
+  for (int i = 0; i < n; i++) {
+    if (WiFi.SSID(i).length() == 0) continue;
+    count++;
+    if (count == choice) { index = i; break; }
+  }
+  String selSsid = WiFi.SSID(index);
+  bool needsPwd = WiFi.encryptionType(index) != WIFI_AUTH_OPEN;
+  Serial.printf("Selected: %s\n", selSsid.c_str());
+  String pwd;
+  if (needsPwd) {
+    Serial.println("Enter password (press ENTER for open networks):");
+    pwd = readLine();
+  }
+  // Try connect
+  if (tryConnect(selSsid.c_str(), needsPwd ? pwd.c_str() : "")) {
+    saveCredentials(selSsid.c_str(), pwd.c_str());
+    Serial.println("Credentials saved to EEPROM.");
+  } else {
+    Serial.println("Connection failed. Try again? (y/N)");
+    String again = readLine();
+    if (again.length() && (again[0] == 'y' || again[0] == 'Y')) serialWifiProvision();
+  }
+}
 
 RotaryEncoder encoder(ROTARY_DT, ROTARY_CLK);
 bool btnPressed = false;
@@ -130,30 +214,18 @@ void setup() {
   // Read credentials before attempting WiFi connection
   readCredentials();
   
-  wm.setSaveConfigCallback(saveConfigCallback);
   // two PWM channels, 8-bit duty
   ledcSetup(0, 5000, 8); ledcAttachPin(LED_A_PIN, 0);
   ledcSetup(1, 5000, 8); ledcAttachPin(LED_B_PIN, 1);
-
-  WiFi.begin(ssid, pass);
-  Serial.print("WiFi…");
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-    delay(500);
-    Serial.print(".");
-    attempts++;
-  }
-  
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println();
-    Serial.println(WiFi.localIP());
+  // Attempt to connect with stored credentials; if missing or fail, run serial setup
+  bool hasStored = (ssid[0] != '\0');
+  if (hasStored && tryConnect(ssid, pass)) {
+    // connected
   } else {
-    Serial.println("\nWiFi connection failed, starting config portal");
-    wm.startConfigPortal("Circadian_WiFi_Config");
+    Serial.println("No valid saved credentials or connection failed.");
+    Serial.println("\n>>> Open Serial Monitor at 115200, then follow prompts to set Wi‑Fi. <<<\n");
+    serialWifiProvision();
   }
-  // TEMP: Force WiFi setup portal on boot for testing
-  // Remove this line after testing
-  wm.startConfigPortal("Circadian_WiFi_Config");
 
   // ----- mDNS (Step 5) -----
 if (!MDNS.begin("circadian-light")) {          // hostname = circadian-light.local
@@ -220,13 +292,8 @@ void loop() {
     unsigned long pressDuration = millis() - btnPressTime;
     if (pressDuration >= 5000) {
       // WiFi setup (check this first)
-      Serial.println("Button pressed, starting WiFiManager...");
-      wm.startConfigPortal("Circadian_WiFi_Config");
-      if (shouldSaveConfig) {
-        saveCredentials(WiFi.SSID().c_str(), WiFi.psk().c_str());
-        Serial.println("Credentials saved.");
-        ESP.restart();
-      }
+      Serial.println("Entering Wi‑Fi setup over Serial...");
+      serialWifiProvision();
     } else if (pressDuration >= 1500) {
       // Long press
       wasLongPress = true;
