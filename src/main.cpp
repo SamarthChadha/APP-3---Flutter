@@ -34,18 +34,7 @@ bool isOn = true;
 bool wasLongPress = false;
 int longPressState = 0; // 0 = warm, 1 = both, 2 = white
 
-// void blinkBuiltin(int times=7, int intervalMs=500) {
-//   for (int i = 0; i < times; i++) {
-//     // turn LED on for active-low
-//     digitalWrite(LED_BUILTIN, LOW);
-//     delay(intervalMs);
-//     // then turn it off
-//     digitalWrite(LED_BUILTIN, HIGH);
-//     delay(intervalMs);
-//   }
-//   // ensure it stays off when done
-//   digitalWrite(LED_BUILTIN, HIGH);
-// }
+
 
 void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
              AwsEventType type, void *arg, uint8_t *data, size_t len) {
