@@ -35,7 +35,6 @@ bool wasLongPress = false;
 int longPressState = 0; // 0 = warm, 1 = both, 2 = white
 
 
-
 void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
              AwsEventType type, void *arg, uint8_t *data, size_t len) {
   // --- Debug: log connect / disconnect ---
