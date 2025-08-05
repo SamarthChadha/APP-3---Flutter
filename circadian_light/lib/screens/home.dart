@@ -14,19 +14,26 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blueGrey,
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Hi This is home Screen'),
-            SizedBox(
-              height: 400,
-              width: 400,
-            child: 
-              Flutter3DViewer(src: 'assets/models/Textured_Lamp_Small.glb'),
-            ),
-          ],
-        )
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 55),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              // const Text('Hi This is home Screen'),
+              SizedBox(
+                height: 250,
+                child:
+                  Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.rotationX(3.1416),
+                    child: const Flutter3DViewer(src: 'assets/models/Textured_Lamp_Small.glb')
+                    )
+              ),
+            ],
+          ),
+        ),
+        
       ),
     );
   }

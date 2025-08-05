@@ -43,6 +43,18 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app discovers and controls a local ESP32 light on your Wi‑Fi network.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_ws._tcp</string>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoadsInLocalNetworks</key>
+		<true/>
+	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>
