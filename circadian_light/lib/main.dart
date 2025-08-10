@@ -53,7 +53,7 @@ class _MainAppState extends State<MainApp> {
               ],
             ),
             child: BottomNavigationBar(
-              backgroundColor: Colors.transparent,
+              backgroundColor: const Color.fromARGB(0, 22, 59, 31),
               elevation: 0,
               onTap: (index) => setState(() => myIndex = index),
               currentIndex: myIndex,
