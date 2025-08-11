@@ -1,7 +1,15 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 // import 'package:flutter_gl/flutter_gl.dart';
 // import 'package:flutter_3d_controller/'
+
+
+void loadMyShader() async {
+  var program = await FragmentProgram.fromAsset('assets/shaders/lamp_shader.frag');
+}
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blueGrey,
+      backgroundColor: Colors.grey,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.only(top: 55),
@@ -22,14 +30,12 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               // const Text('Hi This is home Screen'),
-              SizedBox(
-                height: 250,
-                child:
-                  Transform(
-                    alignment: Alignment.center,
-                    transform: Matrix4.rotationX(3.1416),
-                    child: const Flutter3DViewer(src: 'assets/models/Textured_Lamp_Small.glb')
-                    )
+              NeumorphicPanel(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.rotationX(3.1416),
+                  child: const Flutter3DViewer(src: 'assets/models/Textured_Lamp_Small.glb'),
+                ),
               ),
               const SizedBox(height: 24),
               NeumorphicPillButton(
@@ -106,6 +112,60 @@ class _NeumorphicPillButtonState extends State<NeumorphicPillButton> {
             fontWeight: FontWeight.w600,
             color: Color(0xFF3C3C3C),
             letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class NeumorphicPanel extends StatelessWidget {
+  final Widget child;
+  const NeumorphicPanel({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    const base = Color(0xFFEFEFEF);
+    return Container(
+      width: 280,
+      height: 260,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: base,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: const [
+          BoxShadow(offset: Offset(16, 16), blurRadius: 36, color: Color(0x1A000000)),
+          BoxShadow(offset: Offset(-16, -16), blurRadius: 36, color: Color(0xE6FFFFFF)),
+        ],
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 98, 93, 93),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: const [
+            BoxShadow(offset: Offset(8, 8), blurRadius: 18, color: Color(0x14000000)),
+            BoxShadow(offset: Offset(-8, -8), blurRadius: 18, color: Color(0xF2FFFFFF)),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            fit: StackFit.expand,
+            alignment: Alignment.center,
+            children: [
+              // warm center glow behind the lamp
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment(0, -0.05),
+                    radius: 0.65,
+                    colors: [Color(0xCCFFF3C4), Color(0x00FFFFFF)],
+                  ),
+                ),
+              ),
+              // 3D model fills the panel
+              Positioned.fill(child: child),
+            ],
           ),
         ),
       ),

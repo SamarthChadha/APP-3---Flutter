@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+    shaders:
+      - assets/shaders/lamp_shader.frag
   flutter_3d_controller: ^1.3.1
   flutter_gl: ^0.0.21
   three_dart_jsm: ^0.0.1
