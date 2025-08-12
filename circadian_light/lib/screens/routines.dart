@@ -184,14 +184,24 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
           );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Routines'), centerTitle: true),
+      backgroundColor: Colors.grey,
+      appBar: AppBar(
+        backgroundColor: Colors.grey,
+        title: const Text(
+          'Routines',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
       body: Stack(
         clipBehavior: Clip.none,
         children: [
           content,
           Positioned(
-            left: 16,
-            right: 16,
+            left: 40,
+            right: 40,
             bottom: bottomClearance + 24,
             child: Material(
               color: Colors.white,
