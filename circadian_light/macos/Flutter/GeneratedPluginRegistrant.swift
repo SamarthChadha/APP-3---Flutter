@@ -5,12 +5,8 @@
 import FlutterMacOS
 import Foundation
 
-import flutter_gl_macos
-import url_launcher_macos
-import webview_flutter_wkwebview
+import flutter_inappwebview_macos
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
-  FlutterGlMacosPlugin.register(with: registry.registrar(forPlugin: "FlutterGlMacosPlugin"))
-  UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
-  WebViewFlutterPlugin.register(with: registry.registrar(forPlugin: "WebViewFlutterPlugin"))
+  InAppWebViewFlutterPlugin.register(with: registry.registrar(forPlugin: "InAppWebViewFlutterPlugin"))
 }

@@ -3,8 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  flutter_gl_windows
-  url_launcher_windows
+  flutter_inappwebview_windows
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
