@@ -1,5 +1,19 @@
 import 'package:flutter/material.dart';
 
+class Routine {
+  final TimeOfDay startTime;
+  final TimeOfDay endTime;
+  final Color color;
+  final double brightness;
+
+  const Routine({
+    required this.startTime,
+    required this.endTime,
+    required this.color,
+    required this.brightness,
+  });
+}
+
 class RoutinesScreen extends StatefulWidget {
   const RoutinesScreen({super.key});
   @override
@@ -7,11 +21,183 @@ class RoutinesScreen extends StatefulWidget {
 }
 
 class _RoutinesScreenState extends State<RoutinesScreen> {
+  final _routines = <Routine>[];
+
+  String _formatTime(BuildContext context, TimeOfDay t) =>
+      MaterialLocalizations.of(context).formatTimeOfDay(t);
+
+  void _openAddRoutineSheet() async {
+    final theme = Theme.of(context);
+
+    TimeOfDay start = const TimeOfDay(hour: 7, minute: 0);
+    TimeOfDay end = const TimeOfDay(hour: 22, minute: 0);
+    Color selectedColor = Colors.amber;
+    double brightness = 70;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              Future<void> pickStart() async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: start,
+                );
+                if (picked != null) setSheetState(() => start = picked);
+              }
+
+              Future<void> pickEnd() async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: end,
+                );
+                if (picked != null) setSheetState(() => end = picked);
+              }
+
+              final colors = [Colors.amber, Colors.white, Colors.blue, Colors.pink];
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Create Routine'),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('Routine start time'),
+                  const SizedBox(height: 6),
+                  OutlinedButton.icon(
+                    onPressed: pickStart,
+                    icon: const Icon(Icons.schedule),
+                    label: Text(_formatTime(context, start)),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Routine end time'),
+                  const SizedBox(height: 6),
+                  OutlinedButton.icon(
+                    onPressed: pickEnd,
+                    icon: const Icon(Icons.schedule_outlined),
+                    label: Text(_formatTime(context, end)),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Light color'),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 10,
+                    children: [
+                      for (final c in colors)
+                        GestureDetector(
+                          onTap: () => setSheetState(() => selectedColor = c),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: c,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: selectedColor == c
+                                    ? theme.colorScheme.primary
+                                    : theme.dividerColor,
+                                width: selectedColor == c ? 3 : 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Light brightness'),
+                      Text('${brightness.round()}%'),
+                    ],
+                  ),
+                  Slider(
+                    value: brightness,
+                    min: 0,
+                    max: 100,
+                    onChanged: (v) => setSheetState(() => brightness = v),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () {
+                        setState(() => _routines.add(Routine(
+                              startTime: start,
+                              endTime: end,
+                              color: selectedColor,
+                              brightness: brightness,
+                            )));
+                        Navigator.of(ctx).pop();
+                      },
+                      child: const Text('Save'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bottomClearance = kBottomNavigationBarHeight + 24;
+
+    final content = _routines.isEmpty
+        ? const Center(child: Text('No routines yet'))
+        : ListView.builder(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, bottomClearance + 16),
+            itemCount: _routines.length,
+            itemBuilder: (context, i) {
+              final r = _routines[i];
+              return ListTile(
+                leading: CircleAvatar(backgroundColor: r.color),
+                title: Text(
+                    '${_formatTime(context, r.startTime)} — ${_formatTime(context, r.endTime)}'),
+                subtitle: Text('Brightness: ${r.brightness.round()}%'),
+                trailing: const Icon(Icons.chevron_right),
+              );
+            },
+          );
+
     return Scaffold(
-      body: const Center(
-        child: Text('hi this is routines screen'),
+      appBar: AppBar(title: const Text('Routines'), centerTitle: true),
+      body: Stack(
+        children: [
+          content,
+          Positioned(
+            right: 16,
+            bottom: bottomClearance + 24,
+            child: FloatingActionButton.extended(
+              onPressed: _openAddRoutineSheet,
+              icon: const Icon(Icons.add),
+              label: const Text('Add routine'),
+            ),
+          ),
+        ],
       ),
     );
   }

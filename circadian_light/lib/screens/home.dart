@@ -124,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              // Color Temperature slider (full width, no value pill)
+              // Color Temperature slider 
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Stack(
