@@ -186,15 +186,36 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Routines'), centerTitle: true),
       body: Stack(
+        clipBehavior: Clip.none,
         children: [
           content,
           Positioned(
+            left: 16,
             right: 16,
             bottom: bottomClearance + 24,
-            child: FloatingActionButton.extended(
-              onPressed: _openAddRoutineSheet,
-              icon: const Icon(Icons.add),
-              label: const Text('Add routine'),
+            child: Material(
+              color: Colors.white,
+              elevation: 10,
+              shadowColor: Colors.black.withValues(alpha: 0.12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: _openAddRoutineSheet,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Center(
+                    child: Text(
+                      'Add Routine',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Color(0xFF3D3D3D),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
