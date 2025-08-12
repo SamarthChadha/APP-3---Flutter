@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
 class Routine {
   final TimeOfDay startTime;
@@ -23,6 +24,24 @@ class RoutinesScreen extends StatefulWidget {
 class _RoutinesScreenState extends State<RoutinesScreen> {
   final _routines = <Routine>[];
 
+  Color _colorFromTemperature(double kelvin) {
+    double t = kelvin / 100.0;
+    double r, g, b;
+    if (t <= 66) {
+      r = 255;
+      g = 99.4708025861 * math.log(t) - 161.1195681661;
+      b = t <= 19 ? 0 : 138.5177312231 * math.log(t - 10) - 305.0447927307;
+    } else {
+      r = 329.698727446 * math.pow(t - 60, -0.1332047592);
+      g = 288.1221695283 * math.pow(t - 60, -0.0755148492);
+      b = 255;
+    }
+    int r8 = r.isNaN ? 0 : r.clamp(0, 255).round();
+    int g8 = g.isNaN ? 0 : g.clamp(0, 255).round();
+    int b8 = b.isNaN ? 0 : b.clamp(0, 255).round();
+    return Color.fromARGB(255, r8, g8, b8);
+  }
+
   String _formatTime(BuildContext context, TimeOfDay t) =>
       MaterialLocalizations.of(context).formatTimeOfDay(t);
 
@@ -31,7 +50,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
     TimeOfDay start = const TimeOfDay(hour: 7, minute: 0);
     TimeOfDay end = const TimeOfDay(hour: 22, minute: 0);
-    Color selectedColor = Colors.amber;
+    double temperature = 4000;
+    Color selectedColor = _colorFromTemperature(temperature);
     double brightness = 70;
 
     await showModalBottomSheet(
@@ -63,8 +83,6 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 );
                 if (picked != null) setSheetState(() => end = picked);
               }
-
-              final colors = [Colors.amber, Colors.white, Colors.blue, Colors.pink];
 
               return Column(
                 mainAxisSize: MainAxisSize.min,
@@ -122,30 +140,21 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  const Text('Light color'),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 10,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      for (final c in colors)
-                        GestureDetector(
-                          onTap: () => setSheetState(() => selectedColor = c),
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: c,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: selectedColor == c
-                                    ? theme.colorScheme.primary
-                                    : theme.dividerColor,
-                                width: selectedColor == c ? 3 : 1,
-                              ),
-                            ),
-                          ),
-                        ),
+                      const Text('Light temperature'),
+                      Text('${temperature.round()}K'),
                     ],
+                  ),
+                  Slider(
+                    value: temperature,
+                    min: 2700,
+                    max: 6500,
+                    onChanged: (v) => setSheetState(() {
+                      temperature = v;
+                      selectedColor = _colorFromTemperature(temperature);
+                    }),
                   ),
                   const SizedBox(height: 12),
                   Row(
