@@ -124,68 +124,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              // Temperature slider + value pill
+              // Color Temperature slider (full width, no value pill)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
+                child: Stack(
+                  alignment: Alignment.centerLeft,
                   children: [
-                    // slider
-                    Expanded(
-                      child: Stack(
-                        alignment: Alignment.centerLeft,
-                        children: [
-                          Container(
-                            height: 18,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              gradient: const LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [
-                                  Color(0xFFFFC477), // warm
-                                  Color(0xFFBFD7FF), // cool
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  offset: const Offset(6, 6),
-                                  blurRadius: 18,
-                                  color: Colors.black.withValues(alpha: 0.12),
-                                ),
-                                BoxShadow(
-                                  offset: const Offset(-6, -6),
-                                  blurRadius: 18,
-                                  color: Colors.white.withValues(alpha: 0.5),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SliderTheme(
-                            data: SliderTheme.of(context).copyWith(
-                              trackHeight: 18,
-                              activeTrackColor: Colors.transparent,
-                              inactiveTrackColor: Colors.transparent,
-                              thumbColor: base,
-                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
-                            ),
-                            child: Slider(
-                              min: 1800,
-                              max: 6500,
-                              value: _tempK,
-                              onChanged: (v) => setState(() => _tempK = v),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // value pill
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      height: 18,
                       decoration: BoxDecoration(
-                        color: base,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(20),
+                        gradient: const LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            Color(0xFFFFC477), // warm
+                            Color(0xFFBFD7FF), // cool
+                          ],
+                        ),
                         boxShadow: [
                           BoxShadow(
                             offset: const Offset(6, 6),
@@ -199,14 +155,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      child: Text(
-                        '${_tempK.round()} K',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF3C3C3C),
-                          letterSpacing: 0.2,
-                        ),
+                    ),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 18,
+                        activeTrackColor: Colors.transparent,
+                        inactiveTrackColor: Colors.transparent,
+                        thumbColor: base,
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
+                      ),
+                      child: Slider(
+                        min: 1800,
+                        max: 6500,
+                        value: _tempK,
+                        onChanged: (v) => setState(() => _tempK = v),
                       ),
                     ),
                   ],
