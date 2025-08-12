@@ -81,20 +81,39 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text('Routine start time'),
-                  const SizedBox(height: 6),
-                  OutlinedButton.icon(
-                    onPressed: pickStart,
-                    icon: const Icon(Icons.schedule),
-                    label: Text(_formatTime(context, start)),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('Routine end time'),
-                  const SizedBox(height: 6),
-                  OutlinedButton.icon(
-                    onPressed: pickEnd,
-                    icon: const Icon(Icons.schedule_outlined),
-                    label: Text(_formatTime(context, end)),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Routine start time'),
+                            const SizedBox(height: 6),
+                            OutlinedButton.icon(
+                              onPressed: pickStart,
+                              icon: const Icon(Icons.schedule),
+                              label: Text(_formatTime(context, start)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Routine end time'),
+                            const SizedBox(height: 6),
+                            OutlinedButton.icon(
+                              onPressed: pickEnd,
+                              icon: const Icon(Icons.schedule_outlined),
+                              label: Text(_formatTime(context, end)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   const Text('Light color'),
