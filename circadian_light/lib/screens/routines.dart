@@ -73,7 +73,13 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Create Routine'),
+                      const Text(
+                        'Create Routine',
+                        style:TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        )
+                        ),
                       IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.of(ctx).pop(),
@@ -89,7 +95,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text('Routine start time'),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 10),
                             OutlinedButton.icon(
                               onPressed: pickStart,
                               icon: const Icon(Icons.schedule),
@@ -104,7 +110,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text('Routine end time'),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 10),
                             OutlinedButton.icon(
                               onPressed: pickEnd,
                               icon: const Icon(Icons.schedule_outlined),
