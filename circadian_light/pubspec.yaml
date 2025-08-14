@@ -11,8 +11,10 @@ dependencies:
     sdk: flutter
   flutter_3d_controller: ^2.2.0
   # three_dart_jsm: ^0.0.1
-  web_socket_channel: ^2.4.0
+  web_socket_channel: ^3.0.3
   multicast_dns: ^0.3.2
+  esp_smartconfig: ^3.0.0
+  device_info_plus: ^11.0.0
   # flutter_gl: ^0.0.25
 
 dev_dependencies:

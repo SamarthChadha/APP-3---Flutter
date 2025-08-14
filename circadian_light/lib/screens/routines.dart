@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 
 class Routine {
   final TimeOfDay startTime;
@@ -13,6 +16,108 @@ class Routine {
     required this.color,
     required this.brightness,
   });
+}
+
+// Custom gradient/white slider track with soft shadow and glow
+class GradientRectSliderTrackShape extends SliderTrackShape with BaseSliderTrackShape {
+  final LinearGradient gradient;
+  final double trackBorderRadius;
+  final double shadowSigma;
+  const GradientRectSliderTrackShape({
+    required this.gradient,
+    this.trackBorderRadius = 20,
+    this.shadowSigma = 12,
+  });
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset offset, {
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required Animation<double> enableAnimation,
+    required TextDirection textDirection,
+    required Offset thumbCenter,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+    Offset? secondaryOffset,
+  }) {
+    final Rect trackRect = getPreferredRect(
+      parentBox: parentBox,
+      sliderTheme: sliderTheme,
+      isEnabled: isEnabled,
+      isDiscrete: isDiscrete,
+    ).shift(offset);
+
+    final RRect rrect = RRect.fromRectAndRadius(
+      trackRect,
+      Radius.circular(trackBorderRadius),
+    );
+
+    // Soft shadow below
+    final Paint shadow = Paint()
+      ..color = Colors.black.withValues(alpha: 0.18)
+      ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, shadowSigma);
+    context.canvas.drawRRect(rrect.shift(const Offset(0, 2)), shadow);
+
+    // Gentle top glow
+    final Paint glow = Paint()
+      ..color = Colors.white.withValues(alpha: 0.35)
+      ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, shadowSigma / 2);
+    context.canvas.drawRRect(rrect.shift(const Offset(0, -1)), glow);
+
+    // Gradient/solid track fill
+    final Paint fill = Paint()..shader = gradient.createShader(trackRect);
+    context.canvas.drawRRect(rrect, fill);
+
+    // Subtle border to improve contrast on light backgrounds
+    final Paint border = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = Colors.black.withValues(alpha: 0.08);
+    context.canvas.drawRRect(rrect, border);
+  }
+}
+
+class NeumorphicThumbShape extends SliderComponentShape {
+  final double radius;
+  const NeumorphicThumbShape({this.radius = 16});
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) => Size.fromRadius(radius);
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    // Shadow
+    final Paint shadow = Paint()
+      ..color = Colors.black.withValues(alpha: 0.20)
+      ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, 8);
+    context.canvas.drawCircle(center.translate(0, 2), radius, shadow);
+
+    // Thumb fill
+    final Paint fill = Paint()..color = Colors.white;
+    context.canvas.drawCircle(center, radius, fill);
+
+    // Thin ring
+    final Paint ring = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = Colors.black.withValues(alpha: 0.10);
+    context.canvas.drawCircle(center, radius, ring);
+  }
 }
 
 class RoutinesScreen extends StatefulWidget {
@@ -51,13 +156,14 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     TimeOfDay start = const TimeOfDay(hour: 7, minute: 0);
     TimeOfDay end = const TimeOfDay(hour: 22, minute: 0);
     double temperature = 4000;
-    Color selectedColor = _colorFromTemperature(temperature);
+    Color selectedColor = _colorFromTemperature(temperature); 
     double brightness = 70;
 
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      backgroundColor: Colors.grey.shade300,
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -68,20 +174,93 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
           ),
           child: StatefulBuilder(
             builder: (context, setSheetState) {
-              Future<void> pickStart() async {
-                final picked = await showTimePicker(
-                  context: context,
-                  initialTime: start,
+              Widget _buildCupertinoTimePickerSheet(
+                BuildContext context, {
+                required TimeOfDay initial,
+                required ValueChanged<TimeOfDay> onChanged,
+                required VoidCallback onCancel,
+                required VoidCallback onSave,
+              }) {
+                return SafeArea(
+                  child: Container(
+                    height: 300,
+                    decoration: BoxDecoration(
+                      color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: 44,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              CupertinoButton(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                onPressed: onCancel,
+                                child: const Text('Cancel'),
+                              ),
+                              CupertinoButton(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                onPressed: onSave,
+                                child: const Text('Save'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: CupertinoDatePicker(
+                            mode: CupertinoDatePickerMode.time,
+                            minuteInterval: 1,
+                            use24hFormat: MediaQuery.of(context).alwaysUse24HourFormat,
+                            initialDateTime: DateTime(0, 1, 1, initial.hour, initial.minute),
+                            onDateTimeChanged: (DateTime v) {
+                              onChanged(TimeOfDay(hour: v.hour, minute: v.minute));
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 );
-                if (picked != null) setSheetState(() => start = picked);
+              }
+
+              Future<void> pickStart() async {
+                TimeOfDay temp = start;
+                await showCupertinoModalPopup<void>(
+                  context: context,
+                  builder: (_) {
+                    return _buildCupertinoTimePickerSheet(
+                      context,
+                      initial: start,
+                      onChanged: (t) => temp = t,
+                      onCancel: () => Navigator.of(context).pop(),
+                      onSave: () {
+                        setSheetState(() => start = temp);
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  },
+                );
               }
 
               Future<void> pickEnd() async {
-                final picked = await showTimePicker(
+                TimeOfDay temp = end;
+                await showCupertinoModalPopup<void>(
                   context: context,
-                  initialTime: end,
+                  builder: (_) {
+                    return _buildCupertinoTimePickerSheet(
+                      context,
+                      initial: end,
+                      onChanged: (t) => temp = t,
+                      onCancel: () => Navigator.of(context).pop(),
+                      onSave: () {
+                        setSheetState(() => end = temp);
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  },
                 );
-                if (picked != null) setSheetState(() => end = picked);
               }
 
               return Column(
@@ -139,36 +318,62 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Light temperature'),
-                      Text('${temperature.round()}K'),
-                    ],
-                  ),
-                  Slider(
-                    value: temperature,
-                    min: 2700,
-                    max: 6500,
-                    onChanged: (v) => setSheetState(() {
-                      temperature = v;
-                      selectedColor = _colorFromTemperature(temperature);
-                    }),
+                  const Text(
+                    'Color Temperature',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Light brightness'),
-                      Text('${brightness.round()}%'),
-                    ],
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 20,
+                      trackShape: const GradientRectSliderTrackShape(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFFFFA64D), // warm amber
+                            Color(0xFF8EC6FF), // cool blue
+                          ],
+                        ),
+                      ),
+                      activeTrackColor: Colors.transparent,
+                      inactiveTrackColor: Colors.transparent,
+                      thumbColor: Colors.white,
+                      overlayShape: SliderComponentShape.noOverlay,
+                      thumbShape: const NeumorphicThumbShape(radius: 18),
+                    ),
+                    child: Slider(
+                      value: temperature,
+                      min: 2700,
+                      max: 6500,
+                      onChanged: (v) => setSheetState(() {
+                        temperature = v;
+                        selectedColor = _colorFromTemperature(temperature);
+                      }),
+                    ),
                   ),
-                  Slider(
-                    value: brightness,
-                    min: 0,
-                    max: 100,
-                    onChanged: (v) => setSheetState(() => brightness = v),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Brightness',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 20,
+                      trackShape: const GradientRectSliderTrackShape(
+                        gradient: LinearGradient(colors: [Colors.white, Colors.white]),
+                      ),
+                      activeTrackColor: Colors.transparent,
+                      inactiveTrackColor: Colors.transparent,
+                      thumbColor: Colors.white,
+                      overlayShape: SliderComponentShape.noOverlay,
+                      thumbShape: const NeumorphicThumbShape(radius: 18),
+                    ),
+                    child: Slider(
+                      value: brightness,
+                      min: 0,
+                      max: 100,
+                      onChanged: (v) => setSheetState(() => brightness = v),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
