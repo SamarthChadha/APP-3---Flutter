@@ -433,6 +433,11 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFC049),
+                        foregroundColor: const Color(0xFF3C3C3C),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+                      ),
                       onPressed: () {
                         setState(() => _routines.add(Routine(
                               startTime: start,

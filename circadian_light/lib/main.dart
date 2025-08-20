@@ -32,6 +32,35 @@ class _MainAppState extends State<MainApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFFFFC049), // warm yellow seed
+          brightness: Brightness.light,
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFFFC049),
+            foregroundColor: const Color(0xFF3C3C3C),
+            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            padding: const EdgeInsets.symmetric(vertical: 18),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF5A4A00),
+            side: const BorderSide(color: Color(0xFFFFC049), width: 1.4),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.grey,
+          foregroundColor: Color(0xFF3C3C3C),
+          elevation: 0,
+        ),
+      ),
       home: Scaffold(
         extendBody: true,
         body: _screens[myIndex],
