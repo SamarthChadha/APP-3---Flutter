@@ -126,6 +126,71 @@ class RoutinesScreen extends StatefulWidget {
   State<RoutinesScreen> createState() => _RoutinesScreenState();
 }
 
+// Reusable neumorphic slider matching design used on home screen.
+class _NeumorphicSlider extends StatelessWidget {
+  final double value;
+  final double min;
+  final double max;
+  final ValueChanged<double> onChanged;
+  final LinearGradient? gradient; // if null solidColor used
+  final Color? solidColor; // fallback single color (default base)
+  const _NeumorphicSlider({
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+    this.gradient,
+    this.solidColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const base = Color(0xFFEFEFEF);
+    final trackDecoration = BoxDecoration(
+      color: gradient == null ? (solidColor ?? base) : null,
+      gradient: gradient,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          offset: const Offset(6, 6),
+            blurRadius: 18,
+            color: Colors.black.withValues(alpha: 0.12),
+        ),
+        BoxShadow(
+          offset: const Offset(-6, -6),
+          blurRadius: 18,
+          color: Colors.white.withValues(alpha: 0.5),
+        ),
+      ],
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Stack(
+        alignment: Alignment.centerLeft,
+        children: [
+          Container(height: 18, decoration: trackDecoration),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 18,
+              activeTrackColor: Colors.transparent,
+              inactiveTrackColor: Colors.transparent,
+              thumbColor: base,
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
+            ),
+            child: Slider(
+              value: value.clamp(min, max),
+              min: min,
+              max: max,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RoutinesScreenState extends State<RoutinesScreen> {
   final _routines = <Routine>[];
 
@@ -151,8 +216,6 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       MaterialLocalizations.of(context).formatTimeOfDay(t);
 
   void _openAddRoutineSheet() async {
-    final theme = Theme.of(context);
-
     TimeOfDay start = const TimeOfDay(hour: 7, minute: 0);
     TimeOfDay end = const TimeOfDay(hour: 22, minute: 0);
     double temperature = 4000;
@@ -163,7 +226,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.grey.shade300,
+  // Match home screen base color for consistent neumorphic look
+  backgroundColor: const Color(0xFFEFEFEF),
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -174,7 +238,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
           ),
           child: StatefulBuilder(
             builder: (context, setSheetState) {
-              Widget _buildCupertinoTimePickerSheet(
+      const base = Color(0xFFEFEFEF);
+
+              Widget buildCupertinoTimePickerSheet(
                 BuildContext context, {
                 required TimeOfDay initial,
                 required ValueChanged<TimeOfDay> onChanged,
@@ -230,7 +296,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 await showCupertinoModalPopup<void>(
                   context: context,
                   builder: (_) {
-                    return _buildCupertinoTimePickerSheet(
+                    return buildCupertinoTimePickerSheet(
                       context,
                       initial: start,
                       onChanged: (t) => temp = t,
@@ -249,7 +315,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 await showCupertinoModalPopup<void>(
                   context: context,
                   builder: (_) {
-                    return _buildCupertinoTimePickerSheet(
+                    return buildCupertinoTimePickerSheet(
                       context,
                       initial: end,
                       onChanged: (t) => temp = t,
@@ -320,60 +386,48 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   ),
                   const Text(
                     'Color Temperature',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF3C3C3C),
+                      letterSpacing: 0.2,
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 20,
-                      trackShape: const GradientRectSliderTrackShape(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFFFFA64D), // warm amber
-                            Color(0xFF8EC6FF), // cool blue
-                          ],
-                        ),
-                      ),
-                      activeTrackColor: Colors.transparent,
-                      inactiveTrackColor: Colors.transparent,
-                      thumbColor: Colors.white,
-                      overlayShape: SliderComponentShape.noOverlay,
-                      thumbShape: const NeumorphicThumbShape(radius: 18),
+                  _NeumorphicSlider(
+                    gradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Color(0xFFFFC477), // warm
+                        Color(0xFFBFD7FF), // cool
+                      ],
                     ),
-                    child: Slider(
-                      value: temperature,
-                      min: 2700,
-                      max: 6500,
-                      onChanged: (v) => setSheetState(() {
-                        temperature = v;
-                        selectedColor = _colorFromTemperature(temperature);
-                      }),
-                    ),
+                    value: temperature,
+                    min: 2700,
+                    max: 6500,
+                    onChanged: (v) => setSheetState(() {
+                      temperature = v;
+                      selectedColor = _colorFromTemperature(temperature);
+                    }),
                   ),
                   const SizedBox(height: 12),
                   const Text(
                     'Brightness',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF3C3C3C),
+                      letterSpacing: 0.2,
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 20,
-                      trackShape: const GradientRectSliderTrackShape(
-                        gradient: LinearGradient(colors: [Colors.white, Colors.white]),
-                      ),
-                      activeTrackColor: Colors.transparent,
-                      inactiveTrackColor: Colors.transparent,
-                      thumbColor: Colors.white,
-                      overlayShape: SliderComponentShape.noOverlay,
-                      thumbShape: const NeumorphicThumbShape(radius: 18),
-                    ),
-                    child: Slider(
-                      value: brightness,
-                      min: 0,
-                      max: 100,
-                      onChanged: (v) => setSheetState(() => brightness = v),
-                    ),
+                  _NeumorphicSlider(
+                    solidColor: base,
+                    value: brightness,
+                    min: 0,
+                    max: 100,
+                    onChanged: (v) => setSheetState(() => brightness = v),
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
