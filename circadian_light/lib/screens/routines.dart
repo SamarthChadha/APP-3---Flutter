@@ -126,6 +126,71 @@ class RoutinesScreen extends StatefulWidget {
   State<RoutinesScreen> createState() => _RoutinesScreenState();
 }
 
+// Reusable neumorphic slider matching design used on home screen.
+class _NeumorphicSlider extends StatelessWidget {
+  final double value;
+  final double min;
+  final double max;
+  final ValueChanged<double> onChanged;
+  final LinearGradient? gradient; // if null solidColor used
+  final Color? solidColor; // fallback single color (default base)
+  const _NeumorphicSlider({
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+    this.gradient,
+    this.solidColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const base = Color(0xFFEFEFEF);
+    final trackDecoration = BoxDecoration(
+      color: gradient == null ? (solidColor ?? base) : null,
+      gradient: gradient,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          offset: const Offset(6, 6),
+            blurRadius: 18,
+            color: Colors.black.withValues(alpha: 0.12),
+        ),
+        BoxShadow(
+          offset: const Offset(-6, -6),
+          blurRadius: 18,
+          color: Colors.white.withValues(alpha: 0.5),
+        ),
+      ],
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Stack(
+        alignment: Alignment.centerLeft,
+        children: [
+          Container(height: 18, decoration: trackDecoration),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 18,
+              activeTrackColor: Colors.transparent,
+              inactiveTrackColor: Colors.transparent,
+              thumbColor: base,
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
+            ),
+            child: Slider(
+              value: value.clamp(min, max),
+              min: min,
+              max: max,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RoutinesScreenState extends State<RoutinesScreen> {
   final _routines = <Routine>[];
 
@@ -151,8 +216,6 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       MaterialLocalizations.of(context).formatTimeOfDay(t);
 
   void _openAddRoutineSheet() async {
-    // Removed unnecessary Theme.of(context);
-
     TimeOfDay start = const TimeOfDay(hour: 7, minute: 0);
     TimeOfDay end = const TimeOfDay(hour: 22, minute: 0);
     double temperature = 4000;
@@ -163,19 +226,20 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.grey.shade300,
+  // Match home screen base color for consistent neumorphic look
+  backgroundColor: const Color(0xFFEFEFEF),
       builder: (ctx) {
-        return Theme(
-          data: Theme.of(ctx).copyWith(platform: TargetPlatform.android),
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 12,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-            ),
-            child: StatefulBuilder(
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: StatefulBuilder(
             builder: (context, setSheetState) {
+      const base = Color(0xFFEFEFEF);
+
               Widget buildCupertinoTimePickerSheet(
                 BuildContext context, {
                 required TimeOfDay initial,
@@ -330,61 +394,24 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // Match HomeScreen slider style: gradient track inside a neumorphic container using Stack
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Stack(
-                      alignment: Alignment.centerLeft,
-                      children: [
-                        Container(
-                          height: 18,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: const LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                Color(0xFFFFC477), // warm
-                                Color(0xFFBFD7FF), // cool
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                offset: const Offset(6, 6),
-                                blurRadius: 18,
-                                color: Colors.black.withValues(alpha: 0.12),
-                              ),
-                              BoxShadow(
-                                offset: const Offset(-6, -6),
-                                blurRadius: 18,
-                                color: Colors.white.withValues(alpha: 0.5),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            trackHeight: 18,
-                            activeTrackColor: Colors.transparent,
-                            inactiveTrackColor: Colors.transparent,
-                            thumbColor: const Color(0xFFEFEFEF),
-                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
-                          ),
-                          child: Slider(
-                            value: temperature,
-                            min: 2700,
-                            max: 6500,
-                            onChanged: (v) => setSheetState(() {
-                              temperature = v;
-                              selectedColor = _colorFromTemperature(temperature);
-                            }),
-                          ),
-                        ),
+                  _NeumorphicSlider(
+                    gradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Color(0xFFFFC477), // warm
+                        Color(0xFFBFD7FF), // cool
                       ],
                     ),
+                    value: temperature,
+                    min: 2700,
+                    max: 6500,
+                    onChanged: (v) => setSheetState(() {
+                      temperature = v;
+                      selectedColor = _colorFromTemperature(temperature);
+                    }),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                   const Text(
                     'Brightness',
                     style: TextStyle(
@@ -395,48 +422,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Stack(
-                      alignment: Alignment.centerLeft,
-                      children: [
-                        Container(
-                          height: 18,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFEFEF),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                offset: const Offset(6, 6),
-                                blurRadius: 18,
-                                color: Colors.black.withValues(alpha: 0.12),
-                              ),
-                              BoxShadow(
-                                offset: const Offset(-6, -6),
-                                blurRadius: 18,
-                                color: Colors.white.withValues(alpha: 0.5),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            trackHeight: 18,
-                            activeTrackColor: Colors.transparent,
-                            inactiveTrackColor: Colors.transparent,
-                            thumbColor: const Color(0xFFEFEFEF),
-                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
-                          ),
-                          child: Slider(
-                            value: brightness,
-                            min: 0,
-                            max: 100,
-                            onChanged: (v) => setSheetState(() => brightness = v),
-                          ),
-                        ),
-                      ],
-                    ),
+                  _NeumorphicSlider(
+                    solidColor: base,
+                    value: brightness,
+                    min: 0,
+                    max: 100,
+                    onChanged: (v) => setSheetState(() => brightness = v),
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
@@ -459,7 +450,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               );
             },
           ),
-        ));
+        );
       },
     );
   }
