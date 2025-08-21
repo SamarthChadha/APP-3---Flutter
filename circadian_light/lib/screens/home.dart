@@ -41,6 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 24),
               NeumorphicPillButton(
                 label: _isOn ? 'Turn Off' : 'Turn On',
+                // Swap colors: when ON use light grey base, when OFF show yellow highlight
+                color: _isOn ? const Color(0xFFEFEFEF) : const Color(0xFFFFC049),
                 onTap: () => setState(() => _isOn = !_isOn),
               ),
               const SizedBox(height: 28),
@@ -187,7 +189,8 @@ class _HomeScreenState extends State<HomeScreen> {
 class NeumorphicPillButton extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
-  const NeumorphicPillButton({super.key, required this.label, required this.onTap});
+  final Color? color; // custom base color
+  const NeumorphicPillButton({super.key, required this.label, required this.onTap, this.color});
 
   @override
   State<NeumorphicPillButton> createState() => _NeumorphicPillButtonState();
@@ -198,7 +201,11 @@ class _NeumorphicPillButtonState extends State<NeumorphicPillButton> {
 
   @override
   Widget build(BuildContext context) {
-    const base = Color(0xFFEFEFEF); // soft surface color matching the reference
+  final base = widget.color ?? const Color(0xFFEFEFEF); // allow override
+  // derive dynamic shadow intensity based on luminance
+  final lum = base.computeLuminance();
+  final darkShadow = Colors.black.withValues(alpha: lum > 0.7 ? 0.18 : 0.30);
+  final lightShadow = Colors.white.withValues(alpha: lum > 0.5 ? 0.55 : 0.35);
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapCancel: () => setState(() => _pressed = false),
@@ -215,26 +222,26 @@ class _NeumorphicPillButtonState extends State<NeumorphicPillButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    offset: const Offset(2, 2),
-                    blurRadius: 6,
-                    color: Colors.black.withValues(alpha: 0.12),
+          offset: const Offset(2, 2),
+          blurRadius: 6,
+          color: darkShadow,
                   ),
                   BoxShadow(
-                    offset: const Offset(-2, -2),
-                    blurRadius: 6,
-                    color: Colors.white.withValues(alpha: 0.5),
+          offset: const Offset(-2, -2),
+          blurRadius: 6,
+          color: lightShadow,
                   ),
                 ]
               : [
                   BoxShadow(
-                    offset: const Offset(10, 10),
-                    blurRadius: 24,
-                    color: Colors.black.withValues(alpha: 0.12),
+          offset: const Offset(10, 10),
+          blurRadius: 24,
+          color: darkShadow,
                   ),
                   BoxShadow(
-                    offset: const Offset(-10, -10),
-                    blurRadius: 24,
-                    color: Colors.white.withValues(alpha: 0.5),
+          offset: const Offset(-10, -10),
+          blurRadius: 24,
+          color: lightShadow,
                   ),
                 ],
         ),
