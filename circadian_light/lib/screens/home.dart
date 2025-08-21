@@ -46,70 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => setState(() => _isOn = !_isOn),
               ),
               const SizedBox(height: 28),
-              // Brightness label
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Brightness',
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF3C3C3C),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Brightness slider (neumorphic track)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Container(
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: base,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            offset: const Offset(6, 6),
-                            blurRadius: 18,
-                            color: Colors.black.withValues(alpha: 0.12),
-                          ),
-                          BoxShadow(
-                            offset: const Offset(-6, -6),
-                            blurRadius: 18,
-                            color: Colors.white.withValues(alpha: 0.5),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 18,
-                        activeTrackColor: Colors.transparent,
-                        inactiveTrackColor: Colors.transparent,
-                        thumbColor: base,
-                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
-                      ),
-                      child: Slider(
-                        min: 0.0,
-                        max: 1.0,
-                        value: _brightness,
-                        onChanged: (v) => setState(() => _brightness = v),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 28),
-              // Color Temperature label
+              // Color Temperature label (moved above Brightness)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 28),
                 child: Align(
@@ -172,6 +109,69 @@ class _HomeScreenState extends State<HomeScreen> {
                         max: 6500,
                         value: _tempK,
                         onChanged: (v) => setState(() => _tempK = v),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 28),
+              // Brightness label (moved below Color Temperature)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Brightness',
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF3C3C3C),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Brightness slider (neumorphic track)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    Container(
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: base,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            offset: const Offset(6, 6),
+                            blurRadius: 18,
+                            color: Colors.black.withValues(alpha: 0.12),
+                          ),
+                          BoxShadow(
+                            offset: const Offset(-6, -6),
+                            blurRadius: 18,
+                            color: Colors.white.withValues(alpha: 0.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 18,
+                        activeTrackColor: Colors.transparent,
+                        inactiveTrackColor: Colors.transparent,
+                        thumbColor: base,
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
+                      ),
+                      child: Slider(
+                        min: 0.0,
+                        max: 1.0,
+                        value: _brightness,
+                        onChanged: (v) => setState(() => _brightness = v),
                       ),
                     ),
                   ],
