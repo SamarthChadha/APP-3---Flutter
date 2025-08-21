@@ -10,6 +10,7 @@ class Routine {
   final TimeOfDay endTime;
   final Color color;
   final double brightness;
+  final double temperature; // store kelvin for editing
   bool enabled;
 
   Routine({
@@ -18,8 +19,27 @@ class Routine {
     required this.endTime,
     required this.color,
     required this.brightness,
+    required this.temperature,
     this.enabled = true,
   });
+
+  Routine copyWith({
+    String? name,
+    TimeOfDay? startTime,
+    TimeOfDay? endTime,
+    Color? color,
+    double? brightness,
+    double? temperature,
+    bool? enabled,
+  }) => Routine(
+        name: name ?? this.name,
+        startTime: startTime ?? this.startTime,
+        endTime: endTime ?? this.endTime,
+        color: color ?? this.color,
+        brightness: brightness ?? this.brightness,
+        temperature: temperature ?? this.temperature,
+        enabled: enabled ?? this.enabled,
+      );
 }
 
 // Custom gradient/white slider track with soft shadow and glow
@@ -463,6 +483,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                               endTime: end,
                               color: selectedColor,
                               brightness: brightness,
+                              temperature: temperature,
                             )));
                         Navigator.of(ctx).pop();
                       },
@@ -476,6 +497,191 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _openEditRoutineSheet(int index, Routine routine) {
+    TimeOfDay start = routine.startTime;
+    TimeOfDay end = routine.endTime;
+    double temperature = routine.temperature;
+    double brightness = routine.brightness;
+    Color selectedColor = routine.color;
+    final nameCtrl = TextEditingController(text: routine.name);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: const Color.fromARGB(255, 208, 206, 206),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              const base = Color(0xFFEFEFEF);
+
+              Future<void> pickStart() async {
+                TimeOfDay temp = start;
+                await showCupertinoModalPopup<void>(
+                  context: context,
+                  builder: (_) => _timeSheet(
+                    initial: start,
+                    onChanged: (t) => temp = t,
+                    onCancel: () => Navigator.of(context).pop(),
+                    onSave: () { setSheetState(() => start = temp); Navigator.pop(context);},
+                  ),
+                );
+              }
+              Future<void> pickEnd() async {
+                TimeOfDay temp = end;
+                await showCupertinoModalPopup<void>(
+                  context: context,
+                  builder: (_) => _timeSheet(
+                    initial: end,
+                    onChanged: (t) => temp = t,
+                    onCancel: () => Navigator.of(context).pop(),
+                    onSave: () { setSheetState(() => end = temp); Navigator.pop(context);},
+                  ),
+                );
+              }
+
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Edit Routine', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                      ],
+                    ),
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Routine name',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Start'),
+                              const SizedBox(height: 8),
+                              OutlinedButton.icon(onPressed: pickStart, icon: const Icon(Icons.schedule), label: Text(_formatTime(context, start))),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('End'),
+                              const SizedBox(height: 8),
+                              OutlinedButton.icon(onPressed: pickEnd, icon: const Icon(Icons.schedule_outlined), label: Text(_formatTime(context, end))),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Color Temperature', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    _NeumorphicSlider(
+                      gradient: const LinearGradient(colors: [Color(0xFFFFC477), Color(0xFFBFD7FF)]),
+                      value: temperature,
+                      min: 2700,
+                      max: 6500,
+                      onChanged: (v) => setSheetState(() { temperature = v; selectedColor = _colorFromTemperature(v); }),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Brightness', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    _NeumorphicSlider(
+                      solidColor: base,
+                      value: brightness,
+                      min: 0,
+                      max: 100,
+                      onChanged: (v) => setSheetState(() => brightness = v),
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFC049),
+                        foregroundColor: const Color(0xFF3C3C3C),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        minimumSize: const Size.fromHeight(54),
+                      ),
+                      onPressed: () {
+                        setState(() => _routines[index] = routine.copyWith(
+                              name: nameCtrl.text.trim().isEmpty ? routine.name : nameCtrl.text.trim(),
+                              startTime: start,
+                              endTime: end,
+                              color: selectedColor,
+                              brightness: brightness,
+                              temperature: temperature,
+                            ));
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text('Save Changes'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _timeSheet({
+    required TimeOfDay initial,
+    required ValueChanged<TimeOfDay> onChanged,
+    required VoidCallback onCancel,
+    required VoidCallback onSave,
+  }) {
+    return SafeArea(
+      child: Container(
+        height: 300,
+        decoration: BoxDecoration(
+          color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 44,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(padding: const EdgeInsets.symmetric(horizontal: 16), onPressed: onCancel, child: const Text('Cancel')),
+                  CupertinoButton(padding: const EdgeInsets.symmetric(horizontal: 16), onPressed: onSave, child: const Text('Save')),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                use24hFormat: MediaQuery.of(context).alwaysUse24HourFormat,
+                initialDateTime: DateTime(0,1,1,initial.hour, initial.minute),
+                onDateTimeChanged: (v) => onChanged(TimeOfDay(hour: v.hour, minute: v.minute)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -493,6 +699,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               return _RoutineCard(
                 routine: r,
                 onChanged: (val) => setState(() => r.enabled = val),
+                onTap: () => _openEditRoutineSheet(i, r),
               );
             },
           );
@@ -551,7 +758,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 class _RoutineCard extends StatelessWidget {
   final Routine routine;
   final ValueChanged<bool> onChanged;
-  const _RoutineCard({required this.routine, required this.onChanged});
+  final VoidCallback? onTap;
+  const _RoutineCard({required this.routine, required this.onChanged, this.onTap});
 
   String _formatTime(BuildContext context, TimeOfDay t) =>
       MaterialLocalizations.of(context).formatTimeOfDay(t);
@@ -559,56 +767,44 @@ class _RoutineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final timeRange = '${_formatTime(context, routine.startTime)} – ${_formatTime(context, routine.endTime)}';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: routine.enabled
-                ? [const Color(0xFFFDFDFD), const Color(0xFFE3E3E3)]
-                : [const Color(0xFFE5E5E5), const Color(0xFFD4D4D4)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              offset: const Offset(6, 6),
-              blurRadius: 18,
-              color: Colors.black.withValues(alpha: 0.12),
-            ),
-            BoxShadow(
-              offset: const Offset(-6, -6),
-              blurRadius: 18,
-              color: Colors.white.withValues(alpha: 0.55),
-            ),
-          ],
+    final card = AnimatedContainer(
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOut,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: routine.enabled
+              ? [const Color(0xFFFDFDFD), const Color(0xFFE3E3E3)]
+              : [const Color(0xFFE5E5E5), const Color(0xFFD4D4D4)],
         ),
-        child: Row(
-          children: [
-            // color avatar
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [routine.color.withValues(alpha: .9), routine.color.withValues(alpha: .3)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: routine.color.withValues(alpha: .4),
-                    blurRadius: 14,
-                    spreadRadius: 1,
-                  ),
-                ],
+        boxShadow: const [
+          BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
+          BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [routine.color.withValues(alpha: .9), routine.color.withValues(alpha: .25)],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: routine.color.withValues(alpha: .45),
+                  blurRadius: 12,
+                  spreadRadius: 1,
+                ),
+              ],
             ),
-            const SizedBox(width: 18),
-            // texts
+          ),
+          const SizedBox(width: 18),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -634,15 +830,26 @@ class _RoutineCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            Transform.scale(
-              scale: 1.1,
-              child: Switch(
-                value: routine.enabled,
-                onChanged: onChanged,
-              ),
+          const SizedBox(width: 12),
+          // Isolated switch so tapping it doesn't trigger card tap
+          IgnorePointer(
+            ignoring: false,
+            child: Switch(
+              value: routine.enabled,
+              onChanged: onChanged,
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: onTap,
+          child: card,
         ),
       ),
     );
