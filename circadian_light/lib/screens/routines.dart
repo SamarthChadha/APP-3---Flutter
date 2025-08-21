@@ -5,16 +5,20 @@ import 'dart:ui' as ui;
 
 
 class Routine {
+  final String name;
   final TimeOfDay startTime;
   final TimeOfDay endTime;
   final Color color;
   final double brightness;
+  bool enabled;
 
-  const Routine({
+  Routine({
+    required this.name,
     required this.startTime,
     required this.endTime,
     required this.color,
     required this.brightness,
+    this.enabled = true,
   });
 }
 
@@ -221,6 +225,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     double temperature = 4000;
     Color selectedColor = _colorFromTemperature(temperature); 
     double brightness = 70;
+  final nameCtrl = TextEditingController(text: 'Routine ${_routines.length + 1}');
 
     await showModalBottomSheet(
       context: context,
@@ -333,6 +338,16 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  TextField(
+                    controller: nameCtrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Routine name',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -439,7 +454,11 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
                       ),
                       onPressed: () {
+                        final name = nameCtrl.text.trim().isEmpty
+                            ? 'Routine ${_routines.length + 1}'
+                            : nameCtrl.text.trim();
                         setState(() => _routines.add(Routine(
+                              name: name,
                               startTime: start,
                               endTime: end,
                               color: selectedColor,
@@ -471,12 +490,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
             itemCount: _routines.length,
             itemBuilder: (context, i) {
               final r = _routines[i];
-              return ListTile(
-                leading: CircleAvatar(backgroundColor: r.color),
-                title: Text(
-                    '${_formatTime(context, r.startTime)} — ${_formatTime(context, r.endTime)}'),
-                subtitle: Text('Brightness: ${r.brightness.round()}%'),
-                trailing: const Icon(Icons.chevron_right),
+              return _RoutineCard(
+                routine: r,
+                onChanged: (val) => setState(() => r.enabled = val),
               );
             },
           );
@@ -527,6 +543,107 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RoutineCard extends StatelessWidget {
+  final Routine routine;
+  final ValueChanged<bool> onChanged;
+  const _RoutineCard({required this.routine, required this.onChanged});
+
+  String _formatTime(BuildContext context, TimeOfDay t) =>
+      MaterialLocalizations.of(context).formatTimeOfDay(t);
+
+  @override
+  Widget build(BuildContext context) {
+    final timeRange = '${_formatTime(context, routine.startTime)} – ${_formatTime(context, routine.endTime)}';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: routine.enabled
+                ? [const Color(0xFFFDFDFD), const Color(0xFFE3E3E3)]
+                : [const Color(0xFFE5E5E5), const Color(0xFFD4D4D4)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              offset: const Offset(6, 6),
+              blurRadius: 18,
+              color: Colors.black.withValues(alpha: 0.12),
+            ),
+            BoxShadow(
+              offset: const Offset(-6, -6),
+              blurRadius: 18,
+              color: Colors.white.withValues(alpha: 0.55),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // color avatar
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [routine.color.withValues(alpha: .9), routine.color.withValues(alpha: .3)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: routine.color.withValues(alpha: .4),
+                    blurRadius: 14,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 18),
+            // texts
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    routine.name,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF2F2F2F).withValues(alpha: routine.enabled ? 1 : 0.5),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    timeRange,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
+                      color: const Color(0xFF3C3C3C).withValues(alpha: routine.enabled ? 0.85 : 0.45),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Transform.scale(
+              scale: 1.1,
+              child: Switch(
+                value: routine.enabled,
+                onChanged: onChanged,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
