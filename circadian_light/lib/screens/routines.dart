@@ -226,8 +226,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-  // Match home screen base color for consistent neumorphic look
-  backgroundColor: const Color(0xFFEFEFEF),
+  // Use app grey background for consistency with rest of app
+  backgroundColor: const Color.fromARGB(255, 208, 206, 206),
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
