@@ -28,7 +28,7 @@ RotaryEncoder encoder(ROTARY_DT, ROTARY_CLK);
 // ===== New simplified control state =====
 enum Mode { MODE_WARM = 0, MODE_WHITE = 1, MODE_BOTH = 2 };
 Mode mode = MODE_BOTH;                 // double-click cycles this
-int brightness = 128;                  // 0-255 master brightness (independent of on/off & mode)
+int brightness = 0;                  // 0-255 master brightness (independent of on/off & mode)
 bool isOn = true;                      // single-click toggles this
 
 // Button click state (robust, polarity-agnostic)
