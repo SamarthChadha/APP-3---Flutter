@@ -28,7 +28,7 @@ RotaryEncoder encoder(ROTARY_DT, ROTARY_CLK);
 // ===== New simplified control state =====
 enum Mode { MODE_WARM = 0, MODE_WHITE = 1, MODE_BOTH = 2 };
 Mode mode = MODE_BOTH;                 // double-click cycles this
-int brightness = 0;                  // 0-255 master brightness (independent of on/off & mode)
+int brightness = 0;                  // 0-15 master brightness (independent of on/off & mode)
 bool isOn = true;                      // single-click toggles this
 
 // Button click state (robust, polarity-agnostic)
@@ -41,9 +41,9 @@ const bool BUTTON_ACTIVE_LOW   = true; // set false if wired active-high
 // ===== Helpers =====
 void applyOutput() {
   if (!isOn) {
-    // When OFF: set brightness to 255 (inverted logic)
-    ledcWrite(0, 255);
-    ledcWrite(1, 255);
+    // When OFF: set brightness to 15 (inverted logic)
+    ledcWrite(0, 15);
+    ledcWrite(1, 15);
     return;
   }
   
@@ -51,16 +51,16 @@ void applyOutput() {
   switch (mode) {
     case MODE_WARM:   // mode 0
       ledcWrite(0, brightness);    // LED pin 16 to 0
-      ledcWrite(1, 255);  // LED pin 17 to 255
+      ledcWrite(1, 15);  // LED pin 17 to 15
       break;
     case MODE_WHITE:  // mode 1
-      ledcWrite(0, 255);    // LED pin 16 to 255
+      ledcWrite(0, 15);    // LED pin 16 to 15
       ledcWrite(1, brightness);    // LED pin 17 to 0
       break;
     case MODE_BOTH:   // mode 2
     default:
-      ledcWrite(0, brightness);  // LED pin 16 to 255
-      ledcWrite(1, brightness);  // LED pin 17 to 255
+      ledcWrite(0, brightness);  // LED pin 16 to 15
+      ledcWrite(1, brightness);  // LED pin 17 to 15
       break;
   }
 }
@@ -87,7 +87,7 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
 
   // Handle WebSocket commands that respect the button control system
   if (doc["brightness"].is<int>()) {    // brightness control from app
-    brightness = constrain(doc["brightness"].as<int>(), 0, 255);
+    brightness = constrain(doc["brightness"].as<int>(), 0, 15);
     Serial.printf("WebSocket: brightness -> %d\n", brightness);
     applyOutput();
   }
@@ -109,8 +109,8 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
   // two PWM channels, 8-bit duty
-  ledcSetup(0, 5000, 8); ledcAttachPin(LED_A_PIN, 0);
-  ledcSetup(1, 5000, 8); ledcAttachPin(LED_B_PIN, 1);
+  ledcSetup(0, 5000, 4); ledcAttachPin(LED_A_PIN, 0);
+  ledcSetup(1, 5000, 4); ledcAttachPin(LED_B_PIN, 1);
 
   WiFi.begin(SSID, PASSWORD);
   Serial.print("WiFi…");
@@ -148,7 +148,7 @@ void loop() {
   if (pos != lastPos) {
     int delta = pos - lastPos;
     lastPos = pos;
-    brightness = constrain(brightness + delta * 5, 0, 255); // step = 5
+    brightness = constrain(brightness + delta * 1, 0, 15); // step = 5
     Serial.printf("Brightness -> %d\n", brightness);
     applyOutput();
   }
