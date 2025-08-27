@@ -91,7 +91,8 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(true); // Return success to previous screen
               },
               child: const Text('OK'),
             ),
@@ -105,44 +106,53 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
   Widget build(BuildContext context) {
     final bool blocked = Platform.isIOS && _isSim;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Icon(
-              Icons.cell_tower,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              blocked
-                  ? 'SmartConfig needs a real iPhone (the iOS Simulator has no Wi‑Fi).'
-                  : 'Connect device to Wi‑Fi network using ESP‑Touch protocol',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-            TextFormField(
-              decoration: const InputDecoration(
-                labelText: 'SSID (Network name)',
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(
+                Icons.cell_tower,
+                size: 80,
+                color: Theme.of(context).colorScheme.primary,
               ),
-              controller: ssidController,
-            ),
-            TextFormField(
-              decoration: const InputDecoration(
-                labelText: 'Password',
+              const SizedBox(height: 20),
+              Text(
+                blocked
+                    ? 'SmartConfig needs a real iPhone (the iOS Simulator has no Wi‑Fi).'
+                    : 'Connect device to Wi‑Fi network using ESP‑Touch protocol',
+                textAlign: TextAlign.center,
               ),
-              obscureText: true,
-              controller: passwordController,
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: blocked ? null : _startProvisioning,
-              child: const Text('Start provisioning'),
-            ),
-          ],
+              const SizedBox(height: 40),
+              TextFormField(
+                decoration: const InputDecoration(
+                  labelText: 'SSID (Network name)',
+                ),
+                controller: ssidController,
+              ),
+              TextFormField(
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                ),
+                obscureText: true,
+                controller: passwordController,
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: blocked ? null : _startProvisioning,
+                child: const Text('Start provisioning'),
+              ),
+            ],
+          ),
         ),
       ),
     );

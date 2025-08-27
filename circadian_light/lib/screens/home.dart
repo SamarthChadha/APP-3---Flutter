@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_3d_controller/flutter_3d_controller.dart';
+import 'package:circadian_light/core/esp_connection.dart';
 // import 'package:flutter_gl/flutter_gl.dart';
 // import 'package:flutter_3d_controller/'
 
@@ -19,6 +21,30 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isOn = true;
   double _brightness = 0.7; // 0..1
   double _tempK = 2800;     // 1800..6500
+
+  // Debounce timers for sliders
+  Timer? _brightTimer;
+  Timer? _tempTimer;
+
+  @override
+  void dispose() {
+    _brightTimer?.cancel();
+    _tempTimer?.cancel();
+    super.dispose();
+  }
+
+  int _mapBrightnessTo15(double v) {
+    // Round to nearest 0..15; ensure at least 1 when on and >0 visually
+    final val = (v.clamp(0.0, 1.0) * 15).round();
+    return val.clamp(0, 15);
+  }
+
+  int _modeFromTemp(double k) {
+    // Simple split: <=3000 warm (0), >=5000 white (1), else both (2)
+    if (k <= 3000) return 0; // MODE_WARM
+    if (k >= 5000) return 1; // MODE_WHITE
+    return 2; // MODE_BOTH
+  }
   @override
   Widget build(BuildContext context) {
     const base = Color(0xFFEFEFEF);
@@ -30,6 +56,35 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
+              // Connection status row
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: StreamBuilder<bool>(
+                  initialData: EspConnection.I.isConnected,
+                  stream: EspConnection.I.connection,
+                  builder: (context, snap) {
+                    final ok = snap.data == true;
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: ok ? Colors.green : Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          ok ? 'Connected' : 'Disconnected',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
               // const Text('Hi This is home Screen'),
               NeumorphicPanel(
                 child: Transform(
@@ -43,7 +98,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: _isOn ? 'Turn Off' : 'Turn On',
                 // Swap colors: when ON use light grey base, when OFF show yellow highlight
                 color: _isOn ? const Color(0xFFEFEFEF) : const Color(0xFFFFC049),
-                onTap: () => setState(() => _isOn = !_isOn),
+                onTap: () {
+                  setState(() => _isOn = !_isOn);
+                  EspConnection.I.setOn(_isOn);
+                },
               ),
               const SizedBox(height: 28),
               // Color Temperature label (moved above Brightness)
@@ -108,7 +166,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         min: 1800,
                         max: 6500,
                         value: _tempK,
-                        onChanged: (v) => setState(() => _tempK = v),
+                        onChanged: (v) {
+                          setState(() => _tempK = v);
+                          _tempTimer?.cancel();
+                          _tempTimer = Timer(const Duration(milliseconds: 80), () {
+                            EspConnection.I.setMode(_modeFromTemp(_tempK));
+                          });
+                        },
                       ),
                     ),
                   ],
@@ -171,7 +235,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         min: 0.0,
                         max: 1.0,
                         value: _brightness,
-                        onChanged: (v) => setState(() => _brightness = v),
+                        onChanged: (v) {
+                          setState(() => _brightness = v);
+                          _brightTimer?.cancel();
+                          _brightTimer = Timer(const Duration(milliseconds: 60), () {
+                            final b = _mapBrightnessTo15(_brightness);
+                            EspConnection.I.setBrightness(b);
+                          });
+                        },
                       ),
                     ),
                   ],

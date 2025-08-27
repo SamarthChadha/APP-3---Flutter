@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'screens/home.dart';
 import 'screens/routines.dart';
 import 'screens/settings.dart';
+import 'core/esp_connection.dart';
 
 void main() {
   runApp(const MainApp());
@@ -22,6 +23,8 @@ class _MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
+  // Start ESP connection on app launch
+  EspConnection.I.connect();
     _screens = [
       const HomeScreen(),
       const RoutinesScreen(),

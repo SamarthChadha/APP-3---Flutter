@@ -40,29 +40,39 @@ const bool BUTTON_ACTIVE_LOW   = true; // set false if wired active-high
 
 // ===== Helpers =====
 void applyOutput() {
+  int ch0 = 15;
+  int ch1 = 15;
+
   if (!isOn) {
-    // When OFF: set brightness to 15 (inverted logic)
-    ledcWrite(0, 15);
-    ledcWrite(1, 15);
+    // When OFF: force both channels to 15 (inverted logic)
+    ledcWrite(0, ch0);
+    ledcWrite(1, ch1);
+    Serial.printf("applyOutput: isOn=%d mode=%d brightness=%d -> ch0=%d ch1=%d (OFF)\n",
+                  (int)isOn, (int)mode, brightness, ch0, ch1);
     return;
   }
-  
-  // When ON: set brightness to 0 or specific values based on mode
+
+  // When ON: compute channel values based on mode
   switch (mode) {
     case MODE_WARM:   // mode 0
-      ledcWrite(0, brightness);    // LED pin 16 to 0
-      ledcWrite(1, 15);  // LED pin 17 to 15
+      ch0 = brightness; // warm channel active
+      ch1 = 15;         // white channel off (in inverted logic)
       break;
     case MODE_WHITE:  // mode 1
-      ledcWrite(0, 15);    // LED pin 16 to 15
-      ledcWrite(1, brightness);    // LED pin 17 to 0
+      ch0 = 15;
+      ch1 = brightness;
       break;
     case MODE_BOTH:   // mode 2
     default:
-      ledcWrite(0, brightness);  // LED pin 16 to 15
-      ledcWrite(1, brightness);  // LED pin 17 to 15
+      ch0 = brightness;
+      ch1 = brightness;
       break;
   }
+
+  ledcWrite(0, ch0);
+  ledcWrite(1, ch1);
+  Serial.printf("applyOutput: isOn=%d mode=%d brightness=%d -> ch0=%d ch1=%d\n",
+                (int)isOn, (int)mode, brightness, ch0, ch1);
 }
 
 void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
@@ -81,26 +91,41 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
   AwsFrameInfo *info = (AwsFrameInfo*)arg;
   if (!info->final || info->opcode != WS_TEXT) return;
 
+  // Debug: print raw incoming payload
+  String payload = String((const char*)data, len);
+  Serial.printf("WS RX raw: %s\n", payload.c_str());
+
   JsonDocument doc;           // ArduinoJson v7 – elastic capacity
   DeserializationError err = deserializeJson(doc, data, len);
-  if (err) return;
+  if (err) {
+    Serial.printf("WS JSON parse error: %s\n", err.c_str());
+    return;
+  }
 
   // Handle WebSocket commands that respect the button control system
+  bool recognized = false;
   if (doc["brightness"].is<int>()) {    // brightness control from app
     brightness = constrain(doc["brightness"].as<int>(), 0, 15);
     Serial.printf("WebSocket: brightness -> %d\n", brightness);
     applyOutput();
+    recognized = true;
   }
   if (doc["mode"].is<int>()) {    // mode control from app
     int newMode = constrain(doc["mode"].as<int>(), 0, 2);
     mode = (Mode)newMode;
     Serial.printf("WebSocket: mode -> %d (0=WARM,1=WHITE,2=BOTH)\n", newMode);
     applyOutput();
+    recognized = true;
   }
   if (doc["on"].is<bool>()) {    // on/off control from app
     isOn = doc["on"].as<bool>();
     Serial.printf("WebSocket: isOn -> %s\n", isOn ? "ON" : "OFF");
     applyOutput();
+    recognized = true;
+  }
+
+  if (!recognized) {
+    Serial.println("WS RX: no recognized keys in payload");
   }
 }
 
