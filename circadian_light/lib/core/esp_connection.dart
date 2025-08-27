@@ -13,6 +13,7 @@ class EspConnection {
   StreamSubscription? _sub;
   Timer? _reconnectTimer;
   bool _manuallyClosed = false;
+  bool _connecting = false;
 
   // Adjust if you changed it in firmware
   final String mdnsHost = 'circadian-light.local';
@@ -23,17 +24,42 @@ class EspConnection {
   Stream<Map<String, dynamic>> get messages => _incoming.stream;
   bool get isConnected => _ch != null;
 
+  // Connection status stream: true when connected, false on disconnect
+  final _connection = StreamController<bool>.broadcast();
+  Stream<bool> get connection => _connection.stream;
+
   Future<void> connect({String? ipOrHost, Duration retry = const Duration(seconds: 2)}) async {
+    if (_connecting || _ch != null) return;
+    _connecting = true;
     _manuallyClosed = false;
-    final target = ipOrHost ?? await _resolveMdnsHost(mdnsHost);
+
+    String? target;
+    try {
+      if (ipOrHost != null) {
+        target = ipOrHost;
+      } else if (Platform.isIOS) {
+        // On iOS, rely on system Bonjour for .local hostnames to avoid multicast join errors
+        target = mdnsHost;
+      } else {
+        target = await _resolveMdnsHost(mdnsHost);
+      }
+    } catch (_) {
+      // Fallback: try the mDNS hostname directly; if that fails, we'll reconnect later
+      target = mdnsHost;
+    }
+
     if (target == null) {
+      _connecting = false;
+      _connection.add(false);
       _scheduleReconnect(retry);
       return;
     }
+
     final url = 'ws://$target:$port$path';
     try {
       final socket = await WebSocket.connect(url);
       _ch = IOWebSocketChannel(socket);
+      _connection.add(true);
       _sub = _ch!.stream.listen(
         (data) {
           try {
@@ -47,6 +73,8 @@ class EspConnection {
       );
     } catch (_) {
       _handleDisconnect(retry);
+    } finally {
+      _connecting = false;
     }
   }
 
@@ -54,6 +82,8 @@ class EspConnection {
     _sub?.cancel();
     _sub = null;
     _ch = null;
+  // Notify disconnected
+  _connection.add(false);
     if (!_manuallyClosed) _scheduleReconnect(retry);
   }
 
@@ -87,8 +117,11 @@ class EspConnection {
         return a.address.address;
       }
       return null;
+    } catch (_) {
+      // Any mDNS issue should not crash the app; return null so caller can fallback
+      return null;
     } finally {
-      client.stop();
+      try { client.stop(); } catch (_) {}
     }
   }
 
@@ -102,6 +135,12 @@ class EspConnection {
   void setA(int value) => send({'a': value.clamp(0, 255)});
   void setB(int value) => send({'b': value.clamp(0, 255)});
 
+  // Firmware JSON protocol (see ESP32 main):
+  // { "brightness": 0..15, "mode": 0..2, "on": true/false }
+  void setBrightness(int value) => send({'brightness': value.clamp(0, 15)});
+  void setMode(int value) => send({'mode': value.clamp(0, 2)});
+  void setOn(bool on) => send({'on': on});
+
   Future<void> close() async {
     _manuallyClosed = true;
     _reconnectTimer?.cancel();
@@ -110,5 +149,6 @@ class EspConnection {
     _sub = null;
     await _ch?.sink.close(ws_status.normalClosure);
     _ch = null;
+  _connection.add(false);
   }
 }
