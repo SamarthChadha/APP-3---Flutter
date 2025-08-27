@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:esp_smartconfig/esp_smartconfig.dart';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:logging/logging.dart';
 
 class ProvisioningScreen extends StatefulWidget {
   const ProvisioningScreen({super.key, required this.title});
@@ -20,6 +21,15 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
   @override
   void initState() {
     super.initState();
+    // Verbose logs from esp_smartconfig to the console
+    Logger.root.level = Level.ALL;
+    Logger.root.onRecord.listen((r) {
+      // Keep it light: print level, logger name, and message
+      // Useful to confirm packets are being sent while ESP waits with dots
+      // Example: [esp_smartconfig][INFO] Sending...
+      // ignore: avoid_print
+      print('[${r.loggerName}][${r.level.name}] ${r.message}');
+    });
     if (Platform.isIOS) {
       DeviceInfoPlugin().iosInfo.then((info) {
         final isSim = !info.isPhysicalDevice;
@@ -33,7 +43,8 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
   }
 
   Future<void> _startProvisioning() async {
-    final provisioner = Provisioner.espTouch();
+    // EspTouchV2 tends to be more reliable on modern phones/routers
+    final provisioner = Provisioner.espTouchV2();
 
     provisioner.listen((response) {
       Navigator.of(context).pop(response);
@@ -41,7 +52,7 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
 
     provisioner.start(ProvisioningRequest.fromStrings(
       ssid: ssidController.text,
-      bssid: '00:00:00:00:00:00',
+      // bssid is optional; library defaults to 00:00:00:00:00:00 internally
       password: passwordController.text,
     ));
 
@@ -91,7 +102,8 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(true); // Return success to previous screen
               },
               child: const Text('OK'),
             ),
@@ -105,44 +117,53 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
   Widget build(BuildContext context) {
     final bool blocked = Platform.isIOS && _isSim;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Icon(
-              Icons.cell_tower,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              blocked
-                  ? 'SmartConfig needs a real iPhone (the iOS Simulator has no Wi‑Fi).'
-                  : 'Connect device to Wi‑Fi network using ESP‑Touch protocol',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-            TextFormField(
-              decoration: const InputDecoration(
-                labelText: 'SSID (Network name)',
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(
+                Icons.cell_tower,
+                size: 80,
+                color: Theme.of(context).colorScheme.primary,
               ),
-              controller: ssidController,
-            ),
-            TextFormField(
-              decoration: const InputDecoration(
-                labelText: 'Password',
+              const SizedBox(height: 20),
+              Text(
+                blocked
+                    ? 'SmartConfig needs a real iPhone (the iOS Simulator has no Wi‑Fi).'
+                    : 'Connect device to Wi‑Fi network using ESP‑Touch protocol',
+                textAlign: TextAlign.center,
               ),
-              obscureText: true,
-              controller: passwordController,
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: blocked ? null : _startProvisioning,
-              child: const Text('Start provisioning'),
-            ),
-          ],
+              const SizedBox(height: 40),
+              TextFormField(
+                decoration: const InputDecoration(
+                  labelText: 'SSID (Network name)',
+                ),
+                controller: ssidController,
+              ),
+              TextFormField(
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                ),
+                obscureText: true,
+                controller: passwordController,
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: blocked ? null : _startProvisioning,
+                child: const Text('Start provisioning'),
+              ),
+            ],
+          ),
         ),
       ),
     );
