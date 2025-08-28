@@ -116,11 +116,31 @@ class SunriseSunsetManager {
   }
   
   void _executeStaticState(int currentMinutes, int sunriseEndMinutes, int sunsetStartMinutes) {
-    // Between sunrise end and sunset start - keep at full brightness with both LEDs
+    // Between sunrise end and sunset start - gradually transition from both LEDs to warm-only
     if (currentMinutes > sunriseEndMinutes && currentMinutes < sunsetStartMinutes) {
       EspConnection.I.setOn(true);
-      EspConnection.I.setMode(2); // MODE_BOTH
-      EspConnection.I.setBrightness(15);
+      
+      // Calculate progress through the day (0.0 = just after sunrise, 1.0 = just before sunset)
+      final dayProgress = (currentMinutes - sunriseEndMinutes) / (sunsetStartMinutes - sunriseEndMinutes);
+      final clampedProgress = dayProgress.clamp(0.0, 1.0);
+      
+      // Create a gradual transition throughout the day
+      if (clampedProgress < 0.3) {
+        // Morning (0-30%): Full both LEDs
+        EspConnection.I.setMode(2); // MODE_BOTH
+        EspConnection.I.setBrightness(15);
+        debugPrint('Day state: Morning - Both LEDs full brightness');
+      } else if (clampedProgress < 0.7) {
+        // Mid-day (30-70%): Still both LEDs but preparing for transition
+        EspConnection.I.setMode(2); // MODE_BOTH  
+        EspConnection.I.setBrightness(15);
+        debugPrint('Day state: Midday - Both LEDs, preparing for transition');
+      } else {
+        // Late afternoon (70-100%): Switch to warm-only in preparation for sunset
+        EspConnection.I.setMode(0); // MODE_WARM only
+        EspConnection.I.setBrightness(15);
+        debugPrint('Day state: Late afternoon - Warm only, preparing for sunset');
+      }
     }
     // Before sunrise start or after sunset end - keep off
     else {
@@ -166,7 +186,16 @@ class SunriseSunsetManager {
     } else if (currentMinutes >= sunsetStartMinutes && currentMinutes <= sunsetEndMinutes) {
       return 'Sunset in progress';
     } else if (currentMinutes > sunriseEndMinutes && currentMinutes < sunsetStartMinutes) {
-      return 'Day time - Full brightness';
+      // Calculate day progress for more detailed status
+      final dayProgress = (currentMinutes - sunriseEndMinutes) / (sunsetStartMinutes - sunriseEndMinutes);
+      
+      if (dayProgress < 0.3) {
+        return 'Morning - Full brightness (warm + white)';
+      } else if (dayProgress < 0.7) {
+        return 'Midday - Full brightness (warm + white)';
+      } else {
+        return 'Late afternoon - Warm light only';
+      }
     } else {
       return 'Night time - Off';
     }
