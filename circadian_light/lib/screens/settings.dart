@@ -29,7 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _reconnectDevice() async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (context) => const ProvisioningScreen(title: 'Reconnect ESP32'),
+        builder: (context) => const ProvisioningScreen(title: 'Reconnect to Circadian Lamp'),
       ),
     );
     
@@ -49,135 +49,334 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          _isConnected ? Icons.wifi : Icons.wifi_off,
-                          color: _isConnected ? Colors.green : Colors.red,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'ESP32 Connection',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _isConnected 
-                        ? 'Device is connected and ready'
-                        : 'Device is not connected',
-                      style: TextStyle(
-                        color: _isConnected ? Colors.green : Colors.red,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        ElevatedButton(
-                          onPressed: _reconnectDevice,
-                          child: Text(_isConnected ? 'Reconfigure WiFi' : 'Connect Device'),
-                        ),
-                        const SizedBox(width: 12),
-                        TextButton(
-                          onPressed: _checkConnection,
-                          child: const Text('Refresh'),
-                        ),
-                      ],
-                    ),
-                  ],
+            // Neumorphic style ESP32 connection card
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFDFDFD), Color(0xFFE3E3E3)],
                 ),
+                boxShadow: const [
+                  BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
+                  BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.wb_sunny, color: Colors.orange),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Sunrise & Sunset Sync',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _sunriseSunsetEnabled 
-                        ? 'Automatically adjusts lamp brightness based on sunrise and sunset times'
-                        : 'Manual control enabled',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Enable Sunrise/Sunset Sync'),
-                        Switch(
-                          value: _sunriseSunsetEnabled,
-                          onChanged: (value) {
-                            setState(() {
-                              _sunriseSunsetEnabled = value;
-                              if (value) {
-                                SunriseSunsetManager.I.enable();
-                              } else {
-                                SunriseSunsetManager.I.disable();
-                              }
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    if (_sunriseSunsetEnabled) ...[
-                      const SizedBox(height: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        width: 42,
+                        height: 42,
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: _isConnected 
+                              ? [const Color(0xFF4CAF50), const Color(0xFF66BB6A)]
+                              : [const Color(0xFFEF5350), const Color(0xFFE57373)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (_isConnected ? Colors.green : Colors.red).withValues(alpha: 0.45),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
+                        child: Icon(
+                          _isConnected ? Icons.wifi : Icons.wifi_off,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Current Status: ${SunriseSunsetManager.I.getCurrentStatus()}',
-                              style: const TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Sunrise: ${SunriseSunsetManager.I.sunriseTime.format(context)} • '
-                              'Sunset: ${SunriseSunsetManager.I.sunsetTime.format(context)}',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Note: When enabled, all other routines are disabled.',
+                            const Text(
+                              'Lamp Connection',
                               style: TextStyle(
-                                color: Colors.orange[700],
-                                fontSize: 12,
-                                fontStyle: FontStyle.italic,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2F2F2F),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _isConnected 
+                                ? 'Device is connected and ready'
+                                : 'Device is not connected',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.2,
+                                color: _isConnected ? const Color(0xFF4CAF50) : const Color(0xFFEF5350),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ],
-                  ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFC049), Color(0xFFFFD700)],
+                            ),
+                            boxShadow: const [
+                              BoxShadow(
+                                offset: Offset(2, 2),
+                                blurRadius: 8,
+                                color: Color(0x1A000000),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: _reconnectDevice,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Center(
+                                  child: Text(
+                                    _isConnected ? 'Reconfigure WiFi' : 'Connect Device',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                      color: Color(0xFF3C3C3C),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          color: const Color(0xFFF5F5F5),
+                          boxShadow: const [
+                            BoxShadow(
+                              offset: Offset(2, 2),
+                              blurRadius: 8,
+                              color: Color(0x0A000000),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: _checkConnection,
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              child: Text(
+                                'Refresh',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  color: Color(0xFF666666),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Neumorphic style card matching routine cards
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFDFDFD), Color(0xFFE3E3E3)],
                 ),
+                boxShadow: const [
+                  BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
+                  BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const RadialGradient(
+                            colors: [Color(0xFFFF8C00), Color(0xFFFFB347)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orange.withValues(alpha: 0.45),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.wb_sunny,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Sunrise & Sunset Sync',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2F2F2F),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _sunriseSunsetEnabled 
+                                ? 'Automatically adjusts lamp brightness'
+                                : 'Manual control enabled',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.2,
+                                color: Color(0xFF5A5A5A),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Switch(
+                        value: _sunriseSunsetEnabled,
+                        onChanged: (value) {
+                          setState(() {
+                            _sunriseSunsetEnabled = value;
+                            if (value) {
+                              SunriseSunsetManager.I.enable();
+                            } else {
+                              SunriseSunsetManager.I.disable();
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  if (_sunriseSunsetEnabled) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8F0),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            offset: Offset(2, 2),
+                            blurRadius: 8,
+                            color: Color(0x0A000000),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Current Status: ${SunriseSunsetManager.I.getCurrentStatus()}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: Color(0xFF2F2F2F),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Sunrise',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: Color(0xFF666666),
+                                    ),
+                                  ),
+                                  Text(
+                                    SunriseSunsetManager.I.sunriseTime.format(context),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF2F2F2F),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  const Text(
+                                    'Sunset',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: Color(0xFF666666),
+                                    ),
+                                  ),
+                                  Text(
+                                    SunriseSunsetManager.I.sunsetTime.format(context),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF2F2F2F),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Note: When enabled, all other routines are disabled.',
+                            style: TextStyle(
+                              color: Colors.orange[700],
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],

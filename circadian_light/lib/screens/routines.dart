@@ -699,42 +699,69 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomClearance + 16),
         child: Column(
           children: [
+            // Neumorphic style status card matching routine cards
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFFFFF7E6), Color(0xFFFFE5B4)],
+                  colors: [Color(0xFFFDFDFD), Color(0xFFE3E3E3)],
                 ),
-                borderRadius: BorderRadius.circular(20),
                 boxShadow: const [
-                  BoxShadow(
-                    offset: Offset(4, 4),
-                    blurRadius: 12,
-                    color: Color(0x1A000000),
-                  ),
+                  BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
+                  BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
                 ],
               ),
               child: Column(
                 children: [
-                  const Icon(
-                    Icons.wb_sunny,
-                    size: 48,
-                    color: Colors.orange,
+                  // Icon and title row
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const RadialGradient(
+                            colors: [Color(0xFFFF8C00), Color(0xFFFFB347)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orange.withValues(alpha: 0.45),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.wb_sunny,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Sunrise & Sunset Sync Active',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2F2F2F),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Sunrise & Sunset Sync Active',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF3C3C3C),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
+                  // Status text
                   Text(
                     SunriseSunsetManager.I.getCurrentStatus(),
                     style: const TextStyle(
@@ -744,28 +771,64 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+                  // Times container
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFFFFF8F0),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          offset: Offset(2, 2),
+                          blurRadius: 8,
+                          color: Color(0x0A000000),
+                        ),
+                      ],
                     ),
-                    child: Column(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Column(
                           children: [
-                            const Text('Sunrise:', style: TextStyle(fontWeight: FontWeight.w600)),
-                            Text(SunriseSunsetManager.I.sunriseTime.format(context)),
+                            const Text(
+                              'Sunrise',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: Color(0xFF666666),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              SunriseSunsetManager.I.sunriseTime.format(context),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2F2F2F),
+                              ),
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Column(
                           children: [
-                            const Text('Sunset:', style: TextStyle(fontWeight: FontWeight.w600)),
-                            Text(SunriseSunsetManager.I.sunsetTime.format(context)),
+                            const Text(
+                              'Sunset',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: Color(0xFF666666),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              SunriseSunsetManager.I.sunsetTime.format(context),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2F2F2F),
+                              ),
+                            ),
                           ],
                         ),
                       ],
