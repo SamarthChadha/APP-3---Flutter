@@ -3,6 +3,7 @@ import 'screens/home.dart';
 import 'screens/routines.dart';
 import 'screens/settings.dart';
 import 'core/esp_connection.dart';
+import 'core/sunrise_sunset_manager.dart';
 
 void main() {
   runApp(const MainApp());
@@ -23,13 +24,24 @@ class _MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
-  // Start ESP connection on app launch
-  EspConnection.I.connect();
+    // Start ESP connection on app launch
+    EspConnection.I.connect();
+    
+    // Initialize sunrise/sunset manager but don't enable it by default
+    // It will be enabled when user turns it on in settings
+    
     _screens = [
       const HomeScreen(),
       const RoutinesScreen(),
       const SettingsScreen(),
     ];
+  }
+  
+  @override
+  void dispose() {
+    // Clean up the sunrise/sunset manager when app is disposed
+    SunriseSunsetManager.I.dispose();
+    super.dispose();
   }
   int myIndex = 0;
   @override

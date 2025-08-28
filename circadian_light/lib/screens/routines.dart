@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import '../core/sunrise_sunset_manager.dart';
 
 
 class Routine {
@@ -688,21 +689,148 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
   @override
   Widget build(BuildContext context) {
     final bottomClearance = kBottomNavigationBarHeight + 24;
+    final bool sunriseSunsetEnabled = SunriseSunsetManager.I.isEnabled;
 
-    final content = _routines.isEmpty
-        ? const Center(child: Text('No routines yet'))
-        : ListView.builder(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, bottomClearance + 16),
-            itemCount: _routines.length,
-            itemBuilder: (context, i) {
-              final r = _routines[i];
-              return _RoutineCard(
-                routine: r,
-                onChanged: (val) => setState(() => r.enabled = val),
-                onTap: () => _openEditRoutineSheet(i, r),
-              );
-            },
-          );
+    Widget content;
+    
+    if (sunriseSunsetEnabled) {
+      // Show sunrise/sunset status when enabled
+      content = Padding(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, bottomClearance + 16),
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFFF7E6), Color(0xFFFFE5B4)],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(
+                    offset: Offset(4, 4),
+                    blurRadius: 12,
+                    color: Color(0x1A000000),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.wb_sunny,
+                    size: 48,
+                    color: Colors.orange,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Sunrise & Sunset Sync Active',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF3C3C3C),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    SunriseSunsetManager.I.getCurrentStatus(),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF666666),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Sunrise:', style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text(SunriseSunsetManager.I.sunriseTime.format(context)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Sunset:', style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text(SunriseSunsetManager.I.sunsetTime.format(context)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'All manual routines are disabled while sunrise/sunset sync is active. '
+                    'You can disable this feature in Settings.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF888888),
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            if (_routines.isNotEmpty) ...[
+              const Text(
+                'Disabled Routines',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF888888),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _routines.length,
+                  itemBuilder: (context, i) {
+                    final r = _routines[i];
+                    return _RoutineCard(
+                      routine: r.copyWith(enabled: false), // Force disabled appearance
+                      onChanged: (val) {}, // No-op when sunrise/sunset is active
+                      onTap: null, // Disable editing
+                      isDisabledBySunriseSync: true,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    } else {
+      // Normal routines view
+      content = _routines.isEmpty
+          ? const Center(child: Text('No routines yet'))
+          : ListView.builder(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, bottomClearance + 16),
+              itemCount: _routines.length,
+              itemBuilder: (context, i) {
+                final r = _routines[i];
+                return _RoutineCard(
+                  routine: r,
+                  onChanged: (val) => setState(() => r.enabled = val),
+                  onTap: () => _openEditRoutineSheet(i, r),
+                );
+              },
+            );
+    }
 
     return Scaffold(
       backgroundColor: Colors.grey,
@@ -715,40 +843,65 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
+        actions: sunriseSunsetEnabled ? [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Sunrise/Sunset Sync'),
+                  content: const Text(
+                    'Manual routines are disabled while sunrise/sunset sync is active. '
+                    'The lamp will automatically adjust based on the time of day.\n\n'
+                    'To use manual routines again, disable sunrise/sunset sync in Settings.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ] : null,
       ),
       body: Stack(
         clipBehavior: Clip.none,
         children: [
           content,
-          Positioned(
-            left: 40,
-            right: 40,
-            bottom: bottomClearance + 24,
-            child: Material(
-              color: Colors.white,
-              elevation: 10,
-              shadowColor: Colors.black.withValues(alpha: 0.12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: _openAddRoutineSheet,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  child: Center(
-                    child: Text(
-                      'Add Routine',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Color(0xFF3D3D3D),
+          if (!sunriseSunsetEnabled)
+            Positioned(
+              left: 40,
+              right: 40,
+              bottom: bottomClearance + 24,
+              child: Material(
+                color: Colors.white,
+                elevation: 10,
+                shadowColor: Colors.black.withValues(alpha: 0.12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: _openAddRoutineSheet,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    child: Center(
+                      child: Text(
+                        'Add Routine',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Color(0xFF3D3D3D),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -759,7 +912,14 @@ class _RoutineCard extends StatelessWidget {
   final Routine routine;
   final ValueChanged<bool> onChanged;
   final VoidCallback? onTap;
-  const _RoutineCard({required this.routine, required this.onChanged, this.onTap});
+  final bool isDisabledBySunriseSync;
+  
+  const _RoutineCard({
+    required this.routine, 
+    required this.onChanged, 
+    this.onTap,
+    this.isDisabledBySunriseSync = false,
+  });
 
   String _formatTime(BuildContext context, TimeOfDay t) =>
       MaterialLocalizations.of(context).formatTimeOfDay(t);
@@ -767,6 +927,8 @@ class _RoutineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final timeRange = '${_formatTime(context, routine.startTime)} – ${_formatTime(context, routine.endTime)}';
+    final isEffectivelyDisabled = !routine.enabled || isDisabledBySunriseSync;
+    
     final card = AnimatedContainer(
       duration: const Duration(milliseconds: 240),
       curve: Curves.easeOut,
@@ -776,9 +938,9 @@ class _RoutineCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: routine.enabled
-              ? [const Color(0xFFFDFDFD), const Color(0xFFE3E3E3)]
-              : [const Color(0xFFE5E5E5), const Color(0xFFD4D4D4)],
+          colors: isEffectivelyDisabled
+              ? [const Color(0xFFE5E5E5), const Color(0xFFD4D4D4)]
+              : [const Color(0xFFFDFDFD), const Color(0xFFE3E3E3)],
         ),
         boxShadow: const [
           BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
@@ -793,11 +955,14 @@ class _RoutineCard extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
-                colors: [routine.color.withValues(alpha: .9), routine.color.withValues(alpha: .25)],
+                colors: [
+                  routine.color.withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.9), 
+                  routine.color.withValues(alpha: isEffectivelyDisabled ? 0.1 : 0.25)
+                ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: routine.color.withValues(alpha: .45),
+                  color: routine.color.withValues(alpha: isEffectivelyDisabled ? 0.15 : 0.45),
                   blurRadius: 12,
                   spreadRadius: 1,
                 ),
@@ -805,50 +970,62 @@ class _RoutineCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 18),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    routine.name,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF2F2F2F).withValues(alpha: routine.enabled ? 1 : 0.5),
-                    ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  routine.name,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF2F2F2F).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
                   ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  timeRange,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
+                    color: const Color(0xFF3C3C3C).withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.85),
+                  ),
+                ),
+                if (isDisabledBySunriseSync) ...[
                   const SizedBox(height: 4),
                   Text(
-                    timeRange,
+                    'Disabled by Sunrise/Sunset Sync',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.2,
-                      color: const Color(0xFF3C3C3C).withValues(alpha: routine.enabled ? 0.85 : 0.45),
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.orange[600],
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
+          ),
           const SizedBox(width: 12),
-          // Isolated switch so tapping it doesn't trigger card tap
+          // Show switch but disable interaction when sunrise/sunset is active
           IgnorePointer(
-            ignoring: false,
+            ignoring: isDisabledBySunriseSync,
             child: Switch(
-              value: routine.enabled,
-              onChanged: onChanged,
+              value: routine.enabled && !isDisabledBySunriseSync,
+              onChanged: isDisabledBySunriseSync ? null : onChanged,
             ),
           ),
         ],
       ),
     );
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(28),
-          onTap: onTap,
+          onTap: isDisabledBySunriseSync ? null : onTap,
           child: card,
         ),
       ),
