@@ -4,8 +4,10 @@
 #include <ESPmDNS.h>
 #include <RotaryEncoder.h>
 
-const char* SSID     = "MichaelPark-Guest";
-const char* PASSWORD = "Steiner2021";
+
+const char* SSID     = "MAGS LAB";
+const char* PASSWORD = "vXJC@(Lw";
+
 
 #define LED_BUILTIN 2   // builtin LED (GPIO2)
 #define LED_A_PIN   16  // first LED group PWM (warm)

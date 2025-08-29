@@ -61,8 +61,11 @@ class SunriseSunsetManager {
     try {
       // === PHASE 1: Sunrise (3 minutes) ===
       debugPrint('Phase 1: Starting sunrise sequence...');
+      
+      // Ensure light starts completely off
       EspConnection.I.setOn(false);
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 3));
+      debugPrint('Sunrise: Light is now off, beginning gradual sunrise...');
       
       // Gradual sunrise over 3 minutes (180 seconds)
       const sunriseSteps = 36; // Update every 5 seconds
@@ -72,11 +75,18 @@ class SunriseSunsetManager {
         final progress = i / sunriseSteps;
         final brightness = (15 * _smoothStep(progress)).round();
         
-        EspConnection.I.setOn(true);
-        EspConnection.I.setMode(2); // MODE_BOTH (warm + white)
-        EspConnection.I.setBrightness(brightness);
+        if (brightness > 0) {
+          // Only turn on when we have brightness > 0
+          // Set mode and brightness first, then turn on to avoid flashing
+          EspConnection.I.setMode(2); // MODE_BOTH (warm + white)
+          EspConnection.I.setBrightness(brightness);
+          EspConnection.I.setOn(true);
+        } else {
+          // Ensure light stays off when brightness is 0
+          EspConnection.I.setOn(false);
+        }
         
-        debugPrint('Sunrise: step $i/$sunriseSteps, brightness=$brightness');
+        debugPrint('Sunrise: step $i/$sunriseSteps, brightness=$brightness, progress=${(progress * 100).toStringAsFixed(1)}%');
         
         if (i < sunriseSteps) {
           await Future.delayed(const Duration(seconds: 5));
@@ -202,10 +212,16 @@ class SunriseSunsetManager {
     
     debugPrint('Sunrise transition: progress=$clampedProgress, brightness=$brightness');
     
-    // Send commands to lamp - both warm and white for sunrise
-    EspConnection.I.setOn(true);
-    EspConnection.I.setMode(2); // MODE_BOTH (warm + white)
-    EspConnection.I.setBrightness(brightness);
+    if (brightness > 0) {
+      // Only turn on when we have brightness > 0
+      // Set mode and brightness first, then turn on to avoid flashing
+      EspConnection.I.setMode(2); // MODE_BOTH (warm + white)
+      EspConnection.I.setBrightness(brightness);
+      EspConnection.I.setOn(true);
+    } else {
+      // Ensure light stays off when brightness is 0
+      EspConnection.I.setOn(false);
+    }
   }
   
   void _executeSunsetTransition(int currentMinutes, int startMinutes, int endMinutes) {
