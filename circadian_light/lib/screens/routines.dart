@@ -849,6 +849,214 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               ),
             ),
             const SizedBox(height: 20),
+            // Quick Test Mode Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFDFDFD), Color(0xFFE3E3E3)],
+                ),
+                boxShadow: const [
+                  BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
+                  BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const RadialGradient(
+                            colors: [Color(0xFF673AB7), Color(0xFF9C27B0)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.purple.withValues(alpha: 0.45),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.speed,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Quick Test Mode',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2F2F2F),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              SunriseSunsetManager.I.testModeEnabled 
+                                ? 'Fast transitions for testing (2 min)'
+                                : 'Normal timing (15 min transitions)',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.2,
+                                color: Color(0xFF5A5A5A),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Switch(
+                        value: SunriseSunsetManager.I.testModeEnabled,
+                        onChanged: (value) {
+                          setState(() {
+                            if (value) {
+                              SunriseSunsetManager.I.enableTestMode();
+                            } else {
+                              SunriseSunsetManager.I.disableTestMode();
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  if (SunriseSunsetManager.I.testModeEnabled) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3E5F5),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            offset: Offset(2, 2),
+                            blurRadius: 8,
+                            color: Color(0x0A000000),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Test Full Cycle',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: Color(0xFF2F2F2F),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Complete cycle: 3min sunrise → 5min wait → 3min sunset (~11 minutes total)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF666666),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF9C27B0), Color(0xFF673AB7)],
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  offset: Offset(2, 2),
+                                  blurRadius: 8,
+                                  color: Color(0x1A000000),
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: SunriseSunsetManager.I.isTestSequenceRunning ? null : () async {
+                                  await SunriseSunsetManager.I.startTestCycle();
+                                  if (mounted) setState(() {});
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  child: Center(
+                                    child: Text(
+                                      SunriseSunsetManager.I.isTestSequenceRunning ? 'Running Test Cycle...' : 'Start Test Cycle',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (SunriseSunsetManager.I.isTestSequenceRunning) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                color: const Color(0xFFEF5350),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    offset: Offset(2, 2),
+                                    blurRadius: 8,
+                                    color: Color(0x1A000000),
+                                  ),
+                                ],
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () {
+                                    SunriseSunsetManager.I.stopTestSequence();
+                                    setState(() {});
+                                  },
+                                  child: const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    child: Center(
+                                      child: Text(
+                                        'Stop Test',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             if (_routines.isNotEmpty) ...[
               const Text(
                 'Disabled Routines',

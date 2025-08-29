@@ -8,12 +8,16 @@ class SunriseSunsetManager {
 
   Timer? _timer;
   bool _isEnabled = false;
+  bool _testModeEnabled = false;
+  bool _isTestSequenceRunning = false;
   
   // Hardcoded times for testing - will be replaced with location-based later
   TimeOfDay sunriseTime = const TimeOfDay(hour: 6, minute: 30);
   TimeOfDay sunsetTime = const TimeOfDay(hour: 19, minute: 0); // 7 PM
   
   bool get isEnabled => _isEnabled;
+  bool get testModeEnabled => _testModeEnabled;
+  bool get isTestSequenceRunning => _isTestSequenceRunning;
   
   void enable() {
     if (_isEnabled) return;
@@ -26,13 +30,123 @@ class SunriseSunsetManager {
     if (!_isEnabled) return;
     _isEnabled = false;
     _stopTimer();
+    _isTestSequenceRunning = false;
     debugPrint('SunriseSunsetManager: Disabled');
+  }
+  
+  void enableTestMode() {
+    _testModeEnabled = true;
+    debugPrint('SunriseSunsetManager: Test mode enabled');
+    if (_isEnabled) {
+      _startTimer(); // Restart with new timing
+    }
+  }
+  
+  void disableTestMode() {
+    _testModeEnabled = false;
+    _isTestSequenceRunning = false;
+    debugPrint('SunriseSunsetManager: Test mode disabled');
+    if (_isEnabled) {
+      _startTimer(); // Restart with normal timing
+    }
+  }
+  
+  // Trigger a complete test cycle: sunrise → wait → sunset
+  Future<void> startTestCycle() async {
+    if (!_isEnabled || _isTestSequenceRunning) return;
+    
+    _isTestSequenceRunning = true;
+    debugPrint('Starting complete test cycle: sunrise → wait → sunset...');
+    
+    try {
+      // === PHASE 1: Sunrise (3 minutes) ===
+      debugPrint('Phase 1: Starting sunrise sequence...');
+      EspConnection.I.setOn(false);
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // Gradual sunrise over 3 minutes (180 seconds)
+      const sunriseSteps = 36; // Update every 5 seconds
+      for (int i = 0; i <= sunriseSteps; i++) {
+        if (!_isTestSequenceRunning) return;
+        
+        final progress = i / sunriseSteps;
+        final brightness = (15 * _smoothStep(progress)).round();
+        
+        EspConnection.I.setOn(true);
+        EspConnection.I.setMode(2); // MODE_BOTH (warm + white)
+        EspConnection.I.setBrightness(brightness);
+        
+        debugPrint('Sunrise: step $i/$sunriseSteps, brightness=$brightness');
+        
+        if (i < sunriseSteps) {
+          await Future.delayed(const Duration(seconds: 5));
+        }
+      }
+      
+      if (!_isTestSequenceRunning) return;
+      debugPrint('Phase 1 complete: Sunrise finished');
+      
+      // === PHASE 2: Wait Period (5 minutes) ===
+      debugPrint('Phase 2: Waiting at full brightness...');
+      EspConnection.I.setMode(2); // Keep both LEDs on
+      EspConnection.I.setBrightness(15); // Full brightness
+      
+      // Wait for 5 minutes (300 seconds), checking every 10 seconds
+      for (int i = 0; i < 30; i++) {
+        if (!_isTestSequenceRunning) return;
+        await Future.delayed(const Duration(seconds: 10));
+        debugPrint('Wait phase: ${(i + 1) * 10}/300 seconds');
+      }
+      
+      if (!_isTestSequenceRunning) return;
+      debugPrint('Phase 2 complete: Wait period finished');
+      
+      // === PHASE 3: Sunset (3 minutes) ===
+      debugPrint('Phase 3: Starting sunset sequence...');
+      
+      // Switch to warm only
+      EspConnection.I.setMode(0); // MODE_WARM only
+      EspConnection.I.setBrightness(15); // Start at full brightness
+      await Future.delayed(const Duration(seconds: 3));
+      
+      // Gradual sunset over 3 minutes (180 seconds)
+      const sunsetSteps = 36; // Update every 5 seconds
+      for (int i = 0; i <= sunsetSteps; i++) {
+        if (!_isTestSequenceRunning) return;
+        
+        final progress = i / sunsetSteps;
+        final brightness = (15 * (1.0 - _smoothStep(progress))).round();
+        
+        EspConnection.I.setBrightness(brightness);
+        debugPrint('Sunset: step $i/$sunsetSteps, brightness=$brightness');
+        
+        if (i < sunsetSteps) {
+          await Future.delayed(const Duration(seconds: 5));
+        }
+      }
+      
+      // Turn off at the end
+      EspConnection.I.setOn(false);
+      debugPrint('Phase 3 complete: Sunset finished');
+      
+    } catch (e) {
+      debugPrint('Test cycle error: $e');
+    } finally {
+      _isTestSequenceRunning = false;
+      debugPrint('Complete test cycle finished! Total duration: ~11 minutes');
+    }
+  }
+  
+  void stopTestSequence() {
+    _isTestSequenceRunning = false;
+    debugPrint('Test sequence stopped');
   }
   
   void _startTimer() {
     _stopTimer();
-    // Check every minute for transitions
-    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
+    // Check every minute for normal mode, every 10 seconds for test mode
+    final interval = _testModeEnabled ? const Duration(seconds: 10) : const Duration(minutes: 1);
+    _timer = Timer.periodic(interval, (timer) {
       _checkAndExecuteTransitions();
     });
     // Also check immediately
@@ -45,16 +159,19 @@ class SunriseSunsetManager {
   }
   
   void _checkAndExecuteTransitions() {
-    if (!_isEnabled) return;
+    if (!_isEnabled || _isTestSequenceRunning) return;
     
     final now = TimeOfDay.now();
     final currentMinutes = now.hour * 60 + now.minute;
     
+    // Get transition duration based on mode
+    final transitionMinutes = _testModeEnabled ? 2 : 15; // 2 minutes for test, 15 for normal
+    
     // Calculate transition time windows
-    final sunriseStart = _subtractMinutes(sunriseTime, 15); // 15 min before sunrise
-    final sunriseEnd = _addMinutes(sunriseTime, 15);        // 15 min after sunrise
-    final sunsetStart = _subtractMinutes(sunsetTime, 15);   // 15 min before sunset
-    final sunsetEnd = _addMinutes(sunsetTime, 15);          // 15 min after sunset
+    final sunriseStart = _subtractMinutes(sunriseTime, transitionMinutes);
+    final sunriseEnd = _addMinutes(sunriseTime, transitionMinutes);
+    final sunsetStart = _subtractMinutes(sunsetTime, transitionMinutes);
+    final sunsetEnd = _addMinutes(sunsetTime, transitionMinutes);
     
     final sunriseStartMinutes = sunriseStart.hour * 60 + sunriseStart.minute;
     final sunriseEndMinutes = sunriseEnd.hour * 60 + sunriseEnd.minute;
@@ -167,38 +284,43 @@ class SunriseSunsetManager {
   // Get current status for UI display
   String getCurrentStatus() {
     if (!_isEnabled) return 'Disabled';
+    if (_isTestSequenceRunning) return 'Test sequence running...';
     
     final now = TimeOfDay.now();
     final currentMinutes = now.hour * 60 + now.minute;
     
-    final sunriseStart = _subtractMinutes(sunriseTime, 15);
-    final sunriseEnd = _addMinutes(sunriseTime, 15);
-    final sunsetStart = _subtractMinutes(sunsetTime, 15);
-    final sunsetEnd = _addMinutes(sunsetTime, 15);
+    final transitionMinutes = _testModeEnabled ? 2 : 15;
+    final sunriseStart = _subtractMinutes(sunriseTime, transitionMinutes);
+    final sunriseEnd = _addMinutes(sunriseTime, transitionMinutes);
+    final sunsetStart = _subtractMinutes(sunsetTime, transitionMinutes);
+    final sunsetEnd = _addMinutes(sunsetTime, transitionMinutes);
     
     final sunriseStartMinutes = sunriseStart.hour * 60 + sunriseStart.minute;
     final sunriseEndMinutes = sunriseEnd.hour * 60 + sunriseEnd.minute;
     final sunsetStartMinutes = sunsetStart.hour * 60 + sunsetStart.minute;
     final sunsetEndMinutes = sunsetEnd.hour * 60 + sunsetEnd.minute;
     
+    String baseStatus;
     if (currentMinutes >= sunriseStartMinutes && currentMinutes <= sunriseEndMinutes) {
-      return 'Sunrise in progress';
+      baseStatus = 'Sunrise in progress';
     } else if (currentMinutes >= sunsetStartMinutes && currentMinutes <= sunsetEndMinutes) {
-      return 'Sunset in progress';
+      baseStatus = 'Sunset in progress';
     } else if (currentMinutes > sunriseEndMinutes && currentMinutes < sunsetStartMinutes) {
       // Calculate day progress for more detailed status
       final dayProgress = (currentMinutes - sunriseEndMinutes) / (sunsetStartMinutes - sunriseEndMinutes);
       
       if (dayProgress < 0.3) {
-        return 'Morning - Full brightness (warm + white)';
+        baseStatus = 'Morning - Full brightness (warm + white)';
       } else if (dayProgress < 0.7) {
-        return 'Midday - Full brightness (warm + white)';
+        baseStatus = 'Midday - Full brightness (warm + white)';
       } else {
-        return 'Late afternoon - Warm light only';
+        baseStatus = 'Late afternoon - Warm light only';
       }
     } else {
-      return 'Night time - Off';
+      baseStatus = 'Night time - Off';
     }
+    
+    return _testModeEnabled ? '$baseStatus (Test Mode)' : baseStatus;
   }
   
   // Update sunrise/sunset times (for future location-based feature)
