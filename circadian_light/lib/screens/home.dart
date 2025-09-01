@@ -47,7 +47,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    const base = Color(0xFFEFEFEF);
     return Scaffold(
       backgroundColor: Colors.grey,
       body: Center(
@@ -104,148 +103,126 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const SizedBox(height: 28),
-              // Color Temperature label (moved above Brightness)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Color Temperature',
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF3C3C3C),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Color Temperature slider 
+              // Color Temperature Card
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Container(
-                      height: 18,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        gradient: const LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [
-                            Color(0xFFFFC477), // warm
-                            Color(0xFFBFD7FF), // cool
+                child: ControlCard(
+                  icon: Icons.thermostat,
+                  iconGradient: const [Color(0xFFFFC477), Color(0xFFFFD700)],
+                  title: 'Color Temperature',
+                  subtitle: '${_tempK.round()}K - ${_tempK <= 3000 ? 'Warm' : _tempK >= 5000 ? 'Cool' : 'Mixed'}',
+                  control: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Container(
+                        height: 18,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Color(0xFFFFC477), // warm
+                              Color(0xFFBFD7FF), // cool
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              offset: const Offset(2, 2),
+                              blurRadius: 6,
+                              color: Colors.black.withValues(alpha: 0.08),
+                            ),
+                            BoxShadow(
+                              offset: const Offset(-2, -2),
+                              blurRadius: 6,
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
                           ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            offset: const Offset(6, 6),
-                            blurRadius: 18,
-                            color: Colors.black.withValues(alpha: 0.12),
-                          ),
-                          BoxShadow(
-                            offset: const Offset(-6, -6),
-                            blurRadius: 18,
-                            color: Colors.white.withValues(alpha: 0.5),
-                          ),
-                        ],
                       ),
-                    ),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 18,
-                        activeTrackColor: Colors.transparent,
-                        inactiveTrackColor: Colors.transparent,
-                        thumbColor: base,
-                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 18,
+                          activeTrackColor: Colors.transparent,
+                          inactiveTrackColor: Colors.transparent,
+                          thumbColor: const Color(0xFFEFEFEF),
+                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+                        ),
+                        child: Slider(
+                          min: 1800,
+                          max: 6500,
+                          value: _tempK,
+                          onChanged: (v) {
+                            setState(() => _tempK = v);
+                            _tempTimer?.cancel();
+                            _tempTimer = Timer(const Duration(milliseconds: 80), () {
+                              EspConnection.I.setMode(_modeFromTemp(_tempK));
+                            });
+                          },
+                        ),
                       ),
-                      child: Slider(
-                        min: 1800,
-                        max: 6500,
-                        value: _tempK,
-                        onChanged: (v) {
-                          setState(() => _tempK = v);
-                          _tempTimer?.cancel();
-                          _tempTimer = Timer(const Duration(milliseconds: 80), () {
-                            EspConnection.I.setMode(_modeFromTemp(_tempK));
-                          });
-                        },
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 28),
-              // Brightness label (moved below Color Temperature)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Brightness',
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF3C3C3C),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Brightness slider (neumorphic track)
+              const SizedBox(height: 16),
+              // Brightness Card
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Container(
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: base,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            offset: const Offset(6, 6),
-                            blurRadius: 18,
-                            color: Colors.black.withValues(alpha: 0.12),
-                          ),
-                          BoxShadow(
-                            offset: const Offset(-6, -6),
-                            blurRadius: 18,
-                            color: Colors.white.withValues(alpha: 0.5),
-                          ),
-                        ],
+                child: ControlCard(
+                  icon: Icons.brightness_6,
+                  iconGradient: const [Color(0xFFFFC049), Color(0xFFFFD700)],
+                  title: 'Brightness',
+                  subtitle: '${(_brightness * 100).round()}% intensity',
+                  control: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Container(
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFEFEF),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              offset: const Offset(2, 2),
+                              blurRadius: 6,
+                              color: Colors.black.withValues(alpha: 0.08),
+                            ),
+                            BoxShadow(
+                              offset: const Offset(-2, -2),
+                              blurRadius: 6,
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 18,
-                        activeTrackColor: Colors.transparent,
-                        inactiveTrackColor: Colors.transparent,
-                        thumbColor: base,
-                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 18,
+                          activeTrackColor: Colors.transparent,
+                          inactiveTrackColor: Colors.transparent,
+                          thumbColor: const Color(0xFFEFEFEF),
+                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+                        ),
+                        child: Slider(
+                          min: 0.0,
+                          max: 1.0,
+                          value: _brightness,
+                          onChanged: (v) {
+                            setState(() => _brightness = v);
+                            _brightTimer?.cancel();
+                            _brightTimer = Timer(const Duration(milliseconds: 60), () {
+                              final b = _mapBrightnessTo15(_brightness);
+                              EspConnection.I.setBrightness(b);
+                            });
+                          },
+                        ),
                       ),
-                      child: Slider(
-                        min: 0.0,
-                        max: 1.0,
-                        value: _brightness,
-                        onChanged: (v) {
-                          setState(() => _brightness = v);
-                          _brightTimer?.cancel();
-                          _brightTimer = Timer(const Duration(milliseconds: 60), () {
-                            final b = _mapBrightnessTo15(_brightness);
-                            EspConnection.I.setBrightness(b);
-                          });
-                        },
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -379,6 +356,102 @@ class NeumorphicPanel extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class ControlCard extends StatelessWidget {
+  final IconData icon;
+  final List<Color> iconGradient;
+  final String title;
+  final String subtitle;
+  final Color? subtitleColor;
+  final Widget control;
+
+  const ControlCard({
+    super.key,
+    required this.icon,
+    required this.iconGradient,
+    required this.title,
+    required this.subtitle,
+    this.subtitleColor,
+    required this.control,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFDFDFD), Color(0xFFE3E3E3)],
+        ),
+        boxShadow: const [
+          BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
+          BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: iconGradient),
+                  boxShadow: [
+                    BoxShadow(
+                      color: iconGradient.first.withValues(alpha: 0.45),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF2F2F2F),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                        color: subtitleColor ?? const Color(0xFF5A5A5A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          control,
+        ],
       ),
     );
   }
