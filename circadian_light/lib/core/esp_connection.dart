@@ -29,10 +29,10 @@ class EspState {
   double get flutterTemperature {
     // Map ESP32 modes to temperature values
     switch (mode) {
-      case 0: return 2800; // warm
-      case 1: return 5500; // white  
-      case 2: return 4000; // both (middle)
-      default: return 4000;
+      case 0: return 2700; // warm
+      case 1: return 6500; // white  
+      case 2: return 4600; // both (exactly in the middle: (2700 + 6500) / 2)
+      default: return 4600;
     }
   }
 }
