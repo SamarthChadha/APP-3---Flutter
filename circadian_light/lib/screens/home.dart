@@ -111,14 +111,55 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              NeumorphicPillButton(
-                label: _isOn ? 'Turn Off' : 'Turn On',
-                // Swap colors: when ON use light grey base, when OFF show yellow highlight
-                color: _isOn ? const Color(0xFFEFEFEF) : const Color(0xFFFFC049),
-                onTap: () {
-                  setState(() => _isOn = !_isOn);
-                  EspConnection.I.setOn(_isOn);
-                },
+              // Main Power Toggle
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() => _isOn = !_isOn);
+                    EspConnection.I.setOn(_isOn);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 80,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(21),
+                      color: _isOn ? const Color(0xFFFFC049) : const Color(0xFFE0E0E0),
+                      boxShadow: [
+                        BoxShadow(
+                          offset: const Offset(2, 2),
+                          blurRadius: 4,
+                          color: Colors.black.withValues(alpha: 0.1),
+                        ),
+                        BoxShadow(
+                          offset: const Offset(-1, -1),
+                          blurRadius: 3,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ],
+                    ),
+                    child: AnimatedAlign(
+                      duration: const Duration(milliseconds: 200),
+                      alignment: _isOn ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        margin: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              offset: const Offset(1, 1),
+                              blurRadius: 2,
+                              color: Colors.black.withValues(alpha: 0.2),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 28),
               // Color Temperature Card
