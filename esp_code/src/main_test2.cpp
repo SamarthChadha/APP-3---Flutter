@@ -59,7 +59,7 @@ void applyOutput() {
   int ch1 = 15;
 
   if (!isOn) {
-    // When OFF: force both channels to 15 (inverted logic)
+    // When OFF: force both channels to 15 (inverted logic - high PWM = off)
     ledcWrite(0, ch0);
     ledcWrite(1, ch1);
     Serial.printf("applyOutput: isOn=%d mode=%d brightness=%d -> ch0=%d ch1=%d (OFF)\n",
@@ -68,26 +68,29 @@ void applyOutput() {
   }
 
   // When ON: compute channel values based on mode
+  // Invert brightness: 0 becomes 15, 15 becomes 0 (for correct LED behavior)
+  int invertedBrightness = 15 - brightness;
+  
   switch (mode) {
     case MODE_WARM:   // mode 0
-      ch0 = brightness; // warm channel active
-      ch1 = 15;         // white channel off (in inverted logic)
+      ch0 = invertedBrightness; // warm channel active
+      ch1 = 15;                 // white channel off (high PWM = off)
       break;
     case MODE_WHITE:  // mode 1
-      ch0 = 15;
-      ch1 = brightness;
+      ch0 = 15;                 // warm channel off (high PWM = off)
+      ch1 = invertedBrightness; // white channel active
       break;
     case MODE_BOTH:   // mode 2
     default:
-      ch0 = brightness;
-      ch1 = brightness;
+      ch0 = invertedBrightness; // both channels active
+      ch1 = invertedBrightness;
       break;
   }
 
   ledcWrite(0, ch0);
   ledcWrite(1, ch1);
-  Serial.printf("applyOutput: isOn=%d mode=%d brightness=%d -> ch0=%d ch1=%d\n",
-                (int)isOn, (int)mode, brightness, ch0, ch1);
+  Serial.printf("applyOutput: isOn=%d mode=%d brightness=%d inverted=%d -> ch0=%d ch1=%d\n",
+                (int)isOn, (int)mode, brightness, invertedBrightness, ch0, ch1);
 }
 
 void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,

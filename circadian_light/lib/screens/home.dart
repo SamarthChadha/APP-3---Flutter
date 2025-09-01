@@ -168,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
                         ),
                         child: Slider(
-                          min: 1800,
+                          min: 2700,
                           max: 6500,
                           value: _tempK,
                           onChanged: (v) {
