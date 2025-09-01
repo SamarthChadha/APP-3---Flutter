@@ -59,7 +59,7 @@ class SunriseSunsetManager {
     debugPrint('Starting complete test cycle: sunrise → wait → sunset...');
     
     try {
-      // === PHASE 1: Sunrise (3 minutes) ===
+      // === PHASE 1: Sunrise (2 minutes) ===
       debugPrint('Phase 1: Starting sunrise sequence...');
       
       // Ensure light starts completely off
@@ -67,8 +67,8 @@ class SunriseSunsetManager {
       await Future.delayed(const Duration(seconds: 3));
       debugPrint('Sunrise: Light is now off, beginning gradual sunrise...');
       
-      // Gradual sunrise over 3 minutes (180 seconds)
-      const sunriseSteps = 36; // Update every 5 seconds
+      // Gradual sunrise over 2 minutes (120 seconds)
+      const sunriseSteps = 24; // Update every 5 seconds
       for (int i = 0; i <= sunriseSteps; i++) {
         if (!_isTestSequenceRunning) return;
         
@@ -96,22 +96,19 @@ class SunriseSunsetManager {
       if (!_isTestSequenceRunning) return;
       debugPrint('Phase 1 complete: Sunrise finished');
       
-      // === PHASE 2: Wait Period (5 minutes) ===
+      // === PHASE 2: Wait Period (30 seconds) ===
       debugPrint('Phase 2: Waiting at full brightness...');
       EspConnection.I.setMode(2); // Keep both LEDs on
       EspConnection.I.setBrightness(_convertBrightnessForEsp(15)); // Full brightness
       
-      // Wait for 5 minutes (300 seconds), checking every 10 seconds
-      for (int i = 0; i < 30; i++) {
-        if (!_isTestSequenceRunning) return;
-        await Future.delayed(const Duration(seconds: 10));
-        debugPrint('Wait phase: ${(i + 1) * 10}/300 seconds');
-      }
+      // Wait for 30 seconds
+      await Future.delayed(const Duration(seconds: 30));
+      debugPrint('Wait phase: 30 seconds complete');
       
       if (!_isTestSequenceRunning) return;
       debugPrint('Phase 2 complete: Wait period finished');
       
-      // === PHASE 3: Sunset (3 minutes) ===
+      // === PHASE 3: Sunset (2 minutes) ===
       debugPrint('Phase 3: Starting sunset sequence...');
       
       // Switch to warm only
@@ -119,8 +116,8 @@ class SunriseSunsetManager {
       EspConnection.I.setBrightness(_convertBrightnessForEsp(15)); // Start at full brightness
       await Future.delayed(const Duration(seconds: 3));
       
-      // Gradual sunset over 3 minutes (180 seconds)
-      const sunsetSteps = 36; // Update every 5 seconds
+      // Gradual sunset over 2 minutes (120 seconds)
+      const sunsetSteps = 24; // Update every 5 seconds
       for (int i = 0; i <= sunsetSteps; i++) {
         if (!_isTestSequenceRunning) return;
         
@@ -143,7 +140,7 @@ class SunriseSunsetManager {
       debugPrint('Test cycle error: $e');
     } finally {
       _isTestSequenceRunning = false;
-      debugPrint('Complete test cycle finished! Total duration: ~11 minutes');
+      debugPrint('Complete test cycle finished! Total duration: ~4.5 minutes');
     }
   }
   
