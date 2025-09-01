@@ -79,7 +79,7 @@ class SunriseSunsetManager {
           // Only turn on when we have brightness > 0
           // Set mode and brightness first, then turn on to avoid flashing
           EspConnection.I.setMode(2); // MODE_BOTH (warm + white)
-          EspConnection.I.setBrightness(brightness);
+          EspConnection.I.setBrightness(_convertBrightnessForEsp(brightness));
           EspConnection.I.setOn(true);
         } else {
           // Ensure light stays off when brightness is 0
@@ -99,7 +99,7 @@ class SunriseSunsetManager {
       // === PHASE 2: Wait Period (5 minutes) ===
       debugPrint('Phase 2: Waiting at full brightness...');
       EspConnection.I.setMode(2); // Keep both LEDs on
-      EspConnection.I.setBrightness(15); // Full brightness
+      EspConnection.I.setBrightness(_convertBrightnessForEsp(15)); // Full brightness
       
       // Wait for 5 minutes (300 seconds), checking every 10 seconds
       for (int i = 0; i < 30; i++) {
@@ -116,7 +116,7 @@ class SunriseSunsetManager {
       
       // Switch to warm only
       EspConnection.I.setMode(0); // MODE_WARM only
-      EspConnection.I.setBrightness(15); // Start at full brightness
+      EspConnection.I.setBrightness(_convertBrightnessForEsp(15)); // Start at full brightness
       await Future.delayed(const Duration(seconds: 3));
       
       // Gradual sunset over 3 minutes (180 seconds)
@@ -127,7 +127,7 @@ class SunriseSunsetManager {
         final progress = i / sunsetSteps;
         final brightness = (15 * (1.0 - _smoothStep(progress))).round();
         
-        EspConnection.I.setBrightness(brightness);
+        EspConnection.I.setBrightness(_convertBrightnessForEsp(brightness));
         debugPrint('Sunset: step $i/$sunsetSteps, brightness=$brightness');
         
         if (i < sunsetSteps) {
@@ -216,7 +216,7 @@ class SunriseSunsetManager {
       // Only turn on when we have brightness > 0
       // Set mode and brightness first, then turn on to avoid flashing
       EspConnection.I.setMode(2); // MODE_BOTH (warm + white)
-      EspConnection.I.setBrightness(brightness);
+      EspConnection.I.setBrightness(_convertBrightnessForEsp(brightness));
       EspConnection.I.setOn(true);
     } else {
       // Ensure light stays off when brightness is 0
@@ -232,12 +232,12 @@ class SunriseSunsetManager {
     if (clampedProgress == 0.0) {
       // Just started sunset - switch to warm only
       EspConnection.I.setMode(0); // MODE_WARM only
-      EspConnection.I.setBrightness(15); // Full brightness initially
+      EspConnection.I.setBrightness(_convertBrightnessForEsp(15)); // Full brightness initially
       debugPrint('Sunset started: switched to warm mode');
     } else {
       // Gradually dim the warm light
       final brightness = (15 * (1.0 - _smoothStep(clampedProgress))).round();
-      EspConnection.I.setBrightness(brightness);
+      EspConnection.I.setBrightness(_convertBrightnessForEsp(brightness));
       debugPrint('Sunset transition: progress=$clampedProgress, brightness=$brightness');
       
       if (clampedProgress >= 1.0) {
@@ -261,17 +261,17 @@ class SunriseSunsetManager {
       if (clampedProgress < 0.3) {
         // Morning (0-30%): Full both LEDs
         EspConnection.I.setMode(2); // MODE_BOTH
-        EspConnection.I.setBrightness(15);
+        EspConnection.I.setBrightness(_convertBrightnessForEsp(15));
         debugPrint('Day state: Morning - Both LEDs full brightness');
       } else if (clampedProgress < 0.7) {
         // Mid-day (30-70%): Still both LEDs but preparing for transition
         EspConnection.I.setMode(2); // MODE_BOTH  
-        EspConnection.I.setBrightness(15);
+        EspConnection.I.setBrightness(_convertBrightnessForEsp(15));
         debugPrint('Day state: Midday - Both LEDs, preparing for transition');
       } else {
         // Late afternoon (70-100%): Switch to warm-only in preparation for sunset
         EspConnection.I.setMode(0); // MODE_WARM only
-        EspConnection.I.setBrightness(15);
+        EspConnection.I.setBrightness(_convertBrightnessForEsp(15));
         debugPrint('Day state: Late afternoon - Warm only, preparing for sunset');
       }
     }
@@ -284,6 +284,12 @@ class SunriseSunsetManager {
   // Smooth step function for natural transitions
   double _smoothStep(double t) {
     return t * t * (3.0 - 2.0 * t);
+  }
+  
+  // Convert internal brightness (0-15, where 15=brightest) to ESP brightness (0,1-15 where 1=brightest)
+  int _convertBrightnessForEsp(int brightness) {
+    if (brightness == 0) return 0; // Keep 0 as off
+    return 16 - brightness; // Invert 1-15 to 15-1
   }
   
   TimeOfDay _addMinutes(TimeOfDay time, int minutes) {
