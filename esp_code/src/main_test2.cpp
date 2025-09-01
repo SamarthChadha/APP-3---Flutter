@@ -39,6 +39,21 @@ const uint16_t DEBOUNCE_MS     = 35;   // debounce time (ms)
 const bool BUTTON_ACTIVE_LOW   = true; // set false if wired active-high
 
 // ===== Helpers =====
+void sendStateUpdate() {
+  // Send current state to all connected WebSocket clients
+  JsonDocument doc;
+  JsonObject state = doc["state"].to<JsonObject>();
+  state["brightness"] = brightness;
+  state["mode"] = (int)mode;
+  state["on"] = isOn;
+  
+  String jsonString;
+  serializeJson(doc, jsonString);
+  ws.textAll(jsonString);
+  
+  Serial.printf("Sent state update: %s\n", jsonString.c_str());
+}
+
 void applyOutput() {
   int ch0 = 15;
   int ch1 = 15;
@@ -80,6 +95,8 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
   // --- Debug: log connect / disconnect ---
   if (type == WS_EVT_CONNECT) {
     Serial.printf("WebSocket client #%u connected\n", client->id());
+    // Send current state to newly connected client
+    sendStateUpdate();
     return;                         // nothing else to do
   }
   if (type == WS_EVT_DISCONNECT) {
@@ -104,24 +121,38 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
 
   // Handle WebSocket commands that respect the button control system
   bool recognized = false;
+  bool stateChanged = false;
   if (doc["brightness"].is<int>()) {    // brightness control from app
-    brightness = constrain(doc["brightness"].as<int>(), 0, 15);
-    Serial.printf("WebSocket: brightness -> %d\n", brightness);
-    applyOutput();
+    int newBrightness = constrain(doc["brightness"].as<int>(), 0, 15);
+    if (newBrightness != brightness) {
+      brightness = newBrightness;
+      stateChanged = true;
+      Serial.printf("WebSocket: brightness -> %d\n", brightness);
+    }
     recognized = true;
   }
   if (doc["mode"].is<int>()) {    // mode control from app
     int newMode = constrain(doc["mode"].as<int>(), 0, 2);
-    mode = (Mode)newMode;
-    Serial.printf("WebSocket: mode -> %d (0=WARM,1=WHITE,2=BOTH)\n", newMode);
-    applyOutput();
+    if ((Mode)newMode != mode) {
+      mode = (Mode)newMode;
+      stateChanged = true;
+      Serial.printf("WebSocket: mode -> %d (0=WARM,1=WHITE,2=BOTH)\n", newMode);
+    }
     recognized = true;
   }
   if (doc["on"].is<bool>()) {    // on/off control from app
-    isOn = doc["on"].as<bool>();
-    Serial.printf("WebSocket: isOn -> %s\n", isOn ? "ON" : "OFF");
-    applyOutput();
+    bool newIsOn = doc["on"].as<bool>();
+    if (newIsOn != isOn) {
+      isOn = newIsOn;
+      stateChanged = true;
+      Serial.printf("WebSocket: isOn -> %s\n", isOn ? "ON" : "OFF");
+    }
     recognized = true;
+  }
+
+  if (stateChanged) {
+    applyOutput();
+    // Don't send state update back since this change came from the app
   }
 
   if (!recognized) {
@@ -173,9 +204,13 @@ void loop() {
   if (pos != lastPos) {
     int delta = pos - lastPos;
     lastPos = pos;
-    brightness = constrain(brightness + delta * 1, 0, 15); // step = 5
-    Serial.printf("Brightness -> %d\n", brightness);
-    applyOutput();
+    int newBrightness = constrain(brightness + delta * 1, 0, 15); // step = 1
+    if (newBrightness != brightness) {
+      brightness = newBrightness;
+      Serial.printf("Brightness -> %d\n", brightness);
+      applyOutput();
+      sendStateUpdate(); // Send update to Flutter app
+    }
   }
 
   // --- Button: single click = toggle on/off; double click = cycle modes ---
@@ -200,6 +235,7 @@ void loop() {
         mode = (Mode)((mode + 1) % 3); // warm -> white -> both -> warm ...
         Serial.printf("Double click: mode -> %d (0=WARM,1=WHITE,2=BOTH)\n", (int)mode);
         applyOutput();
+        sendStateUpdate(); // Send update to Flutter app
         clickCount = 0;
       }
     }
@@ -212,6 +248,7 @@ void loop() {
     isOn = !isOn;
     Serial.printf("Single click: isOn -> %s\n", isOn ? "ON" : "OFF");
     applyOutput();
+    sendStateUpdate(); // Send update to Flutter app
     clickCount = 0;
   }
 

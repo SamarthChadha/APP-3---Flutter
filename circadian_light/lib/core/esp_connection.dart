@@ -5,6 +5,38 @@ import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as ws_status;
 import 'package:multicast_dns/multicast_dns.dart';
 
+class EspState {
+  final int brightness; // 0-15
+  final int mode; // 0=warm, 1=white, 2=both
+  final bool isOn;
+
+  const EspState({
+    required this.brightness,
+    required this.mode,
+    required this.isOn,
+  });
+
+  factory EspState.fromJson(Map<String, dynamic> json) {
+    return EspState(
+      brightness: json['brightness'] ?? 0,
+      mode: json['mode'] ?? 2,
+      isOn: json['on'] ?? true,
+    );
+  }
+
+  // Convert to Flutter UI values
+  double get flutterBrightness => brightness / 15.0; // 0.0-1.0
+  double get flutterTemperature {
+    // Map ESP32 modes to temperature values
+    switch (mode) {
+      case 0: return 2800; // warm
+      case 1: return 5500; // white  
+      case 2: return 4000; // both (middle)
+      default: return 4000;
+    }
+  }
+}
+
 class EspConnection {
   EspConnection._();
   static final EspConnection I = EspConnection._();
@@ -27,6 +59,10 @@ class EspConnection {
   // Connection status stream: true when connected, false on disconnect
   final _connection = StreamController<bool>.broadcast();
   Stream<bool> get connection => _connection.stream;
+
+  // State update stream: emits when ESP32 sends state updates
+  final _stateUpdates = StreamController<EspState>.broadcast();
+  Stream<EspState> get stateUpdates => _stateUpdates.stream;
 
   Future<void> connect({String? ipOrHost, Duration retry = const Duration(seconds: 2)}) async {
     if (_connecting || _ch != null) return;
@@ -65,6 +101,12 @@ class EspConnection {
           try {
             final Map<String, dynamic> json = jsonDecode(data as String);
             _incoming.add(json);
+            
+            // Check if this is a state update from ESP32
+            if (json.containsKey('state')) {
+              final state = EspState.fromJson(json['state']);
+              _stateUpdates.add(state);
+            }
           } catch (_) {/* ignore non-JSON */}
         },
         onError: (_) => _handleDisconnect(retry),
@@ -149,6 +191,7 @@ class EspConnection {
     _sub = null;
     await _ch?.sink.close(ws_status.normalClosure);
     _ch = null;
-  _connection.add(false);
+    _connection.add(false);
+    await _stateUpdates.close();
   }
 }

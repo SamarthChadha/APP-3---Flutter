@@ -25,11 +25,29 @@ class _HomeScreenState extends State<HomeScreen> {
   // Debounce timers for sliders
   Timer? _brightTimer;
   Timer? _tempTimer;
+  
+  // Stream subscription for ESP state updates
+  StreamSubscription? _stateSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Listen for state updates from ESP32
+    _stateSubscription = EspConnection.I.stateUpdates.listen((state) {
+      setState(() {
+        _isOn = state.isOn;
+        _brightness = state.flutterBrightness;
+        _tempK = state.flutterTemperature;
+      });
+    });
+  }
 
   @override
   void dispose() {
     _brightTimer?.cancel();
     _tempTimer?.cancel();
+    _stateSubscription?.cancel();
     super.dispose();
   }
 
