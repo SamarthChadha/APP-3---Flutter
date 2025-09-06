@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(width: 8),
                         Text(
                           ok ? 'Connected' : 'Disconnected',
-                          style: const TextStyle(color: Colors.white70),
+                          style: const TextStyle(color: Colors.black),
                         ),
                       ],
                     );

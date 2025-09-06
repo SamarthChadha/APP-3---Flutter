@@ -1,0 +1,13 @@
+Title,Body,Status,Iteration,Estimate,Labels
+"App: Provisioning screen + flow integration","Finish SmartConfig UI; handle timeouts/errors; on success, persist and navigate to Home.","In progress","@current",3,"flutter; networking; provisioning"
+"Firmware: Async Wi‑Fi manager + config persistence","Persist SSID/PW; safe reconnect on boot; long‑press (>5s) re‑provision; debounce status.","In progress","@current",3,"esp32; firmware; networking"
+"Routines: Sunrise/Sunset validation + parameters","Validate timings; expose curve/gamma params; sync with device clock/timezone.","In progress","@current",2,"flutter; feature"
+"Connection lifecycle + offline UX","Status banner; exponential backoff; queue commands while offline; flush on reconnect.","To-Start","",2,"flutter; reliability"
+"App ↔ ESP command protocol v1","Define request/response schema (on/off, brightness, CCT, schedule), errors, versioning; README.","To-Start","",2,"protocol; docs; esp32"
+"Real‑time controls: throttle/debounce + haptics","Smooth slider → command updates; limit packet spam; add haptics.","To-Start","",1,"flutter; performance"
+"Settings screen","Device info; firmware version; timezone; re‑provision; factory reset.","To-Start","",3,"flutter; ui"
+"Firmware: 4‑bit LED mapping + gamma/ramping","Map 0–100% to 0–15 with gamma; smooth ramps to avoid flicker/pop.","To-Start","",2,"esp32; firmware"
+"Schedule storage in NVS","Store schedule + timezone; load/apply on boot; validate; report status to app.","To-Start","",3,"esp32; firmware"
+"Device discovery + reconnect","mDNS/UDP discovery; cache device; reconnect after AP change.","To-Start","",2,"networking; esp32; flutter"
+"CI: Flutter analyze/tests + PlatformIO build on PR","Actions for flutter analyze/tests; PlatformIO build for esp_code on PRs.","To-Start","",2,"ci; testing"
+"Telemetry/logging","Structured logs (app + firmware); toggle via settings; aid debugging.","To-Start","",1,"tooling; reliability"
