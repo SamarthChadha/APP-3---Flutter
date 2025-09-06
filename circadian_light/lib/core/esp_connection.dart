@@ -9,6 +9,7 @@ class EspConnection {
   EspConnection._();
   static final EspConnection I = EspConnection._();
 
+  static bool _initialized = false;
   IOWebSocketChannel? _ch;
   StreamSubscription? _sub;
   Timer? _reconnectTimer;
@@ -27,6 +28,20 @@ class EspConnection {
   // Connection status stream: true when connected, false on disconnect
   final _connection = StreamController<bool>.broadcast();
   Stream<bool> get connection => _connection.stream;
+
+  // Initialize connection when app starts
+  static void initialize() {
+    if (!_initialized) {
+      _initialized = true;
+      I.connect();
+    }
+  }
+
+  // Cleanup when app closes
+  static Future<void> cleanup() async {
+    _initialized = false;
+    await I.close();
+  }
 
   Future<void> connect({String? ipOrHost, Duration retry = const Duration(seconds: 2)}) async {
     if (_connecting || _ch != null) return;

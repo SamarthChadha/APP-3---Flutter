@@ -151,7 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 child: Center(
                                   child: Text(
-                                    _isConnected ? 'Reconfigure WiFi' : 'Connect Device',
+                                    'Update WiFi',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 16,

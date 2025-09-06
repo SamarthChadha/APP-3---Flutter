@@ -4,7 +4,6 @@ import 'screens/routines.dart';
 import 'screens/settings.dart';
 import 'core/esp_connection.dart';
 import 'core/sunrise_sunset_manager.dart';
-import 'core/connection_manager.dart';
 
 void main() {
   runApp(const MainApp());
@@ -25,8 +24,8 @@ class _MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
-    // Start ESP connection on app launch
-    EspConnection.I.connect();
+    // Initialize ESP connection on app launch
+    EspConnection.initialize();
     
     // Initialize sunrise/sunset manager but don't enable it by default
     // It will be enabled when user turns it on in settings
@@ -42,6 +41,8 @@ class _MainAppState extends State<MainApp> {
   void dispose() {
     // Clean up the sunrise/sunset manager when app is disposed
     SunriseSunsetManager.I.dispose();
+    // Clean up ESP connection when app closes
+    EspConnection.cleanup();
     super.dispose();
   }
   int myIndex = 0;
@@ -77,10 +78,9 @@ class _MainAppState extends State<MainApp> {
           elevation: 0,
         ),
       ),
-      home: ConnectionManager(
-        child: Scaffold(
-          extendBody: true,
-          body: _screens[myIndex],
+      home: Scaffold(
+        extendBody: true,
+        body: _screens[myIndex],
 
           bottomNavigationBar: SafeArea(
             top: false,
@@ -124,7 +124,6 @@ class _MainAppState extends State<MainApp> {
               ),
             ),
           ),
-        ),
       ),
     );
   }
