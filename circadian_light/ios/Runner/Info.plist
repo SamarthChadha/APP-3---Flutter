@@ -30,6 +30,8 @@
 	<dict>
 		<key>NSAllowsArbitraryLoadsInLocalNetworks</key>
 		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
 	</dict>
 	<key>NSBonjourServices</key>
 	<array>
@@ -38,7 +40,7 @@
 		<string>_dartobservatory._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>This app discovers and controls a local ESP32 light on your Wi‑Fi network and connects to the Dart VM Service for debugging.</string>
+	<string>This app discovers and controls a local ESP32 light on your Wi‑Fi network, uses SmartConfig for device provisioning, and connects to the Dart VM Service for debugging.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
