@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../core/provisioning_screen.dart';
 import '../core/esp_connection.dart';
 import '../core/sunrise_sunset_manager.dart';
 
@@ -27,15 +26,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _reconnectDevice() async {
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => const ProvisioningScreen(title: 'Reconnect to Circadian Lamp'),
+    // Show a dialog explaining that WiFi configuration is now handled via WiFi Manager
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('WiFi Configuration'),
+        content: const Text(
+          'Your Circadian Lamp now uses WiFi Manager for easy configuration.\n\n'
+          'To connect to a new WiFi network:\n'
+          '1. Power on your lamp\n'
+          '2. Look for "CircadianLamp-Setup" WiFi network\n'
+          '3. Connect to it and follow the setup instructions\n'
+          '4. Return here and tap "Refresh" to check connection'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
-    
-    if (result == true) {
-      _checkConnection();
-    }
   }
 
   @override
@@ -151,7 +162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 child: Center(
                                   child: Text(
-                                    _isConnected ? 'Reconfigure WiFi' : 'Connect Device',
+                                    _isConnected ? 'WiFi Setup Info' : 'WiFi Setup Info',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 16,
