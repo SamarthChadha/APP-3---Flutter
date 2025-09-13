@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'esp_connection.dart';
-import 'provisioning_screen.dart';
 
 class ConnectionManager extends StatefulWidget {
   final Widget child;
@@ -46,18 +45,28 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   }
 
   Future<void> _startProvisioning() async {
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => const Scaffold(
-          body: ProvisioningScreen(title: 'Connect ESP32'),
+    // Show WiFi Manager setup instructions
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('WiFi Setup'),
+        content: const Text(
+          'Your Circadian Lamp uses WiFi Manager for easy setup.\n\n'
+          'Setup Steps:\n'
+          '1. Power on your lamp\n'
+          '2. Look for "CircadianLamp-Setup" WiFi network\n'
+          '3. Connect to it with your phone/computer\n'
+          '4. Follow the setup instructions in your browser\n'
+          '5. Return here and tap "Check Connection Again"'
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
       ),
     );
-    
-    if (result == true) {
-      // Provisioning successful, try to connect
-      _checkConnection();
-    }
   }
 
   @override
@@ -105,13 +114,13 @@ class _ConnectionManagerState extends State<ConnectionManager> {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'Set up your device to connect to WiFi',
+                  'Set up your device WiFi using WiFi Manager',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
                 FilledButton(
                   onPressed: _startProvisioning,
-                  child: const Text('Connect Device'),
+                  child: const Text('WiFi Setup Guide'),
                 ),
                 const SizedBox(height: 20),
                 TextButton(

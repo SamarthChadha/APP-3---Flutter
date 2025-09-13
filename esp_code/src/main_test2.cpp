@@ -4,11 +4,11 @@
 #include <ESPmDNS.h>
 #include <RotaryEncoder.h>
 
-// const char* SSID     = "MAGS LAB";
-// const char* PASSWORD = "vXJC@(Lw";
+const char* SSID     = "MAGS LAB";
+const char* PASSWORD = "vXJC@(Lw";
 
-const char* SSID     = "HUAWEI-2.4G-g3AY";
-const char* PASSWORD = "FW9ta64r";
+// const char* SSID     = "HUAWEI-2.4G-g3AY";
+// const char* PASSWORD = "FW9ta64r";
 
 
 #define LED_BUILTIN 2   // builtin LED (GPIO2)
