@@ -175,10 +175,20 @@ void setup() {
   ledcSetup(0, 5000, 4); ledcAttachPin(LED_A_PIN, 0);
   ledcSetup(1, 5000, 4); ledcAttachPin(LED_B_PIN, 1);
 
+
   WiFi.begin(SSID, PASSWORD);
   Serial.print("WiFi…");
-  while (WiFi.status() != WL_CONNECTED) delay(500);
-  Serial.println(WiFi.localIP());
+  unsigned long wifiStart = millis();
+  const unsigned long wifiTimeout = 5000; // 5 seconds timeout
+  while (WiFi.status() != WL_CONNECTED && millis() - wifiStart < wifiTimeout) {
+    delay(500);
+    Serial.print(".");
+  }
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\nWiFi not connected, continuing without WiFi.");
+  }
 
   // ----- mDNS -----
   if (!MDNS.begin("circadian-light")) {          // hostname = circadian-light.local
