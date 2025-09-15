@@ -381,6 +381,23 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Create Routine',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
                   TextField(
                     controller: nameCtrl,
                     textCapitalization: TextCapitalization.words,
@@ -389,23 +406,6 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
                       isDense: true,
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Create Routine',
-                        style:TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                        )
-                        ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(ctx).pop(),
-                      ),
-                    ],
                   ),
                   const SizedBox(height: 8),
                   Row(
