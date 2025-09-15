@@ -3,45 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import '../core/sunrise_sunset_manager.dart';
+import '../models/routine.dart';
+import '../services/database_service.dart';
 
-
-class Routine {
-  final String name;
-  final TimeOfDay startTime;
-  final TimeOfDay endTime;
-  final Color color;
-  final double brightness;
-  final double temperature; // store kelvin for editing
-  bool enabled;
-
-  Routine({
-    required this.name,
-    required this.startTime,
-    required this.endTime,
-    required this.color,
-    required this.brightness,
-    required this.temperature,
-    this.enabled = true,
-  });
-
-  Routine copyWith({
-    String? name,
-    TimeOfDay? startTime,
-    TimeOfDay? endTime,
-    Color? color,
-    double? brightness,
-    double? temperature,
-    bool? enabled,
-  }) => Routine(
-        name: name ?? this.name,
-        startTime: startTime ?? this.startTime,
-        endTime: endTime ?? this.endTime,
-        color: color ?? this.color,
-        brightness: brightness ?? this.brightness,
-        temperature: temperature ?? this.temperature,
-        enabled: enabled ?? this.enabled,
-      );
-}
 
 // Custom gradient/white slider track with soft shadow and glow
 class GradientRectSliderTrackShape extends SliderTrackShape with BaseSliderTrackShape {
@@ -217,7 +181,65 @@ class _NeumorphicSlider extends StatelessWidget {
 }
 
 class _RoutinesScreenState extends State<RoutinesScreen> {
-  final _routines = <Routine>[];
+  List<Routine> _routines = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoutines();
+  }
+
+  Future<void> _loadRoutines() async {
+    try {
+      final routines = await db.getAllRoutines();
+      setState(() {
+        _routines = routines;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading routines: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveRoutine(Routine routine) async {
+    try {
+      final id = await db.saveRoutine(routine);
+      final savedRoutine = routine.copyWith(id: id);
+      
+      setState(() {
+        final index = _routines.indexWhere((r) => r.id == savedRoutine.id);
+        if (index >= 0) {
+          _routines[index] = savedRoutine;
+        } else {
+          _routines.add(savedRoutine);
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving routine: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteRoutine(int id) async {
+    try {
+      await db.deleteRoutine(id);
+      setState(() {
+        _routines.removeWhere((r) => r.id == id);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting routine: $e')),
+        );
+      }
+    }
+  }
 
   Color _colorFromTemperature(double kelvin) {
     double t = kelvin / 100.0;
@@ -474,19 +496,20 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         foregroundColor: const Color(0xFF3C3C3C),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         final name = nameCtrl.text.trim().isEmpty
                             ? 'Routine ${_routines.length + 1}'
                             : nameCtrl.text.trim();
-                        setState(() => _routines.add(Routine(
-                              name: name,
-                              startTime: start,
-                              endTime: end,
-                              color: selectedColor,
-                              brightness: brightness,
-                              temperature: temperature,
-                            )));
+                        final newRoutine = Routine(
+                          name: name,
+                          startTime: start,
+                          endTime: end,
+                          color: selectedColor,
+                          brightness: brightness,
+                          temperature: temperature,
+                        );
                         Navigator.of(ctx).pop();
+                        await _saveRoutine(newRoutine);
                       },
                       child: const Text('Save'),
                     ),
@@ -624,16 +647,17 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                         minimumSize: const Size.fromHeight(54),
                       ),
-                      onPressed: () {
-                        setState(() => _routines[index] = routine.copyWith(
-                              name: nameCtrl.text.trim().isEmpty ? routine.name : nameCtrl.text.trim(),
-                              startTime: start,
-                              endTime: end,
-                              color: selectedColor,
-                              brightness: brightness,
-                              temperature: temperature,
-                            ));
+                      onPressed: () async {
+                        final updatedRoutine = routine.copyWith(
+                          name: nameCtrl.text.trim().isEmpty ? routine.name : nameCtrl.text.trim(),
+                          startTime: start,
+                          endTime: end,
+                          color: selectedColor,
+                          brightness: brightness,
+                          temperature: temperature,
+                        );
                         Navigator.pop(ctx);
+                        await _saveRoutine(updatedRoutine);
                       },
                       child: const Text('Save Changes'),
                     ),
@@ -868,6 +892,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       routine: r.copyWith(enabled: false), // Force disabled appearance
                       onChanged: (val) {}, // No-op when sunrise/sunset is active
                       onTap: null, // Disable editing
+                      onDelete: null, // Disable deletion when sunrise/sunset is active
                       isDisabledBySunriseSync: true,
                     );
                   },
@@ -888,8 +913,16 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 final r = _routines[i];
                 return _RoutineCard(
                   routine: r,
-                  onChanged: (val) => setState(() => r.enabled = val),
+                  onChanged: (val) async {
+                    final updatedRoutine = r.copyWith(enabled: val);
+                    await _saveRoutine(updatedRoutine);
+                  },
                   onTap: () => _openEditRoutineSheet(i, r),
+                  onDelete: () async {
+                    if (r.id != null) {
+                      await _deleteRoutine(r.id!);
+                    }
+                  },
                 );
               },
             );
@@ -975,12 +1008,14 @@ class _RoutineCard extends StatelessWidget {
   final Routine routine;
   final ValueChanged<bool> onChanged;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
   final bool isDisabledBySunriseSync;
   
   const _RoutineCard({
     required this.routine, 
     required this.onChanged, 
     this.onTap,
+    this.onDelete,
     this.isDisabledBySunriseSync = false,
   });
 
@@ -1089,6 +1124,30 @@ class _RoutineCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(28),
           onTap: isDisabledBySunriseSync ? null : onTap,
+          onLongPress: isDisabledBySunriseSync || onDelete == null 
+              ? null 
+              : () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Delete Routine'),
+                      content: Text('Are you sure you want to delete "${routine.name}"?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            onDelete!();
+                          },
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
           child: card,
         ),
       ),

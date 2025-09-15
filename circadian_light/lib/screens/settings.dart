@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../core/provisioning_screen.dart';
 import '../core/esp_connection.dart';
 import '../core/sunrise_sunset_manager.dart';
+import '../services/database_service.dart';
+import '../models/user_settings.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -12,12 +14,58 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _isConnected = false;
   bool _sunriseSunsetEnabled = false;
+  UserSettings? _userSettings;
 
   @override
   void initState() {
     super.initState();
-    _checkConnection();
-    _sunriseSunsetEnabled = SunriseSunsetManager.I.isEnabled;
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      await db.initialize();
+      final settings = await db.getUserSettings();
+      _checkConnection();
+      
+      setState(() {
+        _userSettings = settings;
+        _sunriseSunsetEnabled = settings.sunriseSunsetEnabled;
+      });
+      
+      // Update the sunrise/sunset manager state
+      if (_sunriseSunsetEnabled) {
+        SunriseSunsetManager.I.enable();
+      } else {
+        SunriseSunsetManager.I.disable();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading settings: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    if (_userSettings != null) {
+      try {
+        final updatedSettings = _userSettings!.copyWith(
+          sunriseSunsetEnabled: _sunriseSunsetEnabled,
+        );
+        await db.saveUserSettings(updatedSettings);
+        setState(() {
+          _userSettings = updatedSettings;
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving settings: $e')),
+          );
+        }
+      }
+    }
   }
 
   void _checkConnection() {
@@ -276,15 +324,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(width: 12),
                       Switch(
                         value: _sunriseSunsetEnabled,
-                        onChanged: (value) {
+                        onChanged: (value) async {
                           setState(() {
                             _sunriseSunsetEnabled = value;
-                            if (value) {
-                              SunriseSunsetManager.I.enable();
-                            } else {
-                              SunriseSunsetManager.I.disable();
-                            }
                           });
+                          
+                          if (value) {
+                            SunriseSunsetManager.I.enable();
+                          } else {
+                            SunriseSunsetManager.I.disable();
+                          }
+                          
+                          await _saveSettings();
                         },
                       ),
                     ],
