@@ -219,7 +219,7 @@ class _MainAppState extends State<MainApp> {
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black12,
