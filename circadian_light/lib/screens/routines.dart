@@ -224,6 +224,19 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
   Future<void> _saveRoutine(Routine routine) async {
     try {
+      // Check for duplicate routine
+      if (_isDuplicateRoutine(routine)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Routine already exists.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
       final id = await db.saveRoutine(routine);
       final savedRoutine = routine.copyWith(id: id);
       
@@ -261,6 +274,19 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
   Future<void> _saveAlarm(Alarm alarm) async {
     try {
+      // Check for duplicate alarm
+      if (_isDuplicateAlarm(alarm)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Alarm already exists with the same specifications'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
       final savedAlarm = alarm.copyWith(id: await db.saveAlarm(alarm));
       setState(() {
         final index = _alarms.indexWhere((a) => a.id == savedAlarm.id);
@@ -310,6 +336,34 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     int g8 = g.isNaN ? 0 : g.clamp(0, 255).round();
     int b8 = b.isNaN ? 0 : b.clamp(0, 255).round();
     return Color.fromARGB(255, r8, g8, b8);
+  }
+
+  // Check if a routine with identical specifications already exists
+  bool _isDuplicateRoutine(Routine newRoutine) {
+    return _routines.any((existingRoutine) {
+      // Skip checking against the same routine (for edits)
+      if (newRoutine.id != null && existingRoutine.id == newRoutine.id) {
+        return false;
+      }
+      
+      return existingRoutine.startTime == newRoutine.startTime &&
+             existingRoutine.endTime == newRoutine.endTime &&
+             (existingRoutine.brightness - newRoutine.brightness).abs() < 0.01 &&
+             (existingRoutine.temperature - newRoutine.temperature).abs() < 0.01;
+    });
+  }
+
+  // Check if an alarm with identical specifications already exists
+  bool _isDuplicateAlarm(Alarm newAlarm) {
+    return _alarms.any((existingAlarm) {
+      // Skip checking against the same alarm (for edits)
+      if (newAlarm.id != null && existingAlarm.id == newAlarm.id) {
+        return false;
+      }
+      
+      return existingAlarm.wakeUpTime == newAlarm.wakeUpTime &&
+             existingAlarm.durationMinutes == newAlarm.durationMinutes;
+    });
   }
 
   String _formatTime(BuildContext context, TimeOfDay t) =>
