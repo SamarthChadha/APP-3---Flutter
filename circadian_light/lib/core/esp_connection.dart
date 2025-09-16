@@ -97,8 +97,7 @@ class EspConnection {
       _ch = IOWebSocketChannel(socket);
       _connection.add(true);
       
-      // Notify that ESP32 is connected - sync service can listen to this
-      print('ESP32 connected successfully');
+
       _sub = _ch!.stream.listen(
         (data) {
           try {

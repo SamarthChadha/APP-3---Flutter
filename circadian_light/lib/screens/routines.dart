@@ -763,6 +763,222 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     );
   }
 
+  void _openEditAlarmSheet(int index, Alarm alarm) {
+    TimeOfDay wakeUpTime = alarm.wakeUpTime;
+    int durationMinutes = alarm.durationMinutes;
+    final nameCtrl = TextEditingController(text: alarm.name);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: const Color.fromARGB(255, 208, 206, 206),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              Future<void> pickWakeUpTime() async {
+                TimeOfDay temp = wakeUpTime;
+                await showCupertinoModalPopup<void>(
+                  context: context,
+                  builder: (_) => _timeSheet(
+                    initial: wakeUpTime,
+                    onChanged: (t) => temp = t,
+                    onCancel: () => Navigator.of(context).pop(),
+                    onSave: () { setSheetState(() => wakeUpTime = temp); Navigator.pop(context);},
+                  ),
+                );
+              }
+
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Edit Alarm',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: nameCtrl,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Alarm name',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Wake-up time',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: pickWakeUpTime,
+                            icon: const Icon(Icons.schedule),
+                            label: Text(wakeUpTime.format(context)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Ramp-up duration',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setSheetState(() => durationMinutes = 10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: durationMinutes == 10 ? const Color(0xFFFFC049) : Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (durationMinutes == 10) ...[
+                                    const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Text(
+                                    '10m',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: durationMinutes == 10 ? const Color(0xFF3C3C3C) : Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setSheetState(() => durationMinutes = 20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: durationMinutes == 20 ? const Color(0xFFFFC049) : Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (durationMinutes == 20) ...[
+                                    const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Text(
+                                    '20m',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: durationMinutes == 20 ? const Color(0xFF3C3C3C) : Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setSheetState(() => durationMinutes = 30),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: durationMinutes == 30 ? const Color(0xFFFFC049) : Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (durationMinutes == 30) ...[
+                                    const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Text(
+                                    '30m',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: durationMinutes == 30 ? const Color(0xFF3C3C3C) : Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFC049),
+                        foregroundColor: const Color(0xFF3C3C3C),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        minimumSize: const Size.fromHeight(54),
+                      ),
+                      onPressed: () async {
+                        final updatedAlarm = alarm.copyWith(
+                          name: nameCtrl.text.trim().isEmpty ? alarm.name : nameCtrl.text.trim(),
+                          wakeUpTime: wakeUpTime,
+                          durationMinutes: durationMinutes,
+                        );
+                        Navigator.pop(ctx);
+                        await _saveAlarm(updatedAlarm);
+                      },
+                      child: const Text('Save Changes'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   void _openAddAlarmSheet() async {
     TimeOfDay wakeUpTime = const TimeOfDay(hour: 6, minute: 0);
     int durationMinutes = 30; // Default to 30 minutes
@@ -1270,9 +1486,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
             final updatedAlarm = a.copyWith(enabled: val);
             await _saveAlarm(updatedAlarm);
           },
-          onTap: () {
-            // TODO: Add edit alarm functionality
-          },
+          onTap: () => _openEditAlarmSheet(i, a),
           onDelete: () async {
             if (a.id != null) {
               await _deleteAlarm(a.id!);
@@ -1294,7 +1508,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       appBar: AppBar(
         backgroundColor: Colors.grey,
         title: const Text(
-          'Routines',
+          'Routines & Alarms',
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.w700,
