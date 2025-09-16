@@ -5,11 +5,11 @@
 #include <RotaryEncoder.h>
 #include <time.h>
 
-// const char* SSID     = "MAGS LAB";
-// const char* PASSWORD = "vXJC@(Lw";
+const char* SSID     = "MAGS LAB";
+const char* PASSWORD = "vXJC@(Lw";
 
-const char* SSID     = "HUAWEI-2.4G-g3AY";
-const char* PASSWORD = "FW9ta64r";
+// const char* SSID     = "HUAWEI-2.4G-g3AY";
+// const char* PASSWORD = "FW9ta64r";
 
 
 #define LED_BUILTIN 2   // builtin LED (GPIO2)
@@ -65,8 +65,6 @@ int alarm_count = 0;
 unsigned long lastScheduleCheck = 0;
 const unsigned long SCHEDULE_CHECK_INTERVAL = 60000; // Check every minute
 
-RotaryEncoder encoder(ROTARY_DT, ROTARY_CLK);
-
 // ===== New simplified control state =====
 enum Mode { MODE_WARM = 0, MODE_WHITE = 1, MODE_BOTH = 2 };
 Mode mode = MODE_BOTH;                 // double-click cycles this
@@ -79,6 +77,12 @@ unsigned long firstClickTime = 0;      // time of first click
 const uint16_t DOUBLE_CLICK_MS = 500;  // double-click window (ms)
 const uint16_t DEBOUNCE_MS     = 35;   // debounce time (ms)
 const bool BUTTON_ACTIVE_LOW   = true; // set false if wired active-high
+
+// ===== Forward Declarations =====
+void handleRoutineSync(JsonDocument& doc);
+void handleAlarmSync(JsonDocument& doc);
+void handleFullSync(JsonDocument& doc);
+void sendSyncResponse(const char* type, bool success, const char* message);
 
 // ===== Helpers =====
 void sendStateUpdate() {
