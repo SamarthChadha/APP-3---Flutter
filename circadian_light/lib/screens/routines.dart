@@ -558,7 +558,17 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       letterSpacing: 0.2,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${temperature.round()}K - ${temperature <= 3000 ? 'Warm' : temperature >= 5000 ? 'Cool' : 'Mixed'}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
+                      color: Color(0xFF5A5A5A),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   _NeumorphicSlider(
                     gradient: const LinearGradient(
                       begin: Alignment.centerLeft,
@@ -586,7 +596,17 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       letterSpacing: 0.2,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${brightness.round()}% intensity',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
+                      color: Color(0xFF5A5A5A),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   _NeumorphicSlider(
                     solidColor: base,
                     value: brightness,
@@ -728,7 +748,17 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ),
                     const SizedBox(height: 16),
                     const Text('Color Temperature', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${temperature.round()}K - ${temperature <= 3000 ? 'Warm' : temperature >= 5000 ? 'Cool' : 'Mixed'}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                        color: Color(0xFF5A5A5A),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     _NeumorphicSlider(
                       gradient: const LinearGradient(colors: [Color(0xFFFFC477), Color(0xFFBFD7FF)]),
                       value: temperature,
@@ -738,7 +768,17 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ),
                     const SizedBox(height: 16),
                     const Text('Brightness', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${brightness.round()}% intensity',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                        color: Color(0xFF5A5A5A),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     _NeumorphicSlider(
                       solidColor: base,
                       value: brightness,
