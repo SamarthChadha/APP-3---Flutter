@@ -868,32 +868,113 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: ChoiceChip(
-                            label: const Text('10m'),
-                            selected: durationMinutes == 10,
-                            onSelected: (selected) {
-                              if (selected) setSheetState(() => durationMinutes = 10);
-                            },
+                          child: Material(
+                            color: durationMinutes == 10 ? const Color(0xFFFFC049) : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () => setSheetState(() => durationMinutes = 10),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: durationMinutes == 10 ? const Color(0xFFFFC049) : Colors.grey.shade300,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (durationMinutes == 10) ...[
+                                      const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    Text(
+                                      '10m',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: durationMinutes == 10 ? const Color(0xFF3C3C3C) : Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: ChoiceChip(
-                            label: const Text('20m'),
-                            selected: durationMinutes == 20,
-                            onSelected: (selected) {
-                              if (selected) setSheetState(() => durationMinutes = 20);
-                            },
+                          child: Material(
+                            color: durationMinutes == 20 ? const Color(0xFFFFC049) : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () => setSheetState(() => durationMinutes = 20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: durationMinutes == 20 ? const Color(0xFFFFC049) : Colors.grey.shade300,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (durationMinutes == 20) ...[
+                                      const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    Text(
+                                      '20m',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: durationMinutes == 20 ? const Color(0xFF3C3C3C) : Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: ChoiceChip(
-                            label: const Text('30m'),
-                            selected: durationMinutes == 30,
-                            onSelected: (selected) {
-                              if (selected) setSheetState(() => durationMinutes = 30);
-                            },
+                          child: Material(
+                            color: durationMinutes == 30 ? const Color(0xFFFFC049) : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () => setSheetState(() => durationMinutes = 30),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: durationMinutes == 30 ? const Color(0xFFFFC049) : Colors.grey.shade300,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (durationMinutes == 30) ...[
+                                      const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    Text(
+                                      '30m',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: durationMinutes == 30 ? const Color(0xFF3C3C3C) : Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ],
