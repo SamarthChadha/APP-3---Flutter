@@ -1666,7 +1666,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
   }
 }
 
-class _RoutineCard extends StatelessWidget {
+class _RoutineCard extends StatefulWidget {
   final Routine routine;
   final ValueChanged<bool> onChanged;
   final VoidCallback? onTap;
@@ -1681,13 +1681,98 @@ class _RoutineCard extends StatelessWidget {
     this.isDisabledBySunriseSync = false,
   });
 
+  @override
+  State<_RoutineCard> createState() => _RoutineCardState();
+}
+
+class _RoutineCardState extends State<_RoutineCard> with SingleTickerProviderStateMixin {
+  late AnimationController _slideController;
+  late Animation<double> _slideAnimation;
+  bool _isSliding = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    _slideAnimation = Tween<double>(
+      begin: 0.0,
+      end: -0.33, // Slide to 1/3 of width
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    super.dispose();
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dragAmount = details.delta.dx / screenWidth;
+    
+    // Only allow dragging to the left (negative direction)
+    if (details.delta.dx < 0) {
+      final newValue = (_slideController.value - dragAmount * 3).clamp(0.0, 1.0);
+      _slideController.value = newValue;
+      setState(() {
+        _isSliding = _slideController.value > 0;
+      });
+    }
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
+    
+    // If dragged more than halfway, complete the slide; otherwise, snap back
+    if (_slideController.value > 0.5) {
+      _slideController.forward();
+      setState(() {
+        _isSliding = true;
+      });
+    } else {
+      _slideController.reverse();
+      setState(() {
+        _isSliding = false;
+      });
+    }
+  }
+
+  void _onTap() {
+    if (_isSliding) {
+      // If sliding, close the slide
+      _slideController.reverse();
+      setState(() {
+        _isSliding = false;
+      });
+    } else if (!widget.isDisabledBySunriseSync && widget.onTap != null) {
+      widget.onTap!();
+    }
+  }
+
+  void _onDelete() {
+    // Close slide and delete immediately (no confirmation)
+    _slideController.reverse();
+    setState(() {
+      _isSliding = false;
+    });
+    widget.onDelete!();
+  }
+
   String _formatTime(BuildContext context, TimeOfDay t) =>
       MaterialLocalizations.of(context).formatTimeOfDay(t);
 
   @override
   Widget build(BuildContext context) {
-    final timeRange = '${_formatTime(context, routine.startTime)} – ${_formatTime(context, routine.endTime)}';
-    final isEffectivelyDisabled = !routine.enabled || isDisabledBySunriseSync;
+    final timeRange = '${_formatTime(context, widget.routine.startTime)} – ${_formatTime(context, widget.routine.endTime)}';
+    final isEffectivelyDisabled = !widget.routine.enabled || widget.isDisabledBySunriseSync;
     
     final card = AnimatedContainer(
       duration: const Duration(milliseconds: 240),
@@ -1716,13 +1801,13 @@ class _RoutineCard extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  routine.color.withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.9), 
-                  routine.color.withValues(alpha: isEffectivelyDisabled ? 0.1 : 0.25)
+                  widget.routine.color.withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.9), 
+                  widget.routine.color.withValues(alpha: isEffectivelyDisabled ? 0.1 : 0.25)
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: routine.color.withValues(alpha: isEffectivelyDisabled ? 0.15 : 0.45),
+                  color: widget.routine.color.withValues(alpha: isEffectivelyDisabled ? 0.15 : 0.45),
                   blurRadius: 12,
                   spreadRadius: 1,
                 ),
@@ -1735,7 +1820,7 @@ class _RoutineCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  routine.name,
+                  widget.routine.name,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -1752,7 +1837,7 @@ class _RoutineCard extends StatelessWidget {
                     color: const Color(0xFF3C3C3C).withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.85),
                   ),
                 ),
-                if (isDisabledBySunriseSync) ...[
+                if (widget.isDisabledBySunriseSync) ...[
                   const SizedBox(height: 4),
                   Text(
                     'Disabled by Sunrise/Sunset Sync',
@@ -1769,55 +1854,149 @@ class _RoutineCard extends StatelessWidget {
           const SizedBox(width: 12),
           // Show switch but disable interaction when sunrise/sunset is active
           IgnorePointer(
-            ignoring: isDisabledBySunriseSync,
+            ignoring: widget.isDisabledBySunriseSync,
             child: Switch(
-              value: routine.enabled && !isDisabledBySunriseSync,
-              onChanged: isDisabledBySunriseSync ? null : onChanged,
+              value: widget.routine.enabled && !widget.isDisabledBySunriseSync,
+              onChanged: widget.isDisabledBySunriseSync ? null : widget.onChanged,
             ),
           ),
         ],
       ),
     );
-    
+
+    // If delete functionality is disabled, just return the card without swipe
+    if (widget.isDisabledBySunriseSync || widget.onDelete == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(28),
+            onTap: _onTap,
+            onLongPress: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Delete Routine'),
+                  content: Text('Are you sure you want to delete "${widget.routine.name}"?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.onDelete!();
+                      },
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: card,
+          ),
+        ),
+      );
+    }
+
+    // Custom sliding implementation
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(28),
-          onTap: isDisabledBySunriseSync ? null : onTap,
-          onLongPress: isDisabledBySunriseSync || onDelete == null 
-              ? null 
-              : () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Delete Routine'),
-                      content: Text('Are you sure you want to delete "${routine.name}"?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
+      child: Stack(
+        children: [
+          // Delete button background
+          Positioned.fill(
+            child: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: GestureDetector(
+                onTap: _onDelete,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Delete',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            onDelete!();
-                          },
-                          child: const Text('Delete'),
-                        ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Sliding card
+          AnimatedBuilder(
+            animation: _slideAnimation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(_slideAnimation.value * MediaQuery.of(context).size.width, 0),
+                child: GestureDetector(
+                  onHorizontalDragUpdate: _onHorizontalDragUpdate,
+                  onHorizontalDragEnd: _onHorizontalDragEnd,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(28),
+                      onTap: _onTap,
+                      onLongPress: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Delete Routine'),
+                            content: Text('Are you sure you want to delete "${widget.routine.name}"?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  widget.onDelete!();
+                                },
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: card,
                     ),
-                  );
-                },
-          child: card,
-        ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 }
 
-class _AlarmCard extends StatelessWidget {
+class _AlarmCard extends StatefulWidget {
   final Alarm alarm;
   final ValueChanged<bool> onChanged;
   final VoidCallback? onTap;
@@ -1833,11 +2012,96 @@ class _AlarmCard extends StatelessWidget {
   });
 
   @override
+  State<_AlarmCard> createState() => _AlarmCardState();
+}
+
+class _AlarmCardState extends State<_AlarmCard> with SingleTickerProviderStateMixin {
+  late AnimationController _slideController;
+  late Animation<double> _slideAnimation;
+  bool _isSliding = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    _slideAnimation = Tween<double>(
+      begin: 0.0,
+      end: -0.33, // Slide to 1/3 of width
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    super.dispose();
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dragAmount = details.delta.dx / screenWidth;
+    
+    // Only allow dragging to the left (negative direction)
+    if (details.delta.dx < 0) {
+      final newValue = (_slideController.value - dragAmount * 3).clamp(0.0, 1.0);
+      _slideController.value = newValue;
+      setState(() {
+        _isSliding = _slideController.value > 0;
+      });
+    }
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
+    
+    // If dragged more than halfway, complete the slide; otherwise, snap back
+    if (_slideController.value > 0.5) {
+      _slideController.forward();
+      setState(() {
+        _isSliding = true;
+      });
+    } else {
+      _slideController.reverse();
+      setState(() {
+        _isSliding = false;
+      });
+    }
+  }
+
+  void _onTap() {
+    if (_isSliding) {
+      // If sliding, close the slide
+      _slideController.reverse();
+      setState(() {
+        _isSliding = false;
+      });
+    } else if (!widget.isDisabledBySunriseSync && widget.onTap != null) {
+      widget.onTap!();
+    }
+  }
+
+  void _onDelete() {
+    // Close slide and delete immediately (no confirmation)
+    _slideController.reverse();
+    setState(() {
+      _isSliding = false;
+    });
+    widget.onDelete!();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bool isEffectivelyDisabled = isDisabledBySunriseSync || !alarm.enabled;
-    final String wakeUpTime = alarm.wakeUpTime.format(context);
-    final String startTime = alarm.startTime.format(context);
-    final String duration = '${alarm.durationMinutes}min';
+    final bool isEffectivelyDisabled = widget.isDisabledBySunriseSync || !widget.alarm.enabled;
+    final String wakeUpTime = widget.alarm.wakeUpTime.format(context);
+    final String startTime = widget.alarm.startTime.format(context);
+    final String duration = '${widget.alarm.durationMinutes}min';
 
     final card = Container(
       width: double.infinity,
@@ -1889,7 +2153,7 @@ class _AlarmCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  alarm.name,
+                  widget.alarm.name,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -1916,10 +2180,10 @@ class _AlarmCard extends StatelessWidget {
               ],
             ),
           ),
-          if (!isDisabledBySunriseSync)
+          if (!widget.isDisabledBySunriseSync)
             Switch(
-              value: alarm.enabled,
-              onChanged: onChanged,
+              value: widget.alarm.enabled,
+              onChanged: widget.onChanged,
               activeColor: const Color(0xFFFFC049),
             )
           else
@@ -1931,40 +2195,86 @@ class _AlarmCard extends StatelessWidget {
         ],
       ),
     );
-    
+
+    // If delete functionality is disabled, just return the card without swipe
+    if (widget.isDisabledBySunriseSync || widget.onDelete == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(28),
+            onTap: widget.onTap,
+            child: card,
+          ),
+        ),
+      );
+    }
+
+    // Custom sliding implementation
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(28),
-          onTap: isDisabledBySunriseSync ? null : onTap,
-          onLongPress: isDisabledBySunriseSync || onDelete == null 
-              ? null 
-              : () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Delete Alarm'),
-                      content: Text('Are you sure you want to delete "${alarm.name}"?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
+      child: Stack(
+        children: [
+          // Background with delete button (only show when sliding)
+          if (_isSliding)
+            Positioned.fill(
+              child: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 20),
+                margin: const EdgeInsets.symmetric(vertical: 0),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                child: GestureDetector(
+                  onTap: _onDelete,
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Delete',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          onDelete!();
-                          },
-                          child: const Text('Delete'),
-                        ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          
+          // Main card content
+          AnimatedBuilder(
+            animation: _slideAnimation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(_slideAnimation.value * MediaQuery.of(context).size.width, 0),
+                child: GestureDetector(
+                  onHorizontalDragUpdate: _onHorizontalDragUpdate,
+                  onHorizontalDragEnd: _onHorizontalDragEnd,
+                  onTap: _onTap,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(28),
+                      onTap: null, // Handle tap in GestureDetector above
+                      child: card,
                     ),
-                  );
-                },
-          child: card,
-        ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
