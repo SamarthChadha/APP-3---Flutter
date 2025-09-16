@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 #include <ESPmDNS.h>
 #include <RotaryEncoder.h>
+#include <time.h>
 
 // const char* SSID     = "MAGS LAB";
 // const char* PASSWORD = "vXJC@(Lw";
@@ -22,10 +23,47 @@ const char* PASSWORD = "FW9ta64r";
 const char* ESP_IP = "10.210.232.242";   // update if the ESP32 reboots with a new IP
 const char* WS_URL = "ws://10.210.232.242/ws";
 
+// Time zone configuration (adjust for your location)
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 0;  // GMT offset in seconds
+const int daylightOffset_sec = 3600;  // Daylight offset in seconds
+
 // Create AsyncWebServer instance on port 80
 AsyncWebServer server(80);
 // Create AsyncWebSocket instance
 AsyncWebSocket ws("/ws");
+
+RotaryEncoder encoder(ROTARY_DT, ROTARY_CLK);
+
+// ===== Schedule Data Structures =====
+struct Routine {
+  int id;
+  bool enabled;
+  int start_hour, start_minute;
+  int end_hour, end_minute;
+  int brightness;  // 0-15
+  int mode;        // 0=warm, 1=white, 2=both
+};
+
+struct Alarm {
+  int id;
+  bool enabled;
+  int wake_hour, wake_minute;
+  int start_hour, start_minute;
+  int duration_minutes;
+};
+
+// Storage for routines and alarms (limited for ESP32 memory)
+const int MAX_ROUTINES = 10;
+const int MAX_ALARMS = 5;
+Routine routines[MAX_ROUTINES];
+Alarm alarms[MAX_ALARMS];
+int routine_count = 0;
+int alarm_count = 0;
+
+// Schedule tracking
+unsigned long lastScheduleCheck = 0;
+const unsigned long SCHEDULE_CHECK_INTERVAL = 60000; // Check every minute
 
 RotaryEncoder encoder(ROTARY_DT, ROTARY_CLK);
 
@@ -157,6 +195,24 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
     recognized = true;
   }
 
+  // Handle sync messages from app
+  if (doc["type"].is<const char*>()) {
+    const char* msgType = doc["type"];
+    
+    if (strcmp(msgType, "routine_sync") == 0) {
+      handleRoutineSync(doc);
+      recognized = true;
+    }
+    else if (strcmp(msgType, "alarm_sync") == 0) {
+      handleAlarmSync(doc);
+      recognized = true;
+    }
+    else if (strcmp(msgType, "full_sync") == 0) {
+      handleFullSync(doc);
+      recognized = true;
+    }
+  }
+
   if (stateChanged) {
     applyOutput();
     // Don't send state update back since this change came from the app
@@ -164,6 +220,242 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
 
   if (!recognized) {
     Serial.println("WS RX: no recognized keys in payload");
+  }
+}
+
+// ===== Schedule Management Functions =====
+void handleRoutineSync(JsonDocument& doc) {
+  const char* action = doc["action"];
+  
+  if (strcmp(action, "upsert") == 0) {
+    JsonObject data = doc["data"];
+    int id = data["id"];
+    
+    // Find existing routine or add new one
+    int index = -1;
+    for (int i = 0; i < routine_count; i++) {
+      if (routines[i].id == id) {
+        index = i;
+        break;
+      }
+    }
+    
+    if (index == -1 && routine_count < MAX_ROUTINES) {
+      index = routine_count++;
+    }
+    
+    if (index >= 0) {
+      routines[index].id = id;
+      routines[index].enabled = data["enabled"];
+      routines[index].start_hour = data["start_hour"];
+      routines[index].start_minute = data["start_minute"];
+      routines[index].end_hour = data["end_hour"];
+      routines[index].end_minute = data["end_minute"];
+      routines[index].brightness = data["brightness"];
+      routines[index].mode = data["mode"];
+      
+      Serial.printf("Routine %d synced\n", id);
+      sendSyncResponse("routine_sync_response", true, "Routine synced successfully");
+    } else {
+      Serial.println("Failed to sync routine: storage full");
+      sendSyncResponse("routine_sync_response", false, "Storage full");
+    }
+  }
+  else if (strcmp(action, "delete") == 0) {
+    int id = doc["id"];
+    
+    // Find and remove routine
+    for (int i = 0; i < routine_count; i++) {
+      if (routines[i].id == id) {
+        // Shift remaining routines
+        for (int j = i; j < routine_count - 1; j++) {
+          routines[j] = routines[j + 1];
+        }
+        routine_count--;
+        Serial.printf("Routine %d deleted\n", id);
+        sendSyncResponse("routine_sync_response", true, "Routine deleted");
+        return;
+      }
+    }
+    Serial.printf("Routine %d not found for deletion\n", id);
+    sendSyncResponse("routine_sync_response", false, "Routine not found");
+  }
+}
+
+void handleAlarmSync(JsonDocument& doc) {
+  const char* action = doc["action"];
+  
+  if (strcmp(action, "upsert") == 0) {
+    JsonObject data = doc["data"];
+    int id = data["id"];
+    
+    // Find existing alarm or add new one
+    int index = -1;
+    for (int i = 0; i < alarm_count; i++) {
+      if (alarms[i].id == id) {
+        index = i;
+        break;
+      }
+    }
+    
+    if (index == -1 && alarm_count < MAX_ALARMS) {
+      index = alarm_count++;
+    }
+    
+    if (index >= 0) {
+      alarms[index].id = id;
+      alarms[index].enabled = data["enabled"];
+      alarms[index].wake_hour = data["wake_hour"];
+      alarms[index].wake_minute = data["wake_minute"];
+      alarms[index].start_hour = data["start_hour"];
+      alarms[index].start_minute = data["start_minute"];
+      alarms[index].duration_minutes = data["duration_minutes"];
+      
+      Serial.printf("Alarm %d synced\n", id);
+      sendSyncResponse("alarm_sync_response", true, "Alarm synced successfully");
+    } else {
+      Serial.println("Failed to sync alarm: storage full");
+      sendSyncResponse("alarm_sync_response", false, "Storage full");
+    }
+  }
+  else if (strcmp(action, "delete") == 0) {
+    int id = doc["id"];
+    
+    // Find and remove alarm
+    for (int i = 0; i < alarm_count; i++) {
+      if (alarms[i].id == id) {
+        // Shift remaining alarms
+        for (int j = i; j < alarm_count - 1; j++) {
+          alarms[j] = alarms[j + 1];
+        }
+        alarm_count--;
+        Serial.printf("Alarm %d deleted\n", id);
+        sendSyncResponse("alarm_sync_response", true, "Alarm deleted");
+        return;
+      }
+    }
+    Serial.printf("Alarm %d not found for deletion\n", id);
+    sendSyncResponse("alarm_sync_response", false, "Alarm not found");
+  }
+}
+
+void handleFullSync(JsonDocument& doc) {
+  // Clear existing data
+  routine_count = 0;
+  alarm_count = 0;
+  
+  // Sync routines
+  if (doc["routines"].is<JsonArray>()) {
+    JsonArray routineArray = doc["routines"];
+    for (JsonObject routine : routineArray) {
+      if (routine_count < MAX_ROUTINES) {
+        routines[routine_count].id = routine["id"];
+        routines[routine_count].enabled = routine["enabled"];
+        routines[routine_count].start_hour = routine["start_hour"];
+        routines[routine_count].start_minute = routine["start_minute"];
+        routines[routine_count].end_hour = routine["end_hour"];
+        routines[routine_count].end_minute = routine["end_minute"];
+        routines[routine_count].brightness = routine["brightness"];
+        routines[routine_count].mode = routine["mode"];
+        routine_count++;
+      }
+    }
+  }
+  
+  // Sync alarms
+  if (doc["alarms"].is<JsonArray>()) {
+    JsonArray alarmArray = doc["alarms"];
+    for (JsonObject alarm : alarmArray) {
+      if (alarm_count < MAX_ALARMS) {
+        alarms[alarm_count].id = alarm["id"];
+        alarms[alarm_count].enabled = alarm["enabled"];
+        alarms[alarm_count].wake_hour = alarm["wake_hour"];
+        alarms[alarm_count].wake_minute = alarm["wake_minute"];
+        alarms[alarm_count].start_hour = alarm["start_hour"];
+        alarms[alarm_count].start_minute = alarm["start_minute"];
+        alarms[alarm_count].duration_minutes = alarm["duration_minutes"];
+        alarm_count++;
+      }
+    }
+  }
+  
+  Serial.printf("Full sync complete: %d routines, %d alarms\n", routine_count, alarm_count);
+  sendSyncResponse("full_sync_response", true, "Full sync complete");
+}
+
+void sendSyncResponse(const char* type, bool success, const char* message) {
+  JsonDocument doc;
+  doc["type"] = type;
+  doc["success"] = success;
+  doc["message"] = message;
+  
+  String jsonString;
+  serializeJson(doc, jsonString);
+  ws.textAll(jsonString);
+  
+  Serial.printf("Sent sync response: %s\n", jsonString.c_str());
+}
+
+void checkSchedule() {
+  // Only check schedule if we have a valid time
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    return; // No valid time available
+  }
+  
+  int currentHour = timeinfo.tm_hour;
+  int currentMinute = timeinfo.tm_min;
+  int currentTime = currentHour * 60 + currentMinute; // Convert to minutes since midnight
+  
+  // Check routines
+  for (int i = 0; i < routine_count; i++) {
+    if (!routines[i].enabled) continue;
+    
+    int startTime = routines[i].start_hour * 60 + routines[i].start_minute;
+    int endTime = routines[i].end_hour * 60 + routines[i].end_minute;
+    
+    // Handle routines that span midnight
+    bool inTimeRange;
+    if (endTime > startTime) {
+      inTimeRange = (currentTime >= startTime && currentTime <= endTime);
+    } else {
+      inTimeRange = (currentTime >= startTime || currentTime <= endTime);
+    }
+    
+    if (inTimeRange) {
+      // Apply routine settings
+      brightness = routines[i].brightness;
+      mode = (Mode)routines[i].mode;
+      isOn = true;
+      applyOutput();
+      Serial.printf("Applied routine %d: brightness=%d, mode=%d\n", 
+                    routines[i].id, brightness, (int)mode);
+      return; // Only apply one routine at a time
+    }
+  }
+  
+  // Check alarms (sunrise simulation)
+  for (int i = 0; i < alarm_count; i++) {
+    if (!alarms[i].enabled) continue;
+    
+    int startTime = alarms[i].start_hour * 60 + alarms[i].start_minute;
+    int wakeTime = alarms[i].wake_hour * 60 + alarms[i].wake_minute;
+    
+    if (currentTime >= startTime && currentTime <= wakeTime) {
+      // Calculate progress through alarm (0.0 to 1.0)
+      float progress = (float)(currentTime - startTime) / (float)alarms[i].duration_minutes;
+      progress = constrain(progress, 0.0, 1.0);
+      
+      // Gradually increase brightness
+      brightness = (int)(progress * 15); // Scale to 0-15
+      mode = MODE_WARM; // Start with warm light for sunrise
+      isOn = true;
+      applyOutput();
+      
+      Serial.printf("Alarm %d progress: %.2f, brightness=%d\n", 
+                    alarms[i].id, progress, brightness);
+      return; // Only apply one alarm at a time
+    }
   }
 }
 
@@ -186,6 +478,10 @@ void setup() {
   }
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println(WiFi.localIP());
+    
+    // Initialize time
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    Serial.println("NTP time initialized");
   } else {
     Serial.println("\nWiFi not connected, continuing without WiFi.");
   }
@@ -267,6 +563,12 @@ void loop() {
     applyOutput();
     sendStateUpdate(); // Send update to Flutter app
     clickCount = 0;
+  }
+
+  // Check schedule for routines and alarms
+  if (millis() - lastScheduleCheck >= SCHEDULE_CHECK_INTERVAL) {
+    lastScheduleCheck = millis();
+    checkSchedule();
   }
 
   ws.cleanupClients();

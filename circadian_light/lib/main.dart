@@ -6,6 +6,7 @@ import 'screens/settings.dart';
 import 'core/esp_connection.dart';
 import 'core/sunrise_sunset_manager.dart';
 import 'services/database_service.dart';
+import 'services/esp_sync_service.dart';
 
 void main() {
   runApp(const MainApp());
@@ -66,6 +67,14 @@ class _MainAppState extends State<MainApp> {
       try {
         await EspConnection.I.connect();
         _logger.info('ESP connection attempt completed');
+        
+        // Listen for ESP connection changes and sync when connected
+        EspConnection.I.connection.listen((isConnected) {
+          if (isConnected) {
+            _logger.info('ESP32 connected, triggering full sync...');
+            EspSyncService.I.onEspConnected();
+          }
+        });
       } catch (espError) {
         // ESP connection failure shouldn't prevent app from working
         _logger.warning('ESP connection failed, continuing without device connection', espError);
