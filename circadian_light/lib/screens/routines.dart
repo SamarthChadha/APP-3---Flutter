@@ -1,114 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'dart:math' as math;
-import 'dart:ui' as ui;
 import '../core/sunrise_sunset_manager.dart';
 import '../models/routine.dart';
 import '../models/alarm.dart';
-import '../services/database_service.dart';
+import '../core/routine_core.dart';
+import '../widgets/neumorphic_slider.dart';
+import '../widgets/time_picker_sheet.dart';
+import '../widgets/alarm_duration_selector.dart';
+import '../widgets/routine_card.dart';
+import '../widgets/alarm_card.dart';
 
-
-// Custom gradient/white slider track with soft shadow and glow
-class GradientRectSliderTrackShape extends SliderTrackShape with BaseSliderTrackShape {
-  final LinearGradient gradient;
-  final double trackBorderRadius;
-  final double shadowSigma;
-  const GradientRectSliderTrackShape({
-    required this.gradient,
-    this.trackBorderRadius = 20,
-    this.shadowSigma = 12,
-  });
-
-  @override
-  void paint(
-    PaintingContext context,
-    Offset offset, {
-    required RenderBox parentBox,
-    required SliderThemeData sliderTheme,
-    required Animation<double> enableAnimation,
-    required TextDirection textDirection,
-    required Offset thumbCenter,
-    bool isEnabled = false,
-    bool isDiscrete = false,
-    Offset? secondaryOffset,
-  }) {
-    final Rect trackRect = getPreferredRect(
-      parentBox: parentBox,
-      sliderTheme: sliderTheme,
-      isEnabled: isEnabled,
-      isDiscrete: isDiscrete,
-    ).shift(offset);
-
-    final RRect rrect = RRect.fromRectAndRadius(
-      trackRect,
-      Radius.circular(trackBorderRadius),
-    );
-
-    // Soft shadow below
-    final Paint shadow = Paint()
-      ..color = Colors.black.withValues(alpha: 0.18)
-      ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, shadowSigma);
-    context.canvas.drawRRect(rrect.shift(const Offset(0, 2)), shadow);
-
-    // Gentle top glow
-    final Paint glow = Paint()
-      ..color = Colors.white.withValues(alpha: 0.35)
-      ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, shadowSigma / 2);
-    context.canvas.drawRRect(rrect.shift(const Offset(0, -1)), glow);
-
-    // Gradient/solid track fill
-    final Paint fill = Paint()..shader = gradient.createShader(trackRect);
-    context.canvas.drawRRect(rrect, fill);
-
-    // Subtle border to improve contrast on light backgrounds
-    final Paint border = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1
-      ..color = Colors.black.withValues(alpha: 0.08);
-    context.canvas.drawRRect(rrect, border);
-  }
-}
-
-class NeumorphicThumbShape extends SliderComponentShape {
-  final double radius;
-  const NeumorphicThumbShape({this.radius = 16});
-
-  @override
-  Size getPreferredSize(bool isEnabled, bool isDiscrete) => Size.fromRadius(radius);
-
-  @override
-  void paint(
-    PaintingContext context,
-    Offset center, {
-    required Animation<double> activationAnimation,
-    required Animation<double> enableAnimation,
-    required bool isDiscrete,
-    required TextPainter labelPainter,
-    required RenderBox parentBox,
-    required SliderThemeData sliderTheme,
-    required TextDirection textDirection,
-    required double value,
-    required double textScaleFactor,
-    required Size sizeWithOverflow,
-  }) {
-    // Shadow
-    final Paint shadow = Paint()
-      ..color = Colors.black.withValues(alpha: 0.20)
-      ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, 8);
-    context.canvas.drawCircle(center.translate(0, 2), radius, shadow);
-
-    // Thumb fill
-    final Paint fill = Paint()..color = Colors.white;
-    context.canvas.drawCircle(center, radius, fill);
-
-    // Thin ring
-    final Paint ring = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1
-      ..color = Colors.black.withValues(alpha: 0.10);
-    context.canvas.drawCircle(center, radius, ring);
-  }
-}
 
 class RoutinesScreen extends StatefulWidget {
   const RoutinesScreen({super.key});
@@ -116,138 +17,36 @@ class RoutinesScreen extends StatefulWidget {
   State<RoutinesScreen> createState() => _RoutinesScreenState();
 }
 
-// Reusable neumorphic slider matching design used on home screen.
-class _NeumorphicSlider extends StatelessWidget {
-  final double value;
-  final double min;
-  final double max;
-  final ValueChanged<double> onChanged;
-  final LinearGradient? gradient; // if null solidColor used
-  final Color? solidColor; // fallback single color (default base)
-  const _NeumorphicSlider({
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.onChanged,
-    this.gradient,
-    this.solidColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const base = Color(0xFFEFEFEF);
-    final trackDecoration = BoxDecoration(
-      color: gradient == null ? (solidColor ?? base) : null,
-      gradient: gradient,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          offset: const Offset(6, 6),
-            blurRadius: 18,
-            color: Colors.black.withValues(alpha: 0.12),
-        ),
-        BoxShadow(
-          offset: const Offset(-6, -6),
-          blurRadius: 18,
-          color: Colors.white.withValues(alpha: 0.5),
-        ),
-      ],
-    );
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Stack(
-        alignment: Alignment.centerLeft,
-        children: [
-          Container(height: 18, decoration: trackDecoration),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              trackHeight: 18,
-              activeTrackColor: Colors.transparent,
-              inactiveTrackColor: Colors.transparent,
-              thumbColor: base,
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
-            ),
-            child: Slider(
-              value: value.clamp(min, max),
-              min: min,
-              max: max,
-              onChanged: onChanged,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _RoutinesScreenState extends State<RoutinesScreen> {
-  List<Routine> _routines = [];
-  List<Alarm> _alarms = [];
+  late final RoutineCore _core;
 
   @override
   void initState() {
     super.initState();
-    _loadRoutines();
-    _loadAlarms();
+    _core = RoutineCore();
+    _core.addListener(() {
+      if (mounted) setState(() {});
+    });
+    // Fire and forget initialization
+    _core.init();
   }
 
-  Future<void> _loadRoutines() async {
-    try {
-      final routines = await db.getAllRoutines();
-      setState(() {
-        _routines = routines;
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading routines: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _loadAlarms() async {
-    try {
-      final alarms = await db.getAllAlarms();
-      setState(() {
-        _alarms = alarms;
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading alarms: $e')),
-        );
-      }
-    }
+  @override
+  void dispose() {
+    _core.dispose();
+    super.dispose();
   }
 
   Future<void> _saveRoutine(Routine routine) async {
     try {
-      // Check for duplicate routine
-      if (_isDuplicateRoutine(routine)) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Routine already exists.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
+      await _core.saveRoutine(routine);
+    } on DuplicateRoutineException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.orange),
+        );
       }
-
-      final id = await db.saveRoutine(routine);
-      final savedRoutine = routine.copyWith(id: id);
-      
-      setState(() {
-        final index = _routines.indexWhere((r) => r.id == savedRoutine.id);
-        if (index >= 0) {
-          _routines[index] = savedRoutine;
-        } else {
-          _routines.add(savedRoutine);
-        }
-      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -259,10 +58,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
   Future<void> _deleteRoutine(int id) async {
     try {
-      await db.deleteRoutine(id);
-      setState(() {
-        _routines.removeWhere((r) => r.id == id);
-      });
+      await _core.deleteRoutine(id);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -274,28 +70,13 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
   Future<void> _saveAlarm(Alarm alarm) async {
     try {
-      // Check for duplicate alarm
-      if (_isDuplicateAlarm(alarm)) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Alarm already exists with the same specifications'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
+      await _core.saveAlarm(alarm);
+    } on DuplicateAlarmException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.orange),
+        );
       }
-
-      final savedAlarm = alarm.copyWith(id: await db.saveAlarm(alarm));
-      setState(() {
-        final index = _alarms.indexWhere((a) => a.id == savedAlarm.id);
-        if (index >= 0) {
-          _alarms[index] = savedAlarm;
-        } else {
-          _alarms.add(savedAlarm);
-        }
-      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -307,10 +88,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
   Future<void> _deleteAlarm(int id) async {
     try {
-      await db.deleteAlarm(id);
-      setState(() {
-        _alarms.removeWhere((a) => a.id == id);
-      });
+      await _core.deleteAlarm(id);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -320,51 +98,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     }
   }
 
-  Color _colorFromTemperature(double kelvin) {
-    double t = kelvin / 100.0;
-    double r, g, b;
-    if (t <= 66) {
-      r = 255;
-      g = 99.4708025861 * math.log(t) - 161.1195681661;
-      b = t <= 19 ? 0 : 138.5177312231 * math.log(t - 10) - 305.0447927307;
-    } else {
-      r = 329.698727446 * math.pow(t - 60, -0.1332047592);
-      g = 288.1221695283 * math.pow(t - 60, -0.0755148492);
-      b = 255;
-    }
-    int r8 = r.isNaN ? 0 : r.clamp(0, 255).round();
-    int g8 = g.isNaN ? 0 : g.clamp(0, 255).round();
-    int b8 = b.isNaN ? 0 : b.clamp(0, 255).round();
-    return Color.fromARGB(255, r8, g8, b8);
-  }
-
-  // Check if a routine with identical specifications already exists
-  bool _isDuplicateRoutine(Routine newRoutine) {
-    return _routines.any((existingRoutine) {
-      // Skip checking against the same routine (for edits)
-      if (newRoutine.id != null && existingRoutine.id == newRoutine.id) {
-        return false;
-      }
-      
-      return existingRoutine.startTime == newRoutine.startTime &&
-             existingRoutine.endTime == newRoutine.endTime &&
-             (existingRoutine.brightness - newRoutine.brightness).abs() < 0.01 &&
-             (existingRoutine.temperature - newRoutine.temperature).abs() < 0.01;
-    });
-  }
-
-  // Check if an alarm with identical specifications already exists
-  bool _isDuplicateAlarm(Alarm newAlarm) {
-    return _alarms.any((existingAlarm) {
-      // Skip checking against the same alarm (for edits)
-      if (newAlarm.id != null && existingAlarm.id == newAlarm.id) {
-        return false;
-      }
-      
-      return existingAlarm.wakeUpTime == newAlarm.wakeUpTime &&
-             existingAlarm.durationMinutes == newAlarm.durationMinutes;
-    });
-  }
+  // Logic moved to RoutineCore
 
   String _formatTime(BuildContext context, TimeOfDay t) =>
       MaterialLocalizations.of(context).formatTimeOfDay(t);
@@ -373,9 +107,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     TimeOfDay start = const TimeOfDay(hour: 7, minute: 0);
     TimeOfDay end = const TimeOfDay(hour: 22, minute: 0);
     double temperature = 4000;
-    Color selectedColor = _colorFromTemperature(temperature); 
+    Color selectedColor = RoutineCore.colorFromTemperature(temperature); 
     double brightness = 70;
-  final nameCtrl = TextEditingController(text: 'Routine ${_routines.length + 1}');
+  final nameCtrl = TextEditingController(text: 'Routine ${_core.routines.length + 1}');
 
     await showModalBottomSheet(
       context: context,
@@ -395,64 +129,14 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
             builder: (context, setSheetState) {
       const base = Color(0xFFEFEFEF);
 
-              Widget buildCupertinoTimePickerSheet(
-                BuildContext context, {
-                required TimeOfDay initial,
-                required ValueChanged<TimeOfDay> onChanged,
-                required VoidCallback onCancel,
-                required VoidCallback onSave,
-              }) {
-                return SafeArea(
-                  child: Container(
-                    height: 300,
-                    decoration: BoxDecoration(
-                      color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          height: 44,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              CupertinoButton(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                onPressed: onCancel,
-                                child: const Text('Cancel'),
-                              ),
-                              CupertinoButton(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                onPressed: onSave,
-                                child: const Text('Save'),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: CupertinoDatePicker(
-                            mode: CupertinoDatePickerMode.time,
-                            minuteInterval: 1,
-                            use24hFormat: MediaQuery.of(context).alwaysUse24HourFormat,
-                            initialDateTime: DateTime(0, 1, 1, initial.hour, initial.minute),
-                            onDateTimeChanged: (DateTime v) {
-                              onChanged(TimeOfDay(hour: v.hour, minute: v.minute));
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
+              // Inline time picker replaced with reusable TimePickerSheet
 
               Future<void> pickStart() async {
                 TimeOfDay temp = start;
                 await showCupertinoModalPopup<void>(
                   context: context,
                   builder: (_) {
-                    return buildCupertinoTimePickerSheet(
-                      context,
+                    return TimePickerSheet(
                       initial: start,
                       onChanged: (t) => temp = t,
                       onCancel: () => Navigator.of(context).pop(),
@@ -470,8 +154,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 await showCupertinoModalPopup<void>(
                   context: context,
                   builder: (_) {
-                    return buildCupertinoTimePickerSheet(
-                      context,
+                    return TimePickerSheet(
                       initial: end,
                       onChanged: (t) => temp = t,
                       onCancel: () => Navigator.of(context).pop(),
@@ -569,7 +252,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _NeumorphicSlider(
+                  NeumorphicSlider(
                     gradient: const LinearGradient(
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
@@ -583,7 +266,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     max: 6500,
                     onChanged: (v) => setSheetState(() {
                       temperature = v;
-                      selectedColor = _colorFromTemperature(temperature);
+                      selectedColor = RoutineCore.colorFromTemperature(temperature);
                     }),
                   ),
                   const SizedBox(height: 12),
@@ -607,7 +290,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _NeumorphicSlider(
+                  NeumorphicSlider(
                     solidColor: base,
                     value: brightness,
                     min: 0,
@@ -625,7 +308,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       ),
                       onPressed: () async {
                         final name = nameCtrl.text.trim().isEmpty
-                            ? 'Routine ${_routines.length + 1}'
+                            ? 'Routine ${_core.routines.length + 1}'
                             : nameCtrl.text.trim();
                         final newRoutine = Routine(
                           name: name,
@@ -656,7 +339,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     TimeOfDay end = routine.endTime;
     double temperature = routine.temperature;
     double brightness = routine.brightness;
-    Color selectedColor = routine.color;
+  Color selectedColor = routine.color;
     final nameCtrl = TextEditingController(text: routine.name);
 
     showModalBottomSheet(
@@ -680,7 +363,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 TimeOfDay temp = start;
                 await showCupertinoModalPopup<void>(
                   context: context,
-                  builder: (_) => _timeSheet(
+                  builder: (_) => TimePickerSheet(
                     initial: start,
                     onChanged: (t) => temp = t,
                     onCancel: () => Navigator.of(context).pop(),
@@ -692,7 +375,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 TimeOfDay temp = end;
                 await showCupertinoModalPopup<void>(
                   context: context,
-                  builder: (_) => _timeSheet(
+                  builder: (_) => TimePickerSheet(
                     initial: end,
                     onChanged: (t) => temp = t,
                     onCancel: () => Navigator.of(context).pop(),
@@ -759,12 +442,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    _NeumorphicSlider(
+                    NeumorphicSlider(
                       gradient: const LinearGradient(colors: [Color(0xFFFFC477), Color(0xFFBFD7FF)]),
                       value: temperature,
                       min: 2700,
                       max: 6500,
-                      onChanged: (v) => setSheetState(() { temperature = v; selectedColor = _colorFromTemperature(v); }),
+                      onChanged: (v) => setSheetState(() { temperature = v; selectedColor = RoutineCore.colorFromTemperature(v); }),
                     ),
                     const SizedBox(height: 16),
                     const Text('Brightness', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
@@ -779,7 +462,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    _NeumorphicSlider(
+                    NeumorphicSlider(
                       solidColor: base,
                       value: brightness,
                       min: 0,
@@ -818,44 +501,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     );
   }
 
-  Widget _timeSheet({
-    required TimeOfDay initial,
-    required ValueChanged<TimeOfDay> onChanged,
-    required VoidCallback onCancel,
-    required VoidCallback onSave,
-  }) {
-    return SafeArea(
-      child: Container(
-        height: 300,
-        decoration: BoxDecoration(
-          color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          children: [
-            SizedBox(
-              height: 44,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(padding: const EdgeInsets.symmetric(horizontal: 16), onPressed: onCancel, child: const Text('Cancel')),
-                  CupertinoButton(padding: const EdgeInsets.symmetric(horizontal: 16), onPressed: onSave, child: const Text('Save')),
-                ],
-              ),
-            ),
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.time,
-                use24hFormat: MediaQuery.of(context).alwaysUse24HourFormat,
-                initialDateTime: DateTime(0,1,1,initial.hour, initial.minute),
-                onDateTimeChanged: (v) => onChanged(TimeOfDay(hour: v.hour, minute: v.minute)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Time sheet moved to reusable widget (TimePickerSheet)
 
   void _openEditAlarmSheet(int index, Alarm alarm) {
     TimeOfDay wakeUpTime = alarm.wakeUpTime;
@@ -881,7 +527,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 TimeOfDay temp = wakeUpTime;
                 await showCupertinoModalPopup<void>(
                   context: context,
-                  builder: (_) => _timeSheet(
+                  builder: (_) => TimePickerSheet(
                     initial: wakeUpTime,
                     onChanged: (t) => temp = t,
                     onCancel: () => Navigator.of(context).pop(),
@@ -945,104 +591,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => setSheetState(() => durationMinutes = 10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: durationMinutes == 10 ? const Color(0xFFFFC049) : Colors.grey.shade300,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (durationMinutes == 10) ...[
-                                    const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
-                                    const SizedBox(width: 4),
-                                  ],
-                                  Text(
-                                    '10m',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: durationMinutes == 10 ? const Color(0xFF3C3C3C) : Colors.black87,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => setSheetState(() => durationMinutes = 20),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: durationMinutes == 20 ? const Color(0xFFFFC049) : Colors.grey.shade300,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (durationMinutes == 20) ...[
-                                    const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
-                                    const SizedBox(width: 4),
-                                  ],
-                                  Text(
-                                    '20m',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: durationMinutes == 20 ? const Color(0xFF3C3C3C) : Colors.black87,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => setSheetState(() => durationMinutes = 30),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: durationMinutes == 30 ? const Color(0xFFFFC049) : Colors.grey.shade300,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (durationMinutes == 30) ...[
-                                    const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
-                                    const SizedBox(width: 4),
-                                  ],
-                                  Text(
-                                    '30m',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: durationMinutes == 30 ? const Color(0xFF3C3C3C) : Colors.black87,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    AlarmDurationSelector(
+                      value: durationMinutes,
+                      onChanged: (v) => setSheetState(() => durationMinutes = v),
                     ),
                     const SizedBox(height: 20),
                     FilledButton(
@@ -1076,7 +627,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
   void _openAddAlarmSheet() async {
     TimeOfDay wakeUpTime = const TimeOfDay(hour: 6, minute: 0);
     int durationMinutes = 30; // Default to 30 minutes
-    final nameCtrl = TextEditingController(text: 'Alarm ${_alarms.length + 1}');
+    final nameCtrl = TextEditingController(text: 'Alarm ${_core.alarms.length + 1}');
 
     await showModalBottomSheet(
       context: context,
@@ -1097,7 +648,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 TimeOfDay temp = wakeUpTime;
                 await showCupertinoModalPopup<void>(
                   context: context,
-                  builder: (_) => _timeSheet(
+                  builder: (_) => TimePickerSheet(
                     initial: wakeUpTime,
                     onChanged: (t) => temp = t,
                     onCancel: () => Navigator.of(context).pop(),
@@ -1110,10 +661,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               }
 
               // Calculate start time based on wake up time and duration
-              final startTime = TimeOfDay(
-                hour: (wakeUpTime.hour * 60 + wakeUpTime.minute - durationMinutes) ~/ 60 % 24,
-                minute: (wakeUpTime.hour * 60 + wakeUpTime.minute - durationMinutes) % 60,
-              );
+              final startTime = RoutineCore.calculateAlarmStartTime(wakeUpTime, durationMinutes);
 
               return SingleChildScrollView(
                 child: Column(
@@ -1331,7 +879,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       ),
                       onPressed: () async {
                         final alarm = Alarm(
-                          name: nameCtrl.text.trim().isEmpty ? 'Alarm ${_alarms.length + 1}' : nameCtrl.text.trim(),
+                          name: nameCtrl.text.trim().isEmpty ? 'Alarm ${_core.alarms.length + 1}' : nameCtrl.text.trim(),
                           wakeUpTime: wakeUpTime,
                           durationMinutes: durationMinutes,
                         );
@@ -1357,7 +905,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
     Widget content;
     
-    if (sunriseSunsetEnabled) {
+  if (sunriseSunsetEnabled) {
       // Show sunrise/sunset status when enabled
       content = Padding(
         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomClearance + 16),
@@ -1513,7 +1061,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            if (_routines.isNotEmpty || _alarms.isNotEmpty) ...[
+            if (_core.routines.isNotEmpty || _core.alarms.isNotEmpty) ...[
               const Text(
                 'Disabled Routines & Alarms',
                 style: TextStyle(
@@ -1527,7 +1075,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 child: ListView(
                   children: [
                     // Show disabled routines
-                    ..._routines.map((r) => _RoutineCard(
+                    ..._core.routines.map((r) => RoutineCard(
                       routine: r.copyWith(enabled: false), // Force disabled appearance
                       onChanged: (val) {}, // No-op when sunrise/sunset is active
                       onTap: null, // Disable editing
@@ -1535,7 +1083,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       isDisabledBySunriseSync: true,
                     )),
                     // Show disabled alarms
-                    ..._alarms.map((a) => _AlarmCard(
+                    ..._core.alarms.map((a) => AlarmCard(
                       alarm: a.copyWith(enabled: false), // Force disabled appearance
                       onChanged: (val) {}, // No-op when sunrise/sunset is active
                       onTap: null, // Disable editing
@@ -1554,9 +1102,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       final allItems = <Widget>[];
       
       // Add routines
-      for (int i = 0; i < _routines.length; i++) {
-        final r = _routines[i];
-        allItems.add(_RoutineCard(
+      for (int i = 0; i < _core.routines.length; i++) {
+        final r = _core.routines[i];
+        allItems.add(RoutineCard(
           routine: r,
           onChanged: (val) async {
             final updatedRoutine = r.copyWith(enabled: val);
@@ -1572,9 +1120,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       }
       
       // Add alarms
-      for (int i = 0; i < _alarms.length; i++) {
-        final a = _alarms[i];
-        allItems.add(_AlarmCard(
+      for (int i = 0; i < _core.alarms.length; i++) {
+        final a = _core.alarms[i];
+        allItems.add(AlarmCard(
           alarm: a,
           onChanged: (val) async {
             final updatedAlarm = a.copyWith(enabled: val);
@@ -1706,616 +1254,4 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
   }
 }
 
-class _RoutineCard extends StatefulWidget {
-  final Routine routine;
-  final ValueChanged<bool> onChanged;
-  final VoidCallback? onTap;
-  final VoidCallback? onDelete;
-  final bool isDisabledBySunriseSync;
-  
-  const _RoutineCard({
-    required this.routine, 
-    required this.onChanged, 
-    this.onTap,
-    this.onDelete,
-    this.isDisabledBySunriseSync = false,
-  });
-
-  @override
-  State<_RoutineCard> createState() => _RoutineCardState();
-}
-
-class _RoutineCardState extends State<_RoutineCard> with SingleTickerProviderStateMixin {
-  late AnimationController _slideController;
-  late Animation<double> _slideAnimation;
-  bool _isSliding = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 250),
-      vsync: this,
-    );
-    _slideAnimation = Tween<double>(
-      begin: 0.0,
-      end: -0.33, // Slide to 1/3 of width
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOut,
-    ));
-  }
-
-  @override
-  void dispose() {
-    _slideController.dispose();
-    super.dispose();
-  }
-
-  void _onHorizontalDragUpdate(DragUpdateDetails details) {
-    if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
-    
-    final screenWidth = MediaQuery.of(context).size.width;
-    final dragAmount = details.delta.dx / screenWidth;
-    
-    // Only allow dragging to the left (negative direction)
-    if (details.delta.dx < 0) {
-      final newValue = (_slideController.value - dragAmount * 3).clamp(0.0, 1.0);
-      _slideController.value = newValue;
-      setState(() {
-        _isSliding = _slideController.value > 0;
-      });
-    }
-  }
-
-  void _onHorizontalDragEnd(DragEndDetails details) {
-    if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
-    
-    // If dragged more than halfway, complete the slide; otherwise, snap back
-    if (_slideController.value > 0.5) {
-      _slideController.forward();
-      setState(() {
-        _isSliding = true;
-      });
-    } else {
-      _slideController.reverse();
-      setState(() {
-        _isSliding = false;
-      });
-    }
-  }
-
-  void _onTap() {
-    if (_isSliding) {
-      // If sliding, close the slide
-      _slideController.reverse();
-      setState(() {
-        _isSliding = false;
-      });
-    } else if (!widget.isDisabledBySunriseSync && widget.onTap != null) {
-      widget.onTap!();
-    }
-  }
-
-  void _onDelete() {
-    // Close slide and delete immediately (no confirmation)
-    _slideController.reverse();
-    setState(() {
-      _isSliding = false;
-    });
-    widget.onDelete!();
-  }
-
-  String _formatTime(BuildContext context, TimeOfDay t) =>
-      MaterialLocalizations.of(context).formatTimeOfDay(t);
-
-  @override
-  Widget build(BuildContext context) {
-    final timeRange = '${_formatTime(context, widget.routine.startTime)} – ${_formatTime(context, widget.routine.endTime)}';
-    final isEffectivelyDisabled = !widget.routine.enabled || widget.isDisabledBySunriseSync;
-    
-    final card = AnimatedContainer(
-      duration: const Duration(milliseconds: 240),
-      curve: Curves.easeOut,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isEffectivelyDisabled
-              ? [const Color(0xFFE5E5E5), const Color(0xFFD4D4D4)]
-              : [const Color(0xFFFDFDFD), const Color(0xFFE3E3E3)],
-        ),
-        boxShadow: const [
-          BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
-          BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  widget.routine.color.withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.9), 
-                  widget.routine.color.withValues(alpha: isEffectivelyDisabled ? 0.1 : 0.25)
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: widget.routine.color.withValues(alpha: isEffectivelyDisabled ? 0.15 : 0.45),
-                  blurRadius: 12,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 18),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.routine.name,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF2F2F2F).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  timeRange,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.2,
-                    color: const Color(0xFF3C3C3C).withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.85),
-                  ),
-                ),
-                if (widget.isDisabledBySunriseSync) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Disabled by Sunrise/Sunset Sync',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.orange[600],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Show switch but disable interaction when sunrise/sunset is active
-          IgnorePointer(
-            ignoring: widget.isDisabledBySunriseSync,
-            child: Switch(
-              value: widget.routine.enabled && !widget.isDisabledBySunriseSync,
-              onChanged: widget.isDisabledBySunriseSync ? null : widget.onChanged,
-            ),
-          ),
-        ],
-      ),
-    );
-
-    // If delete functionality is disabled, just return the card without swipe
-    if (widget.isDisabledBySunriseSync || widget.onDelete == null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(28),
-            onTap: _onTap,
-            onLongPress: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Delete Routine'),
-                  content: Text('Are you sure you want to delete "${widget.routine.name}"?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        widget.onDelete!();
-                      },
-                      child: const Text('Delete'),
-                    ),
-                  ],
-                ),
-              );
-            },
-            child: card,
-          ),
-        ),
-      );
-    }
-
-    // Custom sliding implementation
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Stack(
-        children: [
-          // Delete button background
-          Positioned.fill(
-            child: Container(
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 20),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: GestureDetector(
-                onTap: _onDelete,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.delete_outline,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Delete',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Sliding card
-          AnimatedBuilder(
-            animation: _slideAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(_slideAnimation.value * MediaQuery.of(context).size.width, 0),
-                child: GestureDetector(
-                  onHorizontalDragUpdate: _onHorizontalDragUpdate,
-                  onHorizontalDragEnd: _onHorizontalDragEnd,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(28),
-                      onTap: _onTap,
-                      onLongPress: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Delete Routine'),
-                            content: Text('Are you sure you want to delete "${widget.routine.name}"?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  widget.onDelete!();
-                                },
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: card,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AlarmCard extends StatefulWidget {
-  final Alarm alarm;
-  final ValueChanged<bool> onChanged;
-  final VoidCallback? onTap;
-  final VoidCallback? onDelete;
-  final bool isDisabledBySunriseSync;
-
-  const _AlarmCard({
-    required this.alarm,
-    required this.onChanged,
-    this.onTap,
-    this.onDelete,
-    this.isDisabledBySunriseSync = false,
-  });
-
-  @override
-  State<_AlarmCard> createState() => _AlarmCardState();
-}
-
-class _AlarmCardState extends State<_AlarmCard> with SingleTickerProviderStateMixin {
-  late AnimationController _slideController;
-  late Animation<double> _slideAnimation;
-  bool _isSliding = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 250),
-      vsync: this,
-    );
-    _slideAnimation = Tween<double>(
-      begin: 0.0,
-      end: -0.33, // Slide to 1/3 of width
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOut,
-    ));
-  }
-
-  @override
-  void dispose() {
-    _slideController.dispose();
-    super.dispose();
-  }
-
-  void _onHorizontalDragUpdate(DragUpdateDetails details) {
-    if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
-    
-    final screenWidth = MediaQuery.of(context).size.width;
-    final dragAmount = details.delta.dx / screenWidth;
-    
-    // Only allow dragging to the left (negative direction)
-    if (details.delta.dx < 0) {
-      final newValue = (_slideController.value - dragAmount * 3).clamp(0.0, 1.0);
-      _slideController.value = newValue;
-      setState(() {
-        _isSliding = _slideController.value > 0;
-      });
-    }
-  }
-
-  void _onHorizontalDragEnd(DragEndDetails details) {
-    if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
-    
-    // If dragged more than halfway, complete the slide; otherwise, snap back
-    if (_slideController.value > 0.5) {
-      _slideController.forward();
-      setState(() {
-        _isSliding = true;
-      });
-    } else {
-      _slideController.reverse();
-      setState(() {
-        _isSliding = false;
-      });
-    }
-  }
-
-  void _onTap() {
-    if (_isSliding) {
-      // If sliding, close the slide
-      _slideController.reverse();
-      setState(() {
-        _isSliding = false;
-      });
-    } else if (!widget.isDisabledBySunriseSync && widget.onTap != null) {
-      widget.onTap!();
-    }
-  }
-
-  void _onDelete() {
-    // Close slide and delete immediately (no confirmation)
-    _slideController.reverse();
-    setState(() {
-      _isSliding = false;
-    });
-    widget.onDelete!();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isEffectivelyDisabled = widget.isDisabledBySunriseSync || !widget.alarm.enabled;
-    final String wakeUpTime = widget.alarm.wakeUpTime.format(context);
-    final String startTime = widget.alarm.startTime.format(context);
-    final String duration = '${widget.alarm.durationMinutes}min';
-
-    final card = Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isEffectivelyDisabled
-              ? [const Color(0xFFE5E5E5), const Color(0xFFD4D4D4)]
-              : [const Color(0xFFFDFDFD), const Color(0xFFE3E3E3)],
-        ),
-        boxShadow: const [
-          BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
-          BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFFFFB347).withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.9), 
-                  const Color(0xFFFFB347).withValues(alpha: isEffectivelyDisabled ? 0.1 : 0.25)
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFB347).withValues(alpha: isEffectivelyDisabled ? 0.15 : 0.45),
-                  blurRadius: 12,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.alarm,
-              color: isEffectivelyDisabled ? Colors.grey.shade400 : const Color(0xFF2F2F2F),
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 18),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.alarm.name,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF2F2F2F).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$duration ramp-up to $wakeUpTime',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF666666).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
-                  ),
-                ),
-                Text(
-                  'Starts at $startTime',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF888888).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!widget.isDisabledBySunriseSync)
-            Switch(
-              value: widget.alarm.enabled,
-              onChanged: widget.onChanged,
-              activeColor: const Color(0xFFFFC049),
-            )
-          else
-            Icon(
-              Icons.lock_outline,
-              color: Colors.grey.shade400,
-              size: 20,
-            ),
-        ],
-      ),
-    );
-
-    // If delete functionality is disabled, just return the card without swipe
-    if (widget.isDisabledBySunriseSync || widget.onDelete == null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(28),
-            onTap: widget.onTap,
-            child: card,
-          ),
-        ),
-      );
-    }
-
-    // Custom sliding implementation
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Stack(
-        children: [
-          // Background with delete button (only show when sliding)
-          if (_isSliding)
-            Positioned.fill(
-              child: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 20),
-                margin: const EdgeInsets.symmetric(vertical: 0),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: GestureDetector(
-                  onTap: _onDelete,
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.delete_outline,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Delete',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          
-          // Main card content
-          AnimatedBuilder(
-            animation: _slideAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(_slideAnimation.value * MediaQuery.of(context).size.width, 0),
-                child: GestureDetector(
-                  onHorizontalDragUpdate: _onHorizontalDragUpdate,
-                  onHorizontalDragEnd: _onHorizontalDragEnd,
-                  onTap: _onTap,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(28),
-                      onTap: null, // Handle tap in GestureDetector above
-                      child: card,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
+// Old _RoutineCard and _AlarmCard were extracted to widgets/routine_card.dart and widgets/alarm_card.dart
