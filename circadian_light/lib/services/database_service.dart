@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart';
 import '../models/routine.dart';
+import '../models/alarm.dart';
 import '../models/user_settings.dart';
 
 class DatabaseService {
@@ -46,6 +47,9 @@ class DatabaseService {
   Future<void> _createDatabase(Database db, int version) async {
     // Create routines table
     await db.execute(Routine.createTableSql);
+    
+    // Create alarms table
+    await db.execute(Alarm.createTableSql);
     
     // Create app metadata table for tracking versions, etc.
     await db.execute('''
@@ -160,6 +164,70 @@ class DatabaseService {
   Future<void> deleteAllRoutines() async {
     final db = await database;
     await db.delete(Routine.tableName);
+  }
+
+  // ==================== ALARM OPERATIONS ====================
+
+  /// Save an alarm to the database
+  Future<int> saveAlarm(Alarm alarm) async {
+    final db = await database;
+    
+    if (alarm.id == null) {
+      // Insert new alarm
+      return await db.insert(Alarm.tableName, alarm.toJson());
+    } else {
+      // Update existing alarm
+      await db.update(
+        Alarm.tableName,
+        alarm.toJson(),
+        where: 'id = ?',
+        whereArgs: [alarm.id],
+      );
+      return alarm.id!;
+    }
+  }
+
+  /// Get all alarms from the database
+  Future<List<Alarm>> getAllAlarms() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      Alarm.tableName,
+      orderBy: 'created_at ASC',
+    );
+
+    return List.generate(maps.length, (i) => Alarm.fromJson(maps[i]));
+  }
+
+  /// Get a specific alarm by ID
+  Future<Alarm?> getAlarmById(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      Alarm.tableName,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (maps.isNotEmpty) {
+      return Alarm.fromJson(maps.first);
+    }
+    return null;
+  }
+
+  /// Delete an alarm
+  Future<void> deleteAlarm(int id) async {
+    final db = await database;
+    await db.delete(
+      Alarm.tableName,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Delete all alarms
+  Future<void> deleteAllAlarms() async {
+    final db = await database;
+    await db.delete(Alarm.tableName);
   }
 
   // ==================== USER SETTINGS OPERATIONS ====================

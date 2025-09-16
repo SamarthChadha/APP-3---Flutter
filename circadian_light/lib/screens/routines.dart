@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import '../core/sunrise_sunset_manager.dart';
 import '../models/routine.dart';
+import '../models/alarm.dart';
 import '../services/database_service.dart';
 
 
@@ -182,11 +183,13 @@ class _NeumorphicSlider extends StatelessWidget {
 
 class _RoutinesScreenState extends State<RoutinesScreen> {
   List<Routine> _routines = [];
+  List<Alarm> _alarms = [];
 
   @override
   void initState() {
     super.initState();
     _loadRoutines();
+    _loadAlarms();
   }
 
   Future<void> _loadRoutines() async {
@@ -199,6 +202,21 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading routines: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadAlarms() async {
+    try {
+      final alarms = await db.getAllAlarms();
+      setState(() {
+        _alarms = alarms;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading alarms: $e')),
         );
       }
     }
@@ -236,6 +254,41 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error deleting routine: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveAlarm(Alarm alarm) async {
+    try {
+      final savedAlarm = alarm.copyWith(id: await db.saveAlarm(alarm));
+      setState(() {
+        final index = _alarms.indexWhere((a) => a.id == savedAlarm.id);
+        if (index >= 0) {
+          _alarms[index] = savedAlarm;
+        } else {
+          _alarms.add(savedAlarm);
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving alarm: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteAlarm(int id) async {
+    try {
+      await db.deleteAlarm(id);
+      setState(() {
+        _alarms.removeWhere((a) => a.id == id);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting alarm: $e')),
         );
       }
     }
@@ -710,6 +763,202 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     );
   }
 
+  void _openAddAlarmSheet() async {
+    TimeOfDay wakeUpTime = const TimeOfDay(hour: 6, minute: 0);
+    int durationMinutes = 30; // Default to 30 minutes
+    final nameCtrl = TextEditingController(text: 'Alarm ${_alarms.length + 1}');
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: const Color.fromARGB(255, 208, 206, 206),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              Future<void> pickWakeUpTime() async {
+                TimeOfDay temp = wakeUpTime;
+                await showCupertinoModalPopup<void>(
+                  context: context,
+                  builder: (_) => _timeSheet(
+                    initial: wakeUpTime,
+                    onChanged: (t) => temp = t,
+                    onCancel: () => Navigator.of(context).pop(),
+                    onSave: () {
+                      setSheetState(() => wakeUpTime = temp);
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                );
+              }
+
+              // Calculate start time based on wake up time and duration
+              final startTime = TimeOfDay(
+                hour: (wakeUpTime.hour * 60 + wakeUpTime.minute - durationMinutes) ~/ 60 % 24,
+                minute: (wakeUpTime.hour * 60 + wakeUpTime.minute - durationMinutes) % 60,
+              );
+
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Create Alarm',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: nameCtrl,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Alarm name',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Wake-up time',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: pickWakeUpTime,
+                            icon: const Icon(Icons.schedule),
+                            label: Text(_formatTime(context, wakeUpTime)),
+                            style: OutlinedButton.styleFrom(
+                              alignment: Alignment.centerLeft,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Duration',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('10m'),
+                            selected: durationMinutes == 10,
+                            onSelected: (selected) {
+                              if (selected) setSheetState(() => durationMinutes = 10);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('20m'),
+                            selected: durationMinutes == 20,
+                            onSelected: (selected) {
+                              if (selected) setSheetState(() => durationMinutes = 20);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('30m'),
+                            selected: durationMinutes == 30,
+                            onSelected: (selected) {
+                              if (selected) setSheetState(() => durationMinutes = 30);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'How it works',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Your lamp will gradually brighten from ${_formatTime(context, startTime)} to ${_formatTime(context, wakeUpTime)}, reaching full brightness at wake-up time.',
+                            style: TextStyle(color: Colors.blue.shade700),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFC049),
+                        foregroundColor: const Color(0xFF3C3C3C),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        minimumSize: const Size.fromHeight(54),
+                      ),
+                      onPressed: () async {
+                        final alarm = Alarm(
+                          name: nameCtrl.text.trim().isEmpty ? 'Alarm ${_alarms.length + 1}' : nameCtrl.text.trim(),
+                          wakeUpTime: wakeUpTime,
+                          durationMinutes: durationMinutes,
+                        );
+                        Navigator.pop(ctx);
+                        await _saveAlarm(alarm);
+                      },
+                      child: const Text('Create Alarm'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomClearance = kBottomNavigationBarHeight + 24;
@@ -873,9 +1122,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            if (_routines.isNotEmpty) ...[
+            if (_routines.isNotEmpty || _alarms.isNotEmpty) ...[
               const Text(
-                'Disabled Routines',
+                'Disabled Routines & Alarms',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -884,18 +1133,25 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: ListView.builder(
-                  itemCount: _routines.length,
-                  itemBuilder: (context, i) {
-                    final r = _routines[i];
-                    return _RoutineCard(
+                child: ListView(
+                  children: [
+                    // Show disabled routines
+                    ..._routines.map((r) => _RoutineCard(
                       routine: r.copyWith(enabled: false), // Force disabled appearance
                       onChanged: (val) {}, // No-op when sunrise/sunset is active
                       onTap: null, // Disable editing
                       onDelete: null, // Disable deletion when sunrise/sunset is active
                       isDisabledBySunriseSync: true,
-                    );
-                  },
+                    )),
+                    // Show disabled alarms
+                    ..._alarms.map((a) => _AlarmCard(
+                      alarm: a.copyWith(enabled: false), // Force disabled appearance
+                      onChanged: (val) {}, // No-op when sunrise/sunset is active
+                      onTap: null, // Disable editing
+                      onDelete: null, // Disable deletion when sunrise/sunset is active
+                      isDisabledBySunriseSync: true,
+                    )),
+                  ],
                 ),
               ),
             ],
@@ -903,28 +1159,52 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
         ),
       );
     } else {
-      // Normal routines view
-      content = _routines.isEmpty
-          ? const Center(child: Text('No routines yet'))
-          : ListView.builder(
+      // Normal routines and alarms view
+      final allItems = <Widget>[];
+      
+      // Add routines
+      for (int i = 0; i < _routines.length; i++) {
+        final r = _routines[i];
+        allItems.add(_RoutineCard(
+          routine: r,
+          onChanged: (val) async {
+            final updatedRoutine = r.copyWith(enabled: val);
+            await _saveRoutine(updatedRoutine);
+          },
+          onTap: () => _openEditRoutineSheet(i, r),
+          onDelete: () async {
+            if (r.id != null) {
+              await _deleteRoutine(r.id!);
+            }
+          },
+        ));
+      }
+      
+      // Add alarms
+      for (int i = 0; i < _alarms.length; i++) {
+        final a = _alarms[i];
+        allItems.add(_AlarmCard(
+          alarm: a,
+          onChanged: (val) async {
+            final updatedAlarm = a.copyWith(enabled: val);
+            await _saveAlarm(updatedAlarm);
+          },
+          onTap: () {
+            // TODO: Add edit alarm functionality
+          },
+          onDelete: () async {
+            if (a.id != null) {
+              await _deleteAlarm(a.id!);
+            }
+          },
+        ));
+      }
+      
+      content = allItems.isEmpty
+          ? const Center(child: Text('No routines or alarms yet'))
+          : ListView(
               padding: EdgeInsets.fromLTRB(16, 16, 16, bottomClearance + 16),
-              itemCount: _routines.length,
-              itemBuilder: (context, i) {
-                final r = _routines[i];
-                return _RoutineCard(
-                  routine: r,
-                  onChanged: (val) async {
-                    final updatedRoutine = r.copyWith(enabled: val);
-                    await _saveRoutine(updatedRoutine);
-                  },
-                  onTap: () => _openEditRoutineSheet(i, r),
-                  onDelete: () async {
-                    if (r.id != null) {
-                      await _deleteRoutine(r.id!);
-                    }
-                  },
-                );
-              },
+              children: allItems,
             );
     }
 
@@ -973,29 +1253,62 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               left: 40,
               right: 40,
               bottom: bottomClearance + 24,
-              child: Material(
-                color: Colors.white,
-                elevation: 10,
-                shadowColor: Colors.black.withValues(alpha: 0.12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: _openAddRoutineSheet,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 14),
-                    child: Center(
-                      child: Text(
-                        'Add Routine',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Color(0xFF3D3D3D),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Material(
+                      color: Colors.white,
+                      elevation: 10,
+                      shadowColor: Colors.black.withValues(alpha: 0.12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: _openAddRoutineSheet,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Center(
+                            child: Text(
+                              'Add Routine',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: Color(0xFF3D3D3D),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Material(
+                      color: Colors.white,
+                      elevation: 10,
+                      shadowColor: Colors.black.withValues(alpha: 0.12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: _openAddAlarmSheet,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Center(
+                            child: Text(
+                              'Add Alarm',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: Color(0xFF3D3D3D),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -1141,6 +1454,159 @@ class _RoutineCard extends StatelessWidget {
                           onPressed: () {
                             Navigator.pop(context);
                             onDelete!();
+                          },
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+          child: card,
+        ),
+      ),
+    );
+  }
+}
+
+class _AlarmCard extends StatelessWidget {
+  final Alarm alarm;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback? onTap;
+  final VoidCallback? onDelete;
+  final bool isDisabledBySunriseSync;
+
+  const _AlarmCard({
+    required this.alarm,
+    required this.onChanged,
+    this.onTap,
+    this.onDelete,
+    this.isDisabledBySunriseSync = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isEffectivelyDisabled = isDisabledBySunriseSync || !alarm.enabled;
+    final String wakeUpTime = alarm.wakeUpTime.format(context);
+    final String startTime = alarm.startTime.format(context);
+    final String duration = '${alarm.durationMinutes}min';
+
+    final card = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isEffectivelyDisabled
+              ? [const Color(0xFFE5E5E5), const Color(0xFFD4D4D4)]
+              : [const Color(0xFFFDFDFD), const Color(0xFFE3E3E3)],
+        ),
+        boxShadow: const [
+          BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
+          BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFFFFB347).withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.9), 
+                  const Color(0xFFFFB347).withValues(alpha: isEffectivelyDisabled ? 0.1 : 0.25)
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFB347).withValues(alpha: isEffectivelyDisabled ? 0.15 : 0.45),
+                  blurRadius: 12,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.alarm,
+              color: isEffectivelyDisabled ? Colors.grey.shade400 : const Color(0xFF2F2F2F),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  alarm.name,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF2F2F2F).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$duration ramp-up to $wakeUpTime',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF666666).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                  ),
+                ),
+                Text(
+                  'Starts at $startTime',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF888888).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!isDisabledBySunriseSync)
+            Switch(
+              value: alarm.enabled,
+              onChanged: onChanged,
+              activeColor: const Color(0xFFFFC049),
+            )
+          else
+            Icon(
+              Icons.lock_outline,
+              color: Colors.grey.shade400,
+              size: 20,
+            ),
+        ],
+      ),
+    );
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: isDisabledBySunriseSync ? null : onTap,
+          onLongPress: isDisabledBySunriseSync || onDelete == null 
+              ? null 
+              : () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Delete Alarm'),
+                      content: Text('Are you sure you want to delete "${alarm.name}"?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          onDelete!();
                           },
                           child: const Text('Delete'),
                         ),
