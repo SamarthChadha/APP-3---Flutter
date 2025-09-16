@@ -1331,8 +1331,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
           content,
           if (!sunriseSunsetEnabled)
             Positioned(
-              left: 40,
-              right: 40,
+              left: 20,
+              right: 20,
               bottom: bottomClearance + 24,
               child: Row(
                 children: [
