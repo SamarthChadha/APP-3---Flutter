@@ -1146,9 +1146,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey,
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.grey,
+        backgroundColor: const Color(0xFFF5F5F5),
         title: const Text(
           'Routines & Alarms',
           style: TextStyle(
