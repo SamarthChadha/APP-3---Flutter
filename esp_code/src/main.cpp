@@ -65,6 +65,14 @@ int alarm_count = 0;
 unsigned long lastScheduleCheck = 0;
 const unsigned long SCHEDULE_CHECK_INTERVAL = 60000; // Check every minute
 
+// ===== Routine state tracking =====
+bool routineActive = false;          // Is a routine currently running?
+bool wasOffBeforeRoutine = false;    // Was the lamp off before routine started?
+int activeRoutineId = -1;            // ID of currently active routine
+int originalBrightness = 8;          // Brightness before routine
+Mode originalMode = MODE_BOTH;       // Mode before routine
+bool originalIsOn = true;            // On/off state before routine
+
 // ===== New simplified control state =====
 enum Mode { MODE_WARM = 0, MODE_WHITE = 1, MODE_BOTH = 2 };
 Mode mode = MODE_BOTH;                 // double-click cycles this
@@ -204,6 +212,13 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
       stateChanged = true;
       Serial.printf("WebSocket: isOn -> %s\n", isOn ? "ON" : "OFF");
     }
+    recognized = true;
+  }
+
+  // Handle state request from app (when reconnecting)
+  if (doc["request_state"].is<bool>() && doc["request_state"].as<bool>()) {
+    sendStateUpdate();
+    Serial.println("WebSocket: sent current state on request");
     recognized = true;
   }
 
@@ -419,6 +434,8 @@ void checkSchedule() {
   int currentMinute = timeinfo.tm_min;
   int currentTime = currentHour * 60 + currentMinute; // Convert to minutes since midnight
   
+  bool foundActiveRoutine = false;
+  
   // Check routines
   for (int i = 0; i < routine_count; i++) {
     if (!routines[i].enabled) continue;
@@ -435,38 +452,80 @@ void checkSchedule() {
     }
     
     if (inTimeRange) {
+      foundActiveRoutine = true;
+      
+      // If this is a new routine starting
+      if (!routineActive || activeRoutineId != routines[i].id) {
+        // Save current state if starting a new routine
+        if (!routineActive) {
+          originalIsOn = isOn;
+          originalBrightness = brightness;
+          originalMode = mode;
+          wasOffBeforeRoutine = !isOn;
+          Serial.printf("Starting routine %d: saved state (isOn=%s, brightness=%d, mode=%d)\n",
+                        routines[i].id, originalIsOn ? "true" : "false", originalBrightness, (int)originalMode);
+        }
+        
+        routineActive = true;
+        activeRoutineId = routines[i].id;
+      }
+      
       // Apply routine settings
       brightness = routines[i].brightness;
       mode = (Mode)routines[i].mode;
-      isOn = true;
+      isOn = true;  // Routine always turns lamp on
       applyOutput();
+      
       Serial.printf("Applied routine %d: brightness=%d, mode=%d\n", 
                     routines[i].id, brightness, (int)mode);
+      sendStateUpdate();
       return; // Only apply one routine at a time
     }
   }
   
-  // Check alarms (sunrise simulation)
-  for (int i = 0; i < alarm_count; i++) {
-    if (!alarms[i].enabled) continue;
+  // If no routine is active now but one was active before
+  if (routineActive && !foundActiveRoutine) {
+    Serial.printf("Routine %d ended: restoring state (isOn=%s, brightness=%d, mode=%d)\n",
+                  activeRoutineId, originalIsOn ? "true" : "false", originalBrightness, (int)originalMode);
     
-    int startTime = alarms[i].start_hour * 60 + alarms[i].start_minute;
-    int wakeTime = alarms[i].wake_hour * 60 + alarms[i].wake_minute;
+    // Restore original state
+    isOn = originalIsOn;
+    brightness = originalBrightness;
+    mode = originalMode;
     
-    if (currentTime >= startTime && currentTime <= wakeTime) {
-      // Calculate progress through alarm (0.0 to 1.0)
-      float progress = (float)(currentTime - startTime) / (float)alarms[i].duration_minutes;
-      progress = constrain(progress, 0.0, 1.0);
+    routineActive = false;
+    activeRoutineId = -1;
+    wasOffBeforeRoutine = false;
+    
+    applyOutput();
+    sendStateUpdate();
+    return;
+  }
+  
+  // Check alarms (sunrise simulation) - only if no routine is active
+  if (!routineActive) {
+    for (int i = 0; i < alarm_count; i++) {
+      if (!alarms[i].enabled) continue;
       
-      // Gradually increase brightness
-      brightness = (int)(progress * 15); // Scale to 0-15
-      mode = MODE_WARM; // Start with warm light for sunrise
-      isOn = true;
-      applyOutput();
+      int startTime = alarms[i].start_hour * 60 + alarms[i].start_minute;
+      int wakeTime = alarms[i].wake_hour * 60 + alarms[i].wake_minute;
       
-      Serial.printf("Alarm %d progress: %.2f, brightness=%d\n", 
-                    alarms[i].id, progress, brightness);
-      return; // Only apply one alarm at a time
+      if (currentTime >= startTime && currentTime <= wakeTime) {
+        // Calculate progress through alarm (0.0 to 1.0)
+        float progress = (float)(currentTime - startTime) / (float)alarms[i].duration_minutes;
+        progress = constrain(progress, 0.0, 1.0);
+        
+        // Gradually increase brightness
+        brightness = (int)(progress * 15); // Scale to 0-15
+        mode = MODE_WARM; // Start with warm light for sunrise
+        isOn = true;
+        applyOutput();
+        
+        Serial.printf("Alarm %d progress: %.2f, brightness=%d\n", 
+                      alarms[i].id, progress, brightness);
+        sendStateUpdate();
+        return; // Only apply one alarm at a time
+      }
     }
   }
 }

@@ -36,6 +36,16 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadStateFromDatabase();
     
+    // Listen for ESP connection changes
+    EspConnection.I.connection.listen((isConnected) {
+      if (isConnected) {
+        // When ESP reconnects, request its current state
+        Timer(const Duration(milliseconds: 1000), () {
+          EspConnection.I.requestCurrentState();
+        });
+      }
+    });
+    
     // Listen for state updates from ESP32
     _stateSubscription = EspConnection.I.stateUpdates.listen((state) {
       setState(() {
@@ -44,8 +54,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _tempK = state.flutterTemperature;
       });
       
-      // Save state when ESP updates
+      // Save state when ESP updates (sync ESP state to database)
       _saveStateToDatabase();
+      print('Synced ESP state to app: isOn=${state.isOn}, brightness=${state.brightness}, mode=${state.mode}');
     });
   }
 

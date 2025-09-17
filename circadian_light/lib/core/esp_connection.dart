@@ -120,6 +120,11 @@ class EspConnection {
         onDone: () => _handleDisconnect(retry),
         cancelOnError: true,
       );
+      
+      // Request current state from ESP after successful connection
+      Timer(const Duration(milliseconds: 500), () {
+        requestCurrentState();
+      });
     } catch (_) {
       _handleDisconnect(retry);
     } finally {
@@ -186,9 +191,12 @@ class EspConnection {
 
   // Firmware JSON protocol (see ESP32 main):
   // { "brightness": 0..15, "mode": 0..2, "on": true/false }
-  void setBrightness(int value) => send({'brightness': value.clamp(0, 15)});
+  void setBrightness(int value) => send({'brightness': value.clamp(1, 15)}); // Min 1 instead of 0
   void setMode(int value) => send({'mode': value.clamp(0, 2)});
   void setOn(bool on) => send({'on': on});
+  
+  // Request current state from ESP32
+  void requestCurrentState() => send({'request_state': true});
 
   Future<void> close() async {
     _manuallyClosed = true;
