@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Save state when ESP updates (sync ESP state to database)
       _saveStateToDatabase();
-      print('Synced ESP state to app: isOn=${state.isOn}, brightness=${state.brightness}, mode=${state.mode}');
+      debugPrint('Synced ESP state to app: isOn=${state.isOn}, brightness=${state.brightness}, mode=${state.mode}');
     });
   }
 
@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
         EspConnection.I.setMode(_modeFromTemp(_tempK));
       }
     } catch (e) {
-      print('Error loading lamp state: $e');
+      debugPrint('Error loading lamp state: $e');
     }
   }
 
@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       await db.saveLampState(lampState);
     } catch (e) {
-      print('Error saving lamp state: $e');
+      debugPrint('Error saving lamp state: $e');
     }
   }
 
