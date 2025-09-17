@@ -65,6 +65,9 @@ int alarm_count = 0;
 unsigned long lastScheduleCheck = 0;
 const unsigned long SCHEDULE_CHECK_INTERVAL = 60000; // Check every minute
 
+// ===== New simplified control state =====
+enum Mode { MODE_WARM = 0, MODE_WHITE = 1, MODE_BOTH = 2 };
+
 // ===== Routine state tracking =====
 bool routineActive = false;          // Is a routine currently running?
 bool wasOffBeforeRoutine = false;    // Was the lamp off before routine started?
@@ -73,8 +76,6 @@ int originalBrightness = 8;          // Brightness before routine
 Mode originalMode = MODE_BOTH;       // Mode before routine
 bool originalIsOn = true;            // On/off state before routine
 
-// ===== New simplified control state =====
-enum Mode { MODE_WARM = 0, MODE_WHITE = 1, MODE_BOTH = 2 };
 Mode mode = MODE_BOTH;                 // double-click cycles this
 int brightness = 0;                  // 0-15 master brightness (independent of on/off & mode)
 bool isOn = true;                      // single-click toggles this
