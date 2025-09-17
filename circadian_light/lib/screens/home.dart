@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:circadian_light/core/esp_connection.dart';
+import 'package:circadian_light/models/lamp_state.dart';
+import 'package:circadian_light/services/database_service.dart';
 // import 'package:flutter_gl/flutter_gl.dart';
 // import 'package:flutter_3d_controller/'
 
@@ -32,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _loadStateFromDatabase();
     
     // Listen for state updates from ESP32
     _stateSubscription = EspConnection.I.stateUpdates.listen((state) {
@@ -40,7 +43,45 @@ class _HomeScreenState extends State<HomeScreen> {
         _brightness = state.flutterBrightness;
         _tempK = state.flutterTemperature;
       });
+      
+      // Save state when ESP updates
+      _saveStateToDatabase();
     });
+  }
+
+  /// Load saved lamp state from database on startup
+  Future<void> _loadStateFromDatabase() async {
+    try {
+      final lampState = await db.getLampState();
+      setState(() {
+        _isOn = lampState.isOn;
+        _brightness = lampState.flutterBrightness;
+        _tempK = lampState.flutterTemperature;
+      });
+      
+      // Sync loaded state to ESP if connected
+      if (EspConnection.I.isConnected) {
+        EspConnection.I.setOn(_isOn);
+        EspConnection.I.setBrightness(_mapBrightnessTo15(_brightness));
+        EspConnection.I.setMode(_modeFromTemp(_tempK));
+      }
+    } catch (e) {
+      print('Error loading lamp state: $e');
+    }
+  }
+
+  /// Save current lamp state to database
+  Future<void> _saveStateToDatabase() async {
+    try {
+      final lampState = LampState.fromFlutterValues(
+        isOn: _isOn,
+        brightness: _brightness,
+        temperature: _tempK,
+      );
+      await db.saveLampState(lampState);
+    } catch (e) {
+      print('Error saving lamp state: $e');
+    }
   }
 
   @override
@@ -52,9 +93,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   int _mapBrightnessTo15(double v) {
-    // Round to nearest 0..15; ensure at least 1 when on and >0 visually
-    final val = (v.clamp(0.0, 1.0) * 15).round();
-    return val.clamp(0, 15);
+    // Map 0.0-1.0 to 1-15 (minimum brightness 1 when LEDs are on)
+    final val = ((v.clamp(0.0, 1.0) * 14) + 1).round();
+    return val.clamp(1, 15);
   }
 
   int _modeFromTemp(double k) {
@@ -117,6 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     setState(() => _isOn = !_isOn);
                     EspConnection.I.setOn(_isOn);
+                    _saveStateToDatabase(); // Save state when user toggles
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -217,6 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             _tempTimer?.cancel();
                             _tempTimer = Timer(const Duration(milliseconds: 80), () {
                               EspConnection.I.setMode(_modeFromTemp(_tempK));
+                              _saveStateToDatabase(); // Save state when user changes temperature
                             });
                           },
                         ),
@@ -276,6 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             _brightTimer = Timer(const Duration(milliseconds: 60), () {
                               final b = _mapBrightnessTo15(_brightness);
                               EspConnection.I.setBrightness(b);
+                              _saveStateToDatabase(); // Save state when user changes brightness
                             });
                           },
                         ),

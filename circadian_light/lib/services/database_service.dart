@@ -7,6 +7,7 @@ import 'package:logging/logging.dart';
 import '../models/routine.dart';
 import '../models/alarm.dart';
 import '../models/user_settings.dart';
+import '../models/lamp_state.dart';
 import 'esp_sync_service.dart';
 
 class DatabaseService {
@@ -58,6 +59,9 @@ class DatabaseService {
     
     // Create alarms table
     await db.execute(Alarm.createTableSql);
+    
+    // Create lamp state table
+    await db.execute(LampState.createTableSql);
     
     // Create app metadata table for tracking versions, etc.
     await db.execute('''
@@ -114,6 +118,14 @@ class DatabaseService {
           'updated_at': DateTime.now().millisecondsSinceEpoch,
         });
         _logger.info('App metadata table created successfully');
+      }
+
+      // Check if lamp_state table exists
+      final lampStateTableExists = await _tableExists(db, 'lamp_state');
+      if (!lampStateTableExists) {
+        _logger.warning('Lamp state table missing, creating it...');
+        await db.execute(LampState.createTableSql);
+        _logger.info('Lamp state table created successfully');
       }
     } catch (e) {
       _logger.severe('Error ensuring tables exist: $e');
@@ -398,6 +410,50 @@ class DatabaseService {
   Future<int> getInt(String key, {int defaultValue = 0}) async {
     final prefs = await preferences;
     return prefs.getInt(key) ?? defaultValue;
+  }
+
+  // ==================== LAMP STATE OPERATIONS ====================
+
+  /// Save the current lamp state to database
+  Future<void> saveLampState(LampState state) async {
+    final db = await database;
+    
+    // Check if a lamp state record exists
+    final existing = await db.query(LampState.tableName, limit: 1);
+    
+    if (existing.isEmpty) {
+      // Insert new record
+      await db.insert(LampState.tableName, state.toJson());
+    } else {
+      // Update existing record (there should only be one)
+      await db.update(
+        LampState.tableName,
+        state.toJson(),
+        where: 'id = ?',
+        whereArgs: [existing.first['id']],
+      );
+    }
+    
+    _logger.info('Saved lamp state: $state');
+  }
+
+  /// Load the current lamp state from database
+  Future<LampState> getLampState() async {
+    final db = await database;
+    
+    final List<Map<String, dynamic>> maps = await db.query(
+      LampState.tableName,
+      limit: 1,
+    );
+    
+    if (maps.isNotEmpty) {
+      return LampState.fromJson(maps.first);
+    }
+    
+    // Return default state if none exists
+    final defaultState = LampState();
+    await saveLampState(defaultState); // Save default state
+    return defaultState;
   }
 
   /// Save a simple double preference

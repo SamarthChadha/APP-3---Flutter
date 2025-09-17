@@ -113,9 +113,10 @@ void applyOutput() {
     return;
   }
 
-  // When ON: compute channel values based on mode
-  // Invert brightness: 0 becomes 15, 15 becomes 0 (for correct LED behavior)
-  int invertedBrightness = 15 - brightness;
+  // When ON: ensure minimum brightness is 1, compute channel values based on mode
+  int safeBrightness = max(1, brightness); // Ensure minimum brightness of 1 when on
+  // Invert brightness: 1 becomes 14, 15 becomes 0 (for correct LED behavior)
+  int invertedBrightness = 15 - safeBrightness;
   
   switch (mode) {
     case MODE_WARM:   // mode 0
@@ -135,8 +136,8 @@ void applyOutput() {
 
   ledcWrite(0, ch0);
   ledcWrite(1, ch1);
-  Serial.printf("applyOutput: isOn=%d mode=%d brightness=%d inverted=%d -> ch0=%d ch1=%d\n",
-                (int)isOn, (int)mode, brightness, invertedBrightness, ch0, ch1);
+  Serial.printf("applyOutput: isOn=%d mode=%d brightness=%d safeBrightness=%d inverted=%d -> ch0=%d ch1=%d\n",
+                (int)isOn, (int)mode, brightness, safeBrightness, invertedBrightness, ch0, ch1);
 }
 
 void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
@@ -173,10 +174,17 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
   bool stateChanged = false;
   if (doc["brightness"].is<int>()) {    // brightness control from app
     int newBrightness = constrain(doc["brightness"].as<int>(), 0, 15);
+    
+    // If lamp is on, enforce minimum brightness of 1
+    if (isOn && newBrightness < 1) {
+      newBrightness = 1;
+    }
+    
     if (newBrightness != brightness) {
       brightness = newBrightness;
       stateChanged = true;
-      Serial.printf("WebSocket: brightness -> %d\n", brightness);
+      Serial.printf("WebSocket: brightness -> %d (enforced min for isOn=%s)\n", 
+                    brightness, isOn ? "true" : "false");
     }
     recognized = true;
   }
@@ -514,17 +522,23 @@ void setup() {
 }
 
 void loop() {
-  // --- Rotary encoder: adjust master brightness (independent of on/off & mode) ---
+  // --- Rotary encoder: adjust master brightness (minimum 1 when on, 0-15 when off) ---
   encoder.tick();
   static int lastPos = encoder.getPosition();
   int pos = encoder.getPosition();
   if (pos != lastPos) {
     int delta = pos - lastPos;
     lastPos = pos;
-    int newBrightness = constrain(brightness + delta * 1, 0, 15); // step = 1
+    
+    // Determine brightness limits based on lamp on/off state
+    int minBrightness = isOn ? 1 : 0;  // Minimum 1 when on, can be 0 when off
+    int maxBrightness = 15;
+    
+    int newBrightness = constrain(brightness + delta * 1, minBrightness, maxBrightness);
     if (newBrightness != brightness) {
       brightness = newBrightness;
-      Serial.printf("Brightness -> %d\n", brightness);
+      Serial.printf("Brightness -> %d (limits: %d-%d, isOn: %s)\n", 
+                    brightness, minBrightness, maxBrightness, isOn ? "true" : "false");
       applyOutput();
       sendStateUpdate(); // Send update to Flutter app
     }

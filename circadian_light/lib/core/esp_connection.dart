@@ -25,7 +25,12 @@ class EspState {
   }
 
   // Convert to Flutter UI values
-  double get flutterBrightness => brightness / 15.0; // 0.0-1.0
+  double get flutterBrightness {
+    // Map ESP brightness 1-15 to Flutter 0.0-1.0
+    // Ensure brightness of 1 maps to 0.0 for UI slider
+    if (brightness <= 1) return 0.0;
+    return (brightness - 1) / 14.0; // Map 1-15 to 0.0-1.0
+  }
   double get flutterTemperature {
     // Map ESP32 modes to temperature values
     switch (mode) {
