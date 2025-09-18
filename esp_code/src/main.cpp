@@ -5,8 +5,8 @@
 #include <RotaryEncoder.h>
 #include <time.h>
 
-const char* SSID     = "MAGS LAB";
-const char* PASSWORD = "vXJC@(Lw";
+// const char* SSID     = "MAGS LAB";
+// const char* PASSWORD = "vXJC@(Lw";
 
 // const char* SSID     = "HUAWEI-2.4G-g3AY";
 // const char* PASSWORD = "FW9ta64r";
@@ -534,28 +534,148 @@ void checkSchedule() {
 void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(ROTARY_BTN, INPUT_PULLUP);
+
+  // Check if button is held at startup to reset WiFi
+  delay(100); // Give button time to settle
+  if (digitalRead(ROTARY_BTN) == LOW) { // Button pressed at startup
+    Serial.println("Button held at startup - clearing WiFi credentials...");
+    WiFi.disconnect(true, true); // Clear saved WiFi credentials
+    delay(1000);
+    Serial.println("WiFi credentials cleared. Release button to continue.");
+    while (digitalRead(ROTARY_BTN) == LOW) {
+      delay(100); // Wait for button release
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); // Blink LED
+    }
+  }
 
   // two PWM channels, 8-bit duty
   ledcSetup(0, 5000, 4); ledcAttachPin(LED_A_PIN, 0);
   ledcSetup(1, 5000, 4); ledcAttachPin(LED_B_PIN, 1);
 
+  // Try to connect with saved WiFi credentials first
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  WiFi.setAutoConnect(true);
+  WiFi.begin(); // Attempt to connect with previously saved credentials
 
-  WiFi.begin(SSID, PASSWORD);
-  Serial.print("WiFi…");
+  Serial.print("Checking for saved WiFi credentials...");
   unsigned long wifiStart = millis();
-  const unsigned long wifiTimeout = 5000; // 5 seconds timeout
+  const unsigned long wifiTimeout = 10000; // 10 seconds timeout
+
   while (WiFi.status() != WL_CONNECTED && millis() - wifiStart < wifiTimeout) {
     delay(500);
     Serial.print(".");
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); // Blink LED while connecting
   }
+
   if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("\nConnected to WiFi! IP: ");
     Serial.println(WiFi.localIP());
-    
+    digitalWrite(LED_BUILTIN, HIGH); // LED on when connected
+
     // Initialize time
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     Serial.println("NTP time initialized");
   } else {
-    Serial.println("\nWiFi not connected, continuing without WiFi.");
+    Serial.println("\nNo saved WiFi found. Starting SmartConfig...");
+
+    // Start SmartConfig with type ESPTOUCH_V2 for better compatibility
+    WiFi.beginSmartConfig(SC_TYPE_ESPTOUCH_V2);
+
+    Serial.println("Waiting for SmartConfig from mobile app...");
+    Serial.println("Use the Flutter app to send WiFi credentials");
+    Serial.println("\nSmartConfig Status: WAITING FOR CREDENTIALS");
+
+    // Wait for SmartConfig to complete with timeout
+    unsigned long smartConfigStart = millis();
+    const unsigned long smartConfigTimeout = 120000; // 120 seconds timeout for better reliability
+    bool smartConfigReceived = false;
+
+    while (!smartConfigReceived && millis() - smartConfigStart < smartConfigTimeout) {
+      delay(500);  // Increased delay for stability
+
+      // Check SmartConfig status
+      if (WiFi.smartConfigDone()) {
+        smartConfigReceived = true;
+        Serial.println("\n✓ SmartConfig credentials received!");
+        break;
+      }
+
+      // Fast blink LED during SmartConfig
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+
+      // Print status every 5 seconds
+      if ((millis() - smartConfigStart) % 5000 < 500) {
+        Serial.printf("\n[%lu s] Still waiting for credentials...\n", (millis() - smartConfigStart) / 1000);
+      }
+
+      // Check if connected periodically
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\n✓ Connected during SmartConfig!");
+        smartConfigReceived = true;
+        break;
+      }
+    }
+
+    if (smartConfigReceived) {
+      // Stop SmartConfig first
+      WiFi.stopSmartConfig();
+
+      Serial.println("\nSmartConfig data received, attempting connection...");
+
+      // Get the credentials from SmartConfig (they should be auto-applied)
+      String ssid = WiFi.SSID();
+      String psk = WiFi.psk();
+
+      Serial.print("Received SSID: ");
+      Serial.println(ssid.length() > 0 ? ssid : "(empty)");
+      Serial.print("Received PSK: ");
+      Serial.println(psk.length() > 0 ? "***hidden***" : "(empty)");
+
+      // Force reconnection with received credentials
+      if (ssid.length() > 0) {
+        WiFi.disconnect();
+        delay(100);
+        WiFi.begin(ssid.c_str(), psk.c_str());
+      }
+
+      // Wait for WiFi connection after SmartConfig
+      Serial.println("\nAttempting to connect to WiFi...");
+      wifiStart = millis();
+      int attempts = 0;
+      while (WiFi.status() != WL_CONNECTED && millis() - wifiStart < 30000) { // 30 second timeout
+        delay(500);
+        Serial.print(".");
+        attempts++;
+        if (attempts % 20 == 0) {
+          Serial.printf("\nStatus: %d (0=IDLE, 1=NO_SSID, 3=CONNECTED, 4=CONNECT_FAILED, 5=CONNECTION_LOST, 6=DISCONNECTED)\n", WiFi.status());
+        }
+      }
+    } else {
+      Serial.println("\n✗ SmartConfig timeout - no credentials received");
+      WiFi.stopSmartConfig();
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.print("\nConnected to WiFi! IP: ");
+      Serial.println(WiFi.localIP());
+      Serial.print("SSID: ");
+      Serial.println(WiFi.SSID());
+      digitalWrite(LED_BUILTIN, HIGH); // LED on when connected
+
+      // Initialize time
+      configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+      Serial.println("NTP time initialized");
+    } else {
+      Serial.println("\nFailed to connect with SmartConfig credentials.");
+      Serial.println("Please reset the device and try again.");
+      digitalWrite(LED_BUILTIN, LOW); // LED off if failed
+
+      // Optionally restart ESP32 to try again
+      delay(5000);
+      ESP.restart();
+    }
   }
 
   // ----- mDNS -----
@@ -571,7 +691,7 @@ void setup() {
   server.addHandler(&ws);
   server.begin();
 
-  pinMode(ROTARY_BTN, INPUT_PULLUP);
+  // ROTARY_BTN already configured at start of setup()
   {
     int idle = digitalRead(ROTARY_BTN);
     Serial.printf("ROTARY_BTN idle read: %d (expect %s when unpressed)\n",

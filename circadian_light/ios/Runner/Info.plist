@@ -39,6 +39,10 @@
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app discovers and controls a local ESP32 light on your Wi‑Fi network and connects to the Dart VM Service for debugging.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs location access to configure ESP32 devices on your local network using SmartConfig.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs location access to configure ESP32 devices on your local network using SmartConfig.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
