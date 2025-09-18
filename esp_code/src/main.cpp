@@ -76,6 +76,14 @@ int originalBrightness = 8;          // Brightness before routine
 Mode originalMode = MODE_BOTH;       // Mode before routine
 bool originalIsOn = true;            // On/off state before routine
 
+// ===== Alarm state tracking =====
+bool alarmActive = false;            // Is an alarm currently running?
+bool wasOffBeforeAlarm = false;      // Was the lamp off before alarm started?
+int activeAlarmId = -1;              // ID of currently active alarm
+int alarmOriginalBrightness = 8;     // Brightness before alarm
+Mode alarmOriginalMode = MODE_BOTH;  // Mode before alarm
+bool alarmOriginalIsOn = true;       // On/off state before alarm
+
 Mode mode = MODE_BOTH;                 // double-click cycles this
 int brightness = 0;                  // 0-15 master brightness (independent of on/off & mode)
 bool isOn = true;                      // single-click toggles this
@@ -91,6 +99,7 @@ const bool BUTTON_ACTIVE_LOW   = true; // set false if wired active-high
 void handleRoutineSync(JsonDocument& doc);
 void handleAlarmSync(JsonDocument& doc);
 void handleFullSync(JsonDocument& doc);
+void handleTimeSync(JsonDocument& doc);
 void sendSyncResponse(const char* type, bool success, const char* message);
 
 // ===== Helpers =====
@@ -239,6 +248,10 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
       handleFullSync(doc);
       recognized = true;
     }
+    else if (strcmp(msgType, "time_sync") == 0) {
+      handleTimeSync(doc);
+      recognized = true;
+    }
   }
 
   if (stateChanged) {
@@ -282,10 +295,18 @@ void handleRoutineSync(JsonDocument& doc) {
       routines[index].brightness = data["brightness"];
       routines[index].mode = data["mode"];
       
-      Serial.printf("Routine %d synced\n", id);
+      Serial.printf("📅 ROUTINE SYNC: ID=%d, Name=%s\n", id, data["name"].as<const char*>());
+      Serial.printf("  - Enabled: %s\n", routines[index].enabled ? "YES" : "NO");
+      Serial.printf("  - Time: %02d:%02d to %02d:%02d\n", 
+                    routines[index].start_hour, routines[index].start_minute,
+                    routines[index].end_hour, routines[index].end_minute);
+      Serial.printf("  - Brightness: %d (1-15 scale)\n", routines[index].brightness);
+      Serial.printf("  - Mode: %d (0=warm, 1=white, 2=both)\n", routines[index].mode);
+      Serial.printf("  - Total routines: %d/%d\n", routine_count, MAX_ROUTINES);
+      
       sendSyncResponse("routine_sync_response", true, "Routine synced successfully");
     } else {
-      Serial.println("Failed to sync routine: storage full");
+      Serial.println("📅 ERROR: Failed to sync routine: storage full");
       sendSyncResponse("routine_sync_response", false, "Storage full");
     }
   }
@@ -424,10 +445,54 @@ void sendSyncResponse(const char* type, bool success, const char* message) {
   Serial.printf("Sent sync response: %s\n", jsonString.c_str());
 }
 
+void handleTimeSync(JsonDocument& doc) {
+  if (doc["timestamp"].is<long long>() && doc["timezone_offset"].is<int>()) {
+    long long timestamp = doc["timestamp"];
+    int timezoneOffset = doc["timezone_offset"];
+    
+    // Convert milliseconds to seconds
+    time_t timeSeconds = timestamp / 1000;
+    
+    // Set system time
+    struct timeval tv;
+    tv.tv_sec = timeSeconds;
+    tv.tv_usec = 0;
+    settimeofday(&tv, NULL);
+    
+    // Update timezone if provided
+    if (timezoneOffset != 0) {
+      // ESP32 timezone configuration would go here if needed
+      // For now, we'll work with the timestamp as received
+    }
+    
+    Serial.printf("🕐 TIME SYNC: timestamp=%lld, offset=%d seconds\n", timestamp, timezoneOffset);
+    
+    // Print current time for verification
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+      Serial.printf("🕐 CURRENT TIME: %04d-%02d-%02d %02d:%02d:%02d\n",
+                    timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+                    timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+    } else {
+      Serial.println("🕐 ERROR: Failed to get local time after sync");
+    }
+    
+    sendSyncResponse("time_sync_response", true, "Time synchronized successfully");
+  } else {
+    Serial.println("🕐 ERROR: Invalid time sync data");
+    sendSyncResponse("time_sync_response", false, "Invalid time data");
+  }
+}
+
 void checkSchedule() {
   // Only check schedule if we have a valid time
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
+    static unsigned long lastTimeWarning = 0;
+    if (millis() - lastTimeWarning > 30000) { // Warn every 30 seconds
+      Serial.println("⚠️  SCHEDULE: No valid time available for schedule checking");
+      lastTimeWarning = millis();
+    }
     return; // No valid time available
   }
   
@@ -435,11 +500,29 @@ void checkSchedule() {
   int currentMinute = timeinfo.tm_min;
   int currentTime = currentHour * 60 + currentMinute; // Convert to minutes since midnight
   
+  // Debug: Print current time every minute
+  static int lastMinute = -1;
+  if (currentMinute != lastMinute) {
+    Serial.printf("🕐 SCHEDULE CHECK: Current time %02d:%02d (%d minutes), Routines: %d, Alarms: %d\n", 
+                  currentHour, currentMinute, currentTime, routine_count, alarm_count);
+    lastMinute = currentMinute;
+  }
+  
   bool foundActiveRoutine = false;
   
   // Check routines
   for (int i = 0; i < routine_count; i++) {
-    if (!routines[i].enabled) continue;
+    if (!routines[i].enabled) {
+      // Debug: Show disabled routines occasionally
+      static unsigned long lastDisabledLog = 0;
+      if (millis() - lastDisabledLog > 60000) { // Every minute
+        Serial.printf("📅 Routine %d: DISABLED (%02d:%02d-%02d:%02d)\n", 
+                      routines[i].id, routines[i].start_hour, routines[i].start_minute,
+                      routines[i].end_hour, routines[i].end_minute);
+        lastDisabledLog = millis();
+      }
+      continue;
+    }
     
     int startTime = routines[i].start_hour * 60 + routines[i].start_minute;
     int endTime = routines[i].end_hour * 60 + routines[i].end_minute;
@@ -450,6 +533,16 @@ void checkSchedule() {
       inTimeRange = (currentTime >= startTime && currentTime <= endTime);
     } else {
       inTimeRange = (currentTime >= startTime || currentTime <= endTime);
+    }
+    
+    // Debug: Show routine evaluation
+    static unsigned long lastRoutineLog = 0;
+    if (millis() - lastRoutineLog > 60000) { // Every minute
+      Serial.printf("📅 Routine %d: %02d:%02d-%02d:%02d (start=%d, end=%d, current=%d) -> %s\n", 
+                    routines[i].id, routines[i].start_hour, routines[i].start_minute,
+                    routines[i].end_hour, routines[i].end_minute,
+                    startTime, endTime, currentTime, inTimeRange ? "ACTIVE" : "inactive");
+      lastRoutineLog = millis();
     }
     
     if (inTimeRange) {
@@ -505,6 +598,8 @@ void checkSchedule() {
   
   // Check alarms (sunrise simulation) - only if no routine is active
   if (!routineActive) {
+    bool foundActiveAlarm = false;
+    
     for (int i = 0; i < alarm_count; i++) {
       if (!alarms[i].enabled) continue;
       
@@ -512,6 +607,24 @@ void checkSchedule() {
       int wakeTime = alarms[i].wake_hour * 60 + alarms[i].wake_minute;
       
       if (currentTime >= startTime && currentTime <= wakeTime) {
+        foundActiveAlarm = true;
+        
+        // If this is a new alarm starting
+        if (!alarmActive || activeAlarmId != alarms[i].id) {
+          // Save current state if starting a new alarm
+          if (!alarmActive) {
+            alarmOriginalIsOn = isOn;
+            alarmOriginalBrightness = brightness;
+            alarmOriginalMode = mode;
+            wasOffBeforeAlarm = !isOn;
+            Serial.printf("Starting alarm %d: saved state (isOn=%s, brightness=%d, mode=%d)\n",
+                          alarms[i].id, alarmOriginalIsOn ? "true" : "false", alarmOriginalBrightness, (int)alarmOriginalMode);
+          }
+          
+          alarmActive = true;
+          activeAlarmId = alarms[i].id;
+        }
+        
         // Calculate progress through alarm (0.0 to 1.0)
         float progress = (float)(currentTime - startTime) / (float)alarms[i].duration_minutes;
         progress = constrain(progress, 0.0, 1.0);
@@ -527,6 +640,25 @@ void checkSchedule() {
         sendStateUpdate();
         return; // Only apply one alarm at a time
       }
+    }
+    
+    // If no alarm is active now but one was active before
+    if (alarmActive && !foundActiveAlarm) {
+      Serial.printf("Alarm %d ended: restoring state (isOn=%s, brightness=%d, mode=%d)\n",
+                    activeAlarmId, alarmOriginalIsOn ? "true" : "false", alarmOriginalBrightness, (int)alarmOriginalMode);
+      
+      // Restore original state
+      isOn = alarmOriginalIsOn;
+      brightness = alarmOriginalBrightness;
+      mode = alarmOriginalMode;
+      
+      alarmActive = false;
+      activeAlarmId = -1;
+      wasOffBeforeAlarm = false;
+      
+      applyOutput();
+      sendStateUpdate();
+      return;
     }
   }
 }
