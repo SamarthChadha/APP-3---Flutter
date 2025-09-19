@@ -5,11 +5,11 @@
 #include <RotaryEncoder.h>
 #include <time.h>
 
-const char* SSID     = "MAGS LAB";
-const char* PASSWORD = "vXJC@(Lw";
+// const char* SSID     = "MAGS LAB";
+// const char* PASSWORD = "vXJC@(Lw";
 
-// const char* SSID     = "HUAWEI-2.4G-g3AY";
-// const char* PASSWORD = "FW9ta64r";
+const char* SSID     = "HUAWEI-2.4G-g3AY";
+const char* PASSWORD = "FW9ta64r";
 
 
 #define LED_BUILTIN 2   // builtin LED (GPIO2)
@@ -23,10 +23,12 @@ const char* PASSWORD = "vXJC@(Lw";
 const char* ESP_IP = "10.210.232.242";   // update if the ESP32 reboots with a new IP
 const char* WS_URL = "ws://10.210.232.242/ws";
 
-// Time zone configuration (adjust for your location)
+// Time zone configuration for Auckland, New Zealand
 const char* ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = 0;  // GMT offset in seconds
-const int daylightOffset_sec = 3600;  // Daylight offset in seconds
+// POSIX timezone string for New Zealand (automatically handles NZST/NZDT transitions)
+// NZST-12: Standard time UTC+12, NZDT: Daylight time UTC+13
+// M9.5.0: DST starts last Sunday of September, M4.1.0: DST ends first Sunday of April
+const char* timezone = "NZST-12NZDT,M9.5.0,M4.1.0";
 
 // Create AsyncWebServer instance on port 80
 AsyncWebServer server(80);
@@ -446,40 +448,37 @@ void sendSyncResponse(const char* type, bool success, const char* message) {
 }
 
 void handleTimeSync(JsonDocument& doc) {
-  if (doc["timestamp"].is<long long>() && doc["timezone_offset"].is<int>()) {
+  if (doc["timestamp"].is<long long>()) {
     long long timestamp = doc["timestamp"];
-    int timezoneOffset = doc["timezone_offset"];
     
-    // Convert milliseconds to seconds
-    time_t timeSeconds = timestamp / 1000;
+    // Convert milliseconds to seconds (UTC timestamp)
+    time_t utcTimeSeconds = timestamp / 1000;
     
-    // Set system time
+    // Print UTC time first
+    struct tm* utcTime = gmtime(&utcTimeSeconds);
+    Serial.printf("🕐 RECEIVED UTC: %04d-%02d-%02d %02d:%02d:%02d\n",
+                  utcTime->tm_year + 1900, utcTime->tm_mon + 1, utcTime->tm_mday,
+                  utcTime->tm_hour, utcTime->tm_min, utcTime->tm_sec);
+    
+    // Set system time with UTC time (timezone conversion handled automatically by configTzTime)
     struct timeval tv;
-    tv.tv_sec = timeSeconds;
+    tv.tv_sec = utcTimeSeconds;
     tv.tv_usec = 0;
     settimeofday(&tv, NULL);
     
-    // Update timezone if provided
-    if (timezoneOffset != 0) {
-      // ESP32 timezone configuration would go here if needed
-      // For now, we'll work with the timestamp as received
-    }
-    
-    Serial.printf("🕐 TIME SYNC: timestamp=%lld, offset=%d seconds\n", timestamp, timezoneOffset);
-    
-    // Print current time for verification
+    // Print what the ESP32 thinks the time is after setting
     struct tm timeinfo;
     if (getLocalTime(&timeinfo)) {
-      Serial.printf("🕐 CURRENT TIME: %04d-%02d-%02d %02d:%02d:%02d\n",
+      Serial.printf("🕐 ESP32 AUCKLAND TIME: %04d-%02d-%02d %02d:%02d:%02d\n",
                     timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
                     timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
     } else {
-      Serial.println("🕐 ERROR: Failed to get local time after sync");
+      Serial.println("🕐 ERROR: Failed to get Auckland local time after sync");
     }
-    
-    sendSyncResponse("time_sync_response", true, "Time synchronized successfully");
+
+    sendSyncResponse("time_sync_response", true, "Time synchronized to Auckland timezone with automatic DST");
   } else {
-    Serial.println("🕐 ERROR: Invalid time sync data");
+    Serial.println("🕐 ERROR: Invalid time sync data - missing timestamp");
     sendSyncResponse("time_sync_response", false, "Invalid time data");
   }
 }
@@ -683,9 +682,18 @@ void setup() {
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println(WiFi.localIP());
     
-    // Initialize time
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-    Serial.println("NTP time initialized");
+    // Initialize time for Auckland, New Zealand with automatic DST handling
+    configTzTime(timezone, ntpServer);
+    Serial.println("NTP time initialized for Auckland with automatic NZST/NZDT transitions");
+    
+    // Wait a bit and show current Auckland time
+    delay(2000);
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+      Serial.printf("🕐 Current Auckland time: %04d-%02d-%02d %02d:%02d:%02d\n",
+                    timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+                    timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+    }
   } else {
     Serial.println("\nWiFi not connected, continuing without WiFi.");
   }

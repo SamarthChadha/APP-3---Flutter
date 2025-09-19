@@ -13,30 +13,35 @@ class EspSyncService {
   static const String _logTag = 'EspSyncService';
 
   /// Send current time to ESP32 for synchronization
-  Future<bool> syncTime() async {
+  Future<void> syncTime() async {
+    if (!EspConnection.I.isConnected) {
+      dev.log('🚫 ESP not connected - cannot sync time', name: _logTag);
+      return;
+    }
+
+    // Get current time in UTC milliseconds
+    final now = DateTime.now().toUtc();
+    final timestamp = now.millisecondsSinceEpoch;
+    
+    // Calculate what Auckland time should be
+    final aucklandTime = now.add(Duration(hours: 13)); // UTC+13 for NZDT
+    
+    dev.log('🕐 TIME SYNC DETAILS:', name: _logTag);
+    dev.log('  UTC Time: ${now.toString()}', name: _logTag);
+    dev.log('  UTC Timestamp: $timestamp', name: _logTag);
+    dev.log('  Expected Auckland Time: ${aucklandTime.toString()}', name: _logTag);
+    dev.log('  Offset: +13 hours (NZDT)', name: _logTag);
+    
+    final message = {
+      'action': 'time_sync',
+      'timestamp': timestamp
+    };
+    
     try {
-      if (!EspConnection.I.isConnected) {
-        dev.log('Cannot sync time: ESP32 not connected', name: _logTag);
-        return false;
-      }
-
-      final now = DateTime.now();
-      final timeData = {
-        'type': 'time_sync',
-        'timestamp': now.millisecondsSinceEpoch,
-        'timezone_offset': now.timeZoneOffset.inSeconds,
-      };
-      
-      EspConnection.I.send(timeData);
-
-      dev.log('🕐 Time sync sent to ESP32:', name: _logTag);
-      dev.log('  - Current time: ${now.toLocal().toString()}', name: _logTag);
-      dev.log('  - Timestamp: ${now.millisecondsSinceEpoch}', name: _logTag);
-      dev.log('  - Timezone offset: ${now.timeZoneOffset.inSeconds} seconds', name: _logTag);
-      return true;
+      EspConnection.I.send(message);
+      dev.log('✅ Time sync sent to ESP32', name: _logTag);
     } catch (e) {
-      dev.log('Failed to sync time: $e', name: _logTag);
-      return false;
+      dev.log('❌ Failed to sync time: $e', name: _logTag);
     }
   }
 
@@ -72,15 +77,15 @@ class EspSyncService {
       dev.log('  - Temperature: ${routine.temperature.toStringAsFixed(0)}K', name: _logTag);
       dev.log('  - Mode: ${_temperatureToMode(routine.temperature)} (${_getModeDescription(_temperatureToMode(routine.temperature))})', name: _logTag);
       
-      // Calculate time until routine starts
-      final now = DateTime.now();
-      final todayStart = DateTime(now.year, now.month, now.day, routine.startTime.hour, routine.startTime.minute);
+      // Calculate time until routine starts (in Auckland timezone)
+      final aucklandNow = DateTime.now().toUtc().add(const Duration(hours: 13)); // UTC+13 for NZDT
+      final todayStart = DateTime(aucklandNow.year, aucklandNow.month, aucklandNow.day, routine.startTime.hour, routine.startTime.minute);
       final tomorrowStart = todayStart.add(const Duration(days: 1));
-      final nextStart = todayStart.isAfter(now) ? todayStart : tomorrowStart;
-      final timeUntilStart = nextStart.difference(now);
+      final nextStart = todayStart.isAfter(aucklandNow) ? todayStart : tomorrowStart;
+      final timeUntilStart = nextStart.difference(aucklandNow);
       
       if (routine.enabled) {
-        dev.log('  - Next start: ${nextStart.toString()} (in ${_formatDuration(timeUntilStart)})', name: _logTag);
+        dev.log('  - Next start: ${nextStart.toString()} NZDT (in ${_formatDuration(timeUntilStart)})', name: _logTag);
       } else {
         dev.log('  - Status: DISABLED - will not run', name: _logTag);
       }
@@ -123,15 +128,15 @@ class EspSyncService {
       dev.log('  - Duration: ${alarm.durationMinutes} minutes', name: _logTag);
       dev.log('  - Mode: Warm light sunrise simulation', name: _logTag);
       
-      // Calculate time until alarm starts
-      final now = DateTime.now();
-      final todayStart = DateTime(now.year, now.month, now.day, alarm.startTime.hour, alarm.startTime.minute);
+      // Calculate time until alarm starts (in Auckland timezone)
+      final aucklandNow = DateTime.now().toUtc().add(const Duration(hours: 13)); // UTC+13 for NZDT
+      final todayStart = DateTime(aucklandNow.year, aucklandNow.month, aucklandNow.day, alarm.startTime.hour, alarm.startTime.minute);
       final tomorrowStart = todayStart.add(const Duration(days: 1));
-      final nextStart = todayStart.isAfter(now) ? todayStart : tomorrowStart;
-      final timeUntilStart = nextStart.difference(now);
+      final nextStart = todayStart.isAfter(aucklandNow) ? todayStart : tomorrowStart;
+      final timeUntilStart = nextStart.difference(aucklandNow);
       
       if (alarm.enabled) {
-        dev.log('  - Next start: ${nextStart.toString()} (in ${_formatDuration(timeUntilStart)})', name: _logTag);
+        dev.log('  - Next start: ${nextStart.toString()} NZDT (in ${_formatDuration(timeUntilStart)})', name: _logTag);
       } else {
         dev.log('  - Status: DISABLED - will not run', name: _logTag);
       }
