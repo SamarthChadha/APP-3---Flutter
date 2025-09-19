@@ -1,15 +1,10 @@
 #include <WiFi.h>
+#include <WiFiProv.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 #include <ESPmDNS.h>
 #include <RotaryEncoder.h>
 #include <time.h>
-
-// const char* SSID     = "MAGS LAB";
-// const char* PASSWORD = "vXJC@(Lw";
-
-const char* SSID     = "HUAWEI-2.4G-g3AY";
-const char* PASSWORD = "FW9ta64r";
 
 
 #define LED_BUILTIN 2   // builtin LED (GPIO2)
@@ -662,6 +657,36 @@ void checkSchedule() {
   }
 }
 
+// WiFi provisioning event handler
+void sysProvEvent(arduino_event_t *sys_event) {
+  switch (sys_event->event_id) {
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+      Serial.print("WiFi connected! IP: ");
+      Serial.println(WiFi.localIP());
+      break;
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      Serial.println("WiFi disconnected");
+      break;
+    case ARDUINO_EVENT_PROV_START:
+      Serial.println("BLE provisioning started");
+      break;
+    case ARDUINO_EVENT_PROV_CRED_RECV:
+      Serial.println("WiFi credentials received");
+      break;
+    case ARDUINO_EVENT_PROV_CRED_SUCCESS:
+      Serial.println("WiFi connection successful");
+      break;
+    case ARDUINO_EVENT_PROV_CRED_FAIL:
+      Serial.println("WiFi connection failed, try again");
+      break;
+    case ARDUINO_EVENT_PROV_END:
+      Serial.println("BLE provisioning ended");
+      break;
+    default:
+      break;
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
@@ -670,16 +695,38 @@ void setup() {
   ledcSetup(0, 5000, 4); ledcAttachPin(LED_A_PIN, 0);
   ledcSetup(1, 5000, 4); ledcAttachPin(LED_B_PIN, 1);
 
-
-  WiFi.begin(SSID, PASSWORD);
-  Serial.print("WiFi…");
+  // WiFi provisioning setup
+  WiFi.begin(); // Start WiFi without credentials - will be provided via provisioning or from NVS
+  WiFi.onEvent(sysProvEvent);
+  
+  // Start BLE provisioning
+  uint8_t uuid[16] = {0xb4, 0xdf, 0x5a, 0x1c, 0x3f, 0x6b, 0xf4, 0xbf, 
+                      0xea, 0x4a, 0x82, 0x03, 0x04, 0x90, 0x1a, 0x02};
+  
+  Serial.println("Starting BLE provisioning...");
+  WiFiProv.beginProvision(WIFI_PROV_SCHEME_BLE, WIFI_PROV_SCHEME_HANDLER_FREE_BLE,
+                          WIFI_PROV_SECURITY_1, "circadian123", "CircadianLight", 
+                          NULL, uuid, true);
+  
+  Serial.println("BLE provisioning started");
+  Serial.println("Use the ESP32 WiFi Provisioning app to connect:");
+  Serial.println("Service Name: CircadianLight");
+  Serial.println("Pop/Password: circadian123");
+  
+  // Print QR code for easy setup
+  WiFiProv.printQR("CircadianLight", "circadian123", "ble");
+  
+  // Wait for WiFi connection
   unsigned long wifiStart = millis();
-  const unsigned long wifiTimeout = 5000; // 5 seconds timeout
+  const unsigned long wifiTimeout = 60000; // 60 seconds timeout for provisioning
   while (WiFi.status() != WL_CONNECTED && millis() - wifiStart < wifiTimeout) {
     delay(500);
     Serial.print(".");
   }
+  
   if (WiFi.status() == WL_CONNECTED) {
+    Serial.println();
+    Serial.print("Connected! IP: ");
     Serial.println(WiFi.localIP());
     
     // Initialize time for Auckland, New Zealand with automatic DST handling
@@ -695,7 +742,7 @@ void setup() {
                     timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
     }
   } else {
-    Serial.println("\nWiFi not connected, continuing without WiFi.");
+    Serial.println("\nWiFi not connected after provisioning timeout, continuing without WiFi.");
   }
 
   // ----- mDNS -----
