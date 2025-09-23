@@ -21,6 +21,10 @@ class RoutinesScreen extends StatefulWidget {
 class _RoutinesScreenState extends State<RoutinesScreen> {
   late final RoutineCore _core;
 
+  // For undo functionality
+  Routine? _recentlyDeletedRoutine;
+  Alarm? _recentlyDeletedAlarm;
+
   @override
   void initState() {
     super.initState();
@@ -58,7 +62,42 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
   Future<void> _deleteRoutine(int id) async {
     try {
+      // Find the routine before deleting
+      final routineToDelete = _core.routines.firstWhere((r) => r.id == id);
+      _recentlyDeletedRoutine = routineToDelete;
+
+      // Delete immediately
       await _core.deleteRoutine(id);
+
+      if (mounted) {
+        // Show undo snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${routineToDelete.name} was deleted'),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () async {
+                if (_recentlyDeletedRoutine != null) {
+                  try {
+                    await _saveRoutine(_recentlyDeletedRoutine!.copyWith(id: null));
+                    _recentlyDeletedRoutine = null;
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error restoring routine: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        ).closed.then((_) {
+          // Clear the stored routine when snackbar is dismissed
+          _recentlyDeletedRoutine = null;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -88,7 +127,42 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
   Future<void> _deleteAlarm(int id) async {
     try {
+      // Find the alarm before deleting
+      final alarmToDelete = _core.alarms.firstWhere((a) => a.id == id);
+      _recentlyDeletedAlarm = alarmToDelete;
+
+      // Delete immediately
       await _core.deleteAlarm(id);
+
+      if (mounted) {
+        // Show undo snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${alarmToDelete.name} was deleted'),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () async {
+                if (_recentlyDeletedAlarm != null) {
+                  try {
+                    await _saveAlarm(_recentlyDeletedAlarm!.copyWith(id: null));
+                    _recentlyDeletedAlarm = null;
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error restoring alarm: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        ).closed.then((_) {
+          // Clear the stored alarm when snackbar is dismissed
+          _recentlyDeletedAlarm = null;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
