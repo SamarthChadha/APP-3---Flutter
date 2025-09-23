@@ -194,28 +194,6 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
           child: InkWell(
             borderRadius: BorderRadius.circular(28),
             onTap: _onTap,
-            onLongPress: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Delete Routine'),
-                  content: Text('Are you sure you want to delete "${widget.routine.name}"?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        widget.onDelete?.call();
-                      },
-                      child: const Text('Delete'),
-                    ),
-                  ],
-                ),
-              );
-            },
             child: card,
           ),
         ),
@@ -279,28 +257,6 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
                     child: InkWell(
                       borderRadius: BorderRadius.circular(28),
                       onTap: _onTap,
-                      onLongPress: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Delete Routine'),
-                            content: Text('Are you sure you want to delete "${widget.routine.name}"?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  widget.onDelete?.call();
-                                },
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
                       child: card,
                     ),
                   ),
