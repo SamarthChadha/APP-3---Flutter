@@ -32,3 +32,6 @@ flutter:
   assets:
     - assets/models/lamp.glb
     - assets/models/Textured_Lamp_Small.glb
+    - assets/textures/Small_Lamp_UVMap_Textured.png
+  shaders:
+    - assets/shaders/lamp_shader.frag

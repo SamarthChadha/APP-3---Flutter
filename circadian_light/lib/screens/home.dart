@@ -4,13 +4,7 @@ import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:circadian_light/core/esp_connection.dart';
 import 'package:circadian_light/models/lamp_state.dart';
 import 'package:circadian_light/services/database_service.dart';
-// import 'package:flutter_gl/flutter_gl.dart';
-// import 'package:flutter_3d_controller/'
-
-
-// void loadMyShader() async {
-//   var program = await FragmentProgram.fromAsset('assets/shaders/lamp_shader.frag');
-// }
+import 'package:circadian_light/widgets/lamp_emission_overlay.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -156,10 +150,23 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               // const Text('Hi This is home Screen'),
               NeumorphicPanel(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.rotationX(3.1416),
-                  child: const Flutter3DViewer(src: 'assets/models/Textured_Lamp_Small.glb'),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Transform(
+                      alignment: Alignment.center,
+                      transform: Matrix4.rotationX(3.1416),
+                      child: const Flutter3DViewer(src: 'assets/models/Textured_Lamp_Small.glb'),
+                    ),
+                    // Emission overlay
+                    Positioned.fill(
+                      child: LampEmissionOverlay(
+                        brightness: _brightness,
+                        temperature: _tempK,
+                        isOn: _isOn,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
