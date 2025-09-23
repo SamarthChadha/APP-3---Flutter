@@ -3,7 +3,7 @@ import 'dart:math' as math;
 
 import '../models/alarm.dart';
 import '../models/routine.dart';
-import '../services/database_service.dart';
+import '../services/storage_service.dart';
 import '../services/esp_sync_service.dart';
 import '../core/esp_connection.dart';
 
@@ -41,14 +41,14 @@ class RoutineCore extends ChangeNotifier {
   }
 
   Future<void> _loadRoutines() async {
-    final items = await db.getAllRoutines();
+    final items = await storage.getAllRoutines();
     _routines
       ..clear()
       ..addAll(items);
   }
 
   Future<void> _loadAlarms() async {
-    final items = await db.getAllAlarms();
+    final items = await storage.getAllAlarms();
     _alarms
       ..clear()
       ..addAll(items);
@@ -61,7 +61,7 @@ class RoutineCore extends ChangeNotifier {
       throw DuplicateRoutineException();
     }
 
-    final id = await db.saveRoutine(routine);
+    final id = await storage.saveRoutine(routine);
     final saved = routine.copyWith(id: id);
 
     final index = _routines.indexWhere((r) => r.id == saved.id);
@@ -81,7 +81,7 @@ class RoutineCore extends ChangeNotifier {
   }
 
   Future<void> deleteRoutine(int id) async {
-    await db.deleteRoutine(id);
+    await storage.deleteRoutine(id);
     _routines.removeWhere((r) => r.id == id);
     notifyListeners();
   }
@@ -93,7 +93,7 @@ class RoutineCore extends ChangeNotifier {
       throw DuplicateAlarmException();
     }
 
-    final id = await db.saveAlarm(alarm);
+    final id = await storage.saveAlarm(alarm);
     final saved = alarm.copyWith(id: id);
     final index = _alarms.indexWhere((a) => a.id == saved.id);
     if (index >= 0) {
@@ -112,7 +112,7 @@ class RoutineCore extends ChangeNotifier {
   }
 
   Future<void> deleteAlarm(int id) async {
-    await db.deleteAlarm(id);
+    await storage.deleteAlarm(id);
     _alarms.removeWhere((a) => a.id == id);
     notifyListeners();
   }

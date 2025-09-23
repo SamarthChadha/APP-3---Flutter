@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class Alarm {
-  final int? id; // Database ID
+  final int? id;
   final String name;
   final TimeOfDay wakeUpTime;
   final int durationMinutes; // 10, 20, or 30
@@ -47,7 +47,7 @@ class Alarm {
         updatedAt: updatedAt ?? DateTime.now(),
       );
 
-  // Convert to JSON for database storage
+  // Convert to JSON for storage
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -61,7 +61,7 @@ class Alarm {
     };
   }
 
-  // Create from JSON/database row
+  // Create from JSON
   factory Alarm.fromJson(Map<String, dynamic> json) {
     return Alarm(
       id: json['id'] as int?,
@@ -77,21 +77,6 @@ class Alarm {
     );
   }
 
-  // Database table schema
-  static const String tableName = 'alarms';
-  
-  static const String createTableSql = '''
-    CREATE TABLE $tableName (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      wake_up_hour INTEGER NOT NULL,
-      wake_up_minute INTEGER NOT NULL,
-      duration_minutes INTEGER NOT NULL,
-      enabled INTEGER NOT NULL DEFAULT 1,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-  ''';
 
   @override
   bool operator ==(Object other) =>

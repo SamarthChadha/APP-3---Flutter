@@ -5,7 +5,7 @@ import 'screens/routines.dart';
 import 'screens/settings.dart';
 import 'core/esp_connection.dart';
 import 'core/sunrise_sunset_manager.dart';
-import 'services/database_service.dart';
+import 'services/storage_service.dart';
 import 'services/esp_sync_service.dart';
 
 void main() {
@@ -52,10 +52,10 @@ class _MainAppState extends State<MainApp> {
     try {
       _logger.info('Starting app initialization...');
       
-      // Initialize database first - this is critical for app functionality
-      _logger.info('Initializing database...');
-      await db.initialize();
-      _logger.info('Database initialized successfully');
+      // Initialize storage first - this is critical for app functionality
+      _logger.info('Initializing storage...');
+      await storage.initialize();
+      _logger.info('Storage initialized successfully');
       
       // Start ESP connection - this is optional, app should work without it
       _logger.info('Starting ESP connection...');

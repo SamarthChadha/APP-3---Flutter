@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/provisioning_screen.dart';
 import '../core/esp_connection.dart';
 import '../core/sunrise_sunset_manager.dart';
-import '../services/database_service.dart';
+import '../services/storage_service.dart';
 import '../models/user_settings.dart';
 import 'shared_prefs_test.dart';
 
@@ -25,8 +25,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     try {
-      await db.initialize();
-      final settings = await db.getUserSettings();
+      await storage.initialize();
+      final settings = await storage.getUserSettings();
       _checkConnection();
       
       setState(() {
@@ -55,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final updatedSettings = _userSettings!.copyWith(
           sunriseSunsetEnabled: _sunriseSunsetEnabled,
         );
-        await db.saveUserSettings(updatedSettings);
+        await storage.saveUserSettings(updatedSettings);
         setState(() {
           _userSettings = updatedSettings;
         });

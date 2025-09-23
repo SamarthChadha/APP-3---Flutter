@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class Routine {
-  final int? id; // Database ID
+  final int? id;
   final String name;
   final TimeOfDay startTime;
   final TimeOfDay endTime;
@@ -51,7 +51,7 @@ class Routine {
         updatedAt: updatedAt ?? DateTime.now(),
       );
 
-  // Convert to JSON for database storage
+  // Convert to JSON for storage
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -69,7 +69,7 @@ class Routine {
     };
   }
 
-  // Create from JSON/database row
+  // Create from JSON
   factory Routine.fromJson(Map<String, dynamic> json) {
     return Routine(
       id: json['id'] as int?,
@@ -91,25 +91,6 @@ class Routine {
     );
   }
 
-  // Database table schema
-  static const String tableName = 'routines';
-  
-  static const String createTableSql = '''
-    CREATE TABLE $tableName (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      start_hour INTEGER NOT NULL,
-      start_minute INTEGER NOT NULL,
-      end_hour INTEGER NOT NULL,
-      end_minute INTEGER NOT NULL,
-      color_value INTEGER NOT NULL,
-      brightness REAL NOT NULL,
-      temperature REAL NOT NULL,
-      enabled INTEGER NOT NULL DEFAULT 1,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-  ''';
 
   @override
   bool operator ==(Object other) =>

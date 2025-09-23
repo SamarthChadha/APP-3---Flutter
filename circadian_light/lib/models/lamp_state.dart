@@ -111,19 +111,6 @@ class LampState {
     );
   }
 
-  // Create table SQL for database
-  static const String tableName = 'lamp_state';
-  
-  static const String createTableSql = '''
-    CREATE TABLE $tableName (
-      id INTEGER PRIMARY KEY,
-      is_on INTEGER NOT NULL DEFAULT 1,
-      brightness INTEGER NOT NULL DEFAULT 8,
-      mode INTEGER NOT NULL DEFAULT 2,
-      temperature REAL NOT NULL DEFAULT 4000.0,
-      last_updated INTEGER NOT NULL
-    );
-  ''';
 
   @override
   bool operator ==(Object other) =>

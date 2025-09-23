@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:circadian_light/core/esp_connection.dart';
 import 'package:circadian_light/models/lamp_state.dart';
-import 'package:circadian_light/services/database_service.dart';
+import 'package:circadian_light/services/storage_service.dart';
 // import 'package:flutter_gl/flutter_gl.dart';
 // import 'package:flutter_3d_controller/'
 
@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Load saved lamp state from database on startup
   Future<void> _loadStateFromDatabase() async {
     try {
-      final lampState = await db.getLampState();
+      final lampState = await storage.getLampState();
       setState(() {
         _isOn = lampState.isOn;
         _brightness = lampState.flutterBrightness;
@@ -89,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
         brightness: _brightness,
         temperature: _tempK,
       );
-      await db.saveLampState(lampState);
+      await storage.saveLampState(lampState);
     } catch (e) {
       debugPrint('Error saving lamp state: $e');
     }

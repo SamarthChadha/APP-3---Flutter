@@ -2,7 +2,7 @@ import 'dart:developer' as dev;
 import '../core/esp_connection.dart';
 import '../models/routine.dart';
 import '../models/alarm.dart';
-import 'database_service.dart';
+import 'storage_service.dart';
 
 /// Service responsible for synchronizing routines and alarms to ESP32
 /// Ensures the lamp can function independently even when app is disconnected
@@ -159,9 +159,9 @@ class EspSyncService {
       // First sync time to ensure ESP32 has accurate time
       await syncTime();
 
-      // Get all routines and alarms from database
-      final routines = await db.getAllRoutines();
-      final alarms = await db.getAllAlarms();
+      // Get all routines and alarms from storage
+      final routines = await storage.getAllRoutines();
+      final alarms = await storage.getAllAlarms();
 
       // Prepare data for bulk sync
       final allData = {
