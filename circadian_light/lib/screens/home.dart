@@ -296,8 +296,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       Container(
                         height: 18,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFEFEF),
                           borderRadius: BorderRadius.circular(20),
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Color(0xFF424242), // dark/dim
+                              Color(0xFFFFFFFF), // bright/white
+                            ],
+                          ),
                           boxShadow: [
                             BoxShadow(
                               offset: const Offset(2, 2),
