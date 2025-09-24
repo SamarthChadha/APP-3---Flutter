@@ -9,6 +9,7 @@ import '../widgets/time_picker_sheet.dart';
 import '../widgets/alarm_duration_selector.dart';
 import '../widgets/routine_card.dart';
 import '../widgets/alarm_card.dart';
+import '../core/theme_manager.dart';
 
 
 class RoutinesScreen extends StatefulWidget {
@@ -1220,9 +1221,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F5F5),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         title: const Text(
           'Routines & Alarms',
           style: TextStyle(
@@ -1268,23 +1269,34 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 children: [
                   Expanded(
                     child: Material(
-                      color: Colors.white,
+                      color: Colors.transparent,
                       elevation: 10,
                       shadowColor: Colors.black.withValues(alpha: 0.12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                       clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: _openAddRoutineSheet,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          child: Center(
-                            child: Text(
-                              'Add Routine',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: Color(0xFF3D3D3D),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: ThemeManager.I.neumorphicGradient,
+                          ),
+                          boxShadow: ThemeManager.I.neumorphicShadows,
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: _openAddRoutineSheet,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: Text(
+                                'Add Routine',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  color: ThemeManager.I.primaryTextColor,
+                                ),
                               ),
                             ),
                           ),
@@ -1295,23 +1307,34 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Material(
-                      color: Colors.white,
+                      color: Colors.transparent,
                       elevation: 10,
                       shadowColor: Colors.black.withValues(alpha: 0.12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                       clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: _openAddAlarmSheet,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          child: Center(
-                            child: Text(
-                              'Add Alarm',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: Color(0xFF3D3D3D),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: ThemeManager.I.neumorphicGradient,
+                          ),
+                          boxShadow: ThemeManager.I.neumorphicShadows,
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: _openAddAlarmSheet,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: Text(
+                                'Add Alarm',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  color: ThemeManager.I.primaryTextColor,
+                                ),
                               ),
                             ),
                           ),

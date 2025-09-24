@@ -4,6 +4,7 @@ import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:circadian_light/core/esp_connection.dart';
 import 'package:circadian_light/models/lamp_state.dart';
 import 'package:circadian_light/services/database_service.dart';
+import '../core/theme_manager.dart';
 // import 'package:flutter_gl/flutter_gl.dart';
 // import 'package:flutter_3d_controller/'
 
@@ -500,15 +501,12 @@ class ControlCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFDFDFD), Color(0xFFE3E3E3)],
+          colors: ThemeManager.I.neumorphicGradient,
         ),
-        boxShadow: const [
-          BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
-          BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
-        ],
+        boxShadow: ThemeManager.I.neumorphicShadows,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -542,10 +540,10 @@ class ControlCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF2F2F2F),
+                        color: ThemeManager.I.primaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -555,7 +553,7 @@ class ControlCard extends StatelessWidget {
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.2,
-                        color: subtitleColor ?? const Color(0xFF5A5A5A),
+                        color: subtitleColor ?? ThemeManager.I.secondaryTextColor,
                       ),
                     ),
                   ],
