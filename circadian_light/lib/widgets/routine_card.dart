@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/routine.dart';
+import '../core/theme_manager.dart';
 
 class RoutineCard extends StatefulWidget {
   final Routine routine;
@@ -92,6 +93,56 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
   String _formatTime(BuildContext context, TimeOfDay t) =>
       MaterialLocalizations.of(context).formatTimeOfDay(t);
 
+  Widget _buildCustomSwitch() {
+    final isOn = widget.routine.enabled && !widget.isDisabledBySunriseSync;
+    final isEffectivelyDisabled = !widget.routine.enabled || widget.isDisabledBySunriseSync;
+    
+    return GestureDetector(
+      onTap: widget.isDisabledBySunriseSync 
+          ? null 
+          : () => widget.onChanged(!widget.routine.enabled),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 52,
+        height: 32,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: isOn 
+              ? ThemeManager.I.currentAccentColor
+              : (ThemeManager.I.isDarkMode ? const Color(0xFF424242) : const Color(0xFFE0E0E0)),
+          border: isEffectivelyDisabled 
+              ? Border.all(color: Colors.grey.withOpacity(0.3), width: 1)
+              : null,
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: isOn ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 28,
+            height: 28,
+            margin: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isEffectivelyDisabled
+                  ? Colors.grey
+                  : (isOn 
+                      ? (ThemeManager.I.isDarkMode ? Colors.black : Colors.white)
+                      : (ThemeManager.I.isDarkMode ? const Color(0xFF9E9E9E) : Colors.white)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final timeRange = '${_formatTime(context, widget.routine.startTime)} – ${_formatTime(context, widget.routine.endTime)}';
@@ -107,13 +158,10 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isEffectivelyDisabled
-              ? [const Color(0xFFE5E5E5), const Color(0xFFD4D4D4)]
-              : [const Color(0xFFFDFDFD), const Color(0xFFE3E3E3)],
+              ? [ThemeManager.I.disabledColor, ThemeManager.I.disabledColor.withValues(alpha: 0.8)]
+              : ThemeManager.I.neumorphicGradient,
         ),
-        boxShadow: const [
-          BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
-          BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
-        ],
+        boxShadow: ThemeManager.I.neumorphicShadows,
       ),
       child: Row(
         children: [
@@ -147,7 +195,7 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF2F2F2F).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                    color: ThemeManager.I.primaryTextColor.withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -157,7 +205,7 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.2,
-                    color: const Color(0xFF3C3C3C).withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.85),
+                    color: ThemeManager.I.secondaryTextColor.withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
                   ),
                 ),
                 if (widget.isDisabledBySunriseSync) ...[
@@ -177,10 +225,7 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
           const SizedBox(width: 12),
           IgnorePointer(
             ignoring: widget.isDisabledBySunriseSync,
-            child: Switch(
-              value: widget.routine.enabled && !widget.isDisabledBySunriseSync,
-              onChanged: widget.isDisabledBySunriseSync ? null : widget.onChanged,
-            ),
+            child: _buildCustomSwitch(),
           ),
         ],
       ),

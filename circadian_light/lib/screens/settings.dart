@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/provisioning_screen.dart';
 import '../core/esp_connection.dart';
 import '../core/sunrise_sunset_manager.dart';
+import '../core/theme_manager.dart';
 import '../services/database_service.dart';
 import '../models/user_settings.dart';
 
@@ -103,15 +104,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFFFDFDFD), Color(0xFFE3E3E3)],
+                  colors: ThemeManager.I.neumorphicGradient,
                 ),
-                boxShadow: const [
-                  BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
-                  BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
-                ],
+                boxShadow: ThemeManager.I.neumorphicShadows,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,24 +145,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Lamp Connection',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF2F2F2F),
+                                color: ThemeManager.I.primaryTextColor,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _isConnected 
+                              _isConnected
                                 ? 'Device is connected and ready'
                                 : 'Device is not connected',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: 0.2,
-                                color: _isConnected ? const Color(0xFF4CAF50) : const Color(0xFFEF5350),
+                                color: _isConnected ? ThemeManager.I.successColor : ThemeManager.I.errorColor,
                               ),
                             ),
                           ],
@@ -216,12 +214,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          color: const Color(0xFFF5F5F5),
-                          boxShadow: const [
+                          color: ThemeManager.I.elevatedSurfaceColor,
+                          boxShadow: [
                             BoxShadow(
-                              offset: Offset(2, 2),
+                              offset: const Offset(2, 2),
                               blurRadius: 8,
-                              color: Color(0x0A000000),
+                              color: ThemeManager.I.isDarkMode
+                                  ? const Color(0x20000000)
+                                  : const Color(0x0A000000),
                             ),
                           ],
                         ),
@@ -230,14 +230,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(20),
                             onTap: _checkConnection,
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                               child: Text(
                                 'Refresh',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 16,
-                                  color: Color(0xFF666666),
+                                  color: ThemeManager.I.secondaryTextColor,
                                 ),
                               ),
                             ),
@@ -256,15 +256,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFFFDFDFD), Color(0xFFE3E3E3)],
+                  colors: ThemeManager.I.neumorphicGradient,
                 ),
-                boxShadow: const [
-                  BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
-                  BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
-                ],
+                boxShadow: ThemeManager.I.neumorphicShadows,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,24 +295,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Sunrise & Sunset Sync',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF2F2F2F),
+                                color: ThemeManager.I.primaryTextColor,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _sunriseSunsetEnabled 
+                              _sunriseSunsetEnabled
                                 ? 'Automatically adjusts lamp brightness'
                                 : 'Manual control enabled',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: 0.2,
-                                color: Color(0xFF5A5A5A),
+                                color: ThemeManager.I.secondaryTextColor,
                               ),
                             ),
                           ],
@@ -345,13 +342,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8F0),
+                        color: ThemeManager.I.infoBackgroundColor,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            offset: Offset(2, 2),
+                            offset: const Offset(2, 2),
                             blurRadius: 8,
-                            color: Color(0x0A000000),
+                            color: ThemeManager.I.isDarkMode
+                                ? const Color(0x20000000)
+                                : const Color(0x0A000000),
                           ),
                         ],
                       ),
@@ -360,10 +359,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           Text(
                             'Current Status: ${SunriseSunsetManager.I.getCurrentStatus()}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
-                              color: Color(0xFF2F2F2F),
+                              color: ThemeManager.I.primaryTextColor,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -429,6 +428,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ],
               ),
+            ),
+            const SizedBox(height: 16),
+            // Dark Mode Toggle Card
+            ListenableBuilder(
+              listenable: ThemeManager.I,
+              builder: (context, child) {
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: ThemeManager.I.neumorphicGradient,
+                    ),
+                    boxShadow: ThemeManager.I.neumorphicShadows,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: ThemeManager.I.isDarkMode
+                              ? [const Color(0xFF6A5ACD), const Color(0xFF9370DB)]
+                              : [const Color(0xFFFFB347), const Color(0xFFFFD700)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (ThemeManager.I.isDarkMode ? Colors.deepPurple : Colors.amber).withValues(alpha: 0.45),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          ThemeManager.I.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dark Mode',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: ThemeManager.I.primaryTextColor,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              ThemeManager.I.isDarkMode
+                                ? 'Dark theme is active'
+                                : 'Light theme is active',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.2,
+                                color: ThemeManager.I.secondaryTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Switch(
+                        value: ThemeManager.I.isDarkMode,
+                        onChanged: (value) async {
+                          await ThemeManager.I.setDarkMode(value);
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/theme_manager.dart';
 
 class NeumorphicSlider extends StatelessWidget {
   final double value;
@@ -20,23 +21,12 @@ class NeumorphicSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const base = Color(0xFFEFEFEF);
+    final base = ThemeManager.I.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFEFEFEF);
     final trackDecoration = BoxDecoration(
       color: gradient == null ? (solidColor ?? base) : null,
       gradient: gradient,
       borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          offset: const Offset(6, 6),
-          blurRadius: 18,
-          color: Colors.black.withValues(alpha: 0.12),
-        ),
-        BoxShadow(
-          offset: const Offset(-6, -6),
-          blurRadius: 18,
-          color: Colors.white.withValues(alpha: 0.5),
-        ),
-      ],
+      boxShadow: ThemeManager.I.neumorphicShadows,
     );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
