@@ -111,7 +111,7 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
               ? ThemeManager.I.currentAccentColor
               : (ThemeManager.I.isDarkMode ? const Color(0xFF424242) : const Color(0xFFE0E0E0)),
           border: isEffectivelyDisabled 
-              ? Border.all(color: Colors.grey.withOpacity(0.3), width: 1)
+              ? Border.all(color: Colors.grey.withValues(alpha: 0.3), width: 1)
               : null,
         ),
         child: AnimatedAlign(
@@ -131,7 +131,7 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
                       : (ThemeManager.I.isDarkMode ? const Color(0xFF9E9E9E) : Colors.white)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),

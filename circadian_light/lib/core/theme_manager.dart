@@ -125,19 +125,19 @@ class ThemeManager extends ChangeNotifier {
       ),
       // Add custom switch theme for better dark mode appearance
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
+        thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
             return const Color(0xFFFFC049); // Use accent color when on
           }
           return const Color(0xFF9E9E9E); // Grey when off
         }),
-        trackColor: MaterialStateProperty.resolveWith<Color>((states) {
-          if (states.contains(MaterialState.selected)) {
-            return const Color(0xFFFFC049).withOpacity(0.3); // Accent with opacity when on
+        trackColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const Color(0xFFFFC049).withValues(alpha: 0.3); // Accent with opacity when on
           }
           return const Color(0xFF424242); // Dark grey when off
         }),
-        overlayColor: MaterialStateProperty.all(Colors.transparent),
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
       ),
     );
   }
