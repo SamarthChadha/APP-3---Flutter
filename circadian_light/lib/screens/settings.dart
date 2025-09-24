@@ -107,11 +107,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Neumorphic style ESP32 connection card
             Container(
               margin: const EdgeInsets.symmetric(vertical: 8),
@@ -310,7 +311,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Sunrise & Sunset Sync',
+                              'Sun Sync',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
@@ -606,7 +607,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
