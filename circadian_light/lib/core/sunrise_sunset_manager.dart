@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'esp_connection.dart';
+import '../services/location_service.dart';
 
 class SunriseSunsetManager {
   SunriseSunsetManager._();
@@ -8,18 +9,54 @@ class SunriseSunsetManager {
 
   Timer? _timer;
   bool _isEnabled = false;
-  
-  // Hardcoded times for testing - will be replaced with location-based later
+  bool _useLocationBasedTimes = false;
+
+  // Default times used when location is not available or disabled
   TimeOfDay sunriseTime = const TimeOfDay(hour: 6, minute: 30);
   TimeOfDay sunsetTime = const TimeOfDay(hour: 19, minute: 0); // 7 PM
   
   bool get isEnabled => _isEnabled;
-  
+  bool get useLocationBasedTimes => _useLocationBasedTimes;
+
   void enable() {
     if (_isEnabled) return;
     _isEnabled = true;
     _startTimer();
     debugPrint('SunriseSunsetManager: Enabled');
+  }
+
+  /// Enable or disable location-based sunrise/sunset times
+  Future<void> setLocationBasedTimes(bool enabled) async {
+    _useLocationBasedTimes = enabled;
+
+    if (enabled) {
+      await _updateLocationBasedTimes();
+    }
+
+    // Restart timer to apply new times if enabled
+    if (_isEnabled) {
+      _startTimer();
+    }
+
+    debugPrint('SunriseSunsetManager: Location-based times ${enabled ? 'enabled' : 'disabled'}');
+  }
+
+  /// Update sunrise/sunset times based on current location
+  Future<void> _updateLocationBasedTimes() async {
+    if (!_useLocationBasedTimes) return;
+
+    try {
+      final result = await LocationService.I.calculateSunriseSunset();
+      if (result != null) {
+        sunriseTime = result.sunrise;
+        sunsetTime = result.sunset;
+        debugPrint('SunriseSunsetManager: Updated to location-based times - Sunrise: ${sunriseTime.format(null)}, Sunset: ${sunsetTime.format(null)}');
+      } else {
+        debugPrint('SunriseSunsetManager: Could not get location-based times, using defaults');
+      }
+    } catch (e) {
+      debugPrint('SunriseSunsetManager: Error updating location-based times: $e');
+    }
   }
   
   void disable() {
@@ -31,10 +68,17 @@ class SunriseSunsetManager {
   
   void _startTimer() {
     _stopTimer();
+
+    // Update location-based times if enabled
+    if (_useLocationBasedTimes) {
+      _updateLocationBasedTimes();
+    }
+
     // Check every minute for transitions
     _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
       _checkAndExecuteTransitions();
     });
+
     // Also check immediately
     _checkAndExecuteTransitions();
   }
@@ -167,37 +211,41 @@ class SunriseSunsetManager {
   // Get current status for UI display
   String getCurrentStatus() {
     if (!_isEnabled) return 'Disabled';
-    
+
+    final locationStatus = _useLocationBasedTimes
+        ? ' (Location-based)'
+        : ' (Manual times)';
+
     final now = TimeOfDay.now();
     final currentMinutes = now.hour * 60 + now.minute;
-    
+
     final sunriseStart = _subtractMinutes(sunriseTime, 15);
     final sunriseEnd = _addMinutes(sunriseTime, 15);
     final sunsetStart = _subtractMinutes(sunsetTime, 15);
     final sunsetEnd = _addMinutes(sunsetTime, 15);
-    
+
     final sunriseStartMinutes = sunriseStart.hour * 60 + sunriseStart.minute;
     final sunriseEndMinutes = sunriseEnd.hour * 60 + sunriseEnd.minute;
     final sunsetStartMinutes = sunsetStart.hour * 60 + sunsetStart.minute;
     final sunsetEndMinutes = sunsetEnd.hour * 60 + sunsetEnd.minute;
-    
+
     if (currentMinutes >= sunriseStartMinutes && currentMinutes <= sunriseEndMinutes) {
-      return 'Sunrise in progress';
+      return 'Sunrise in progress$locationStatus';
     } else if (currentMinutes >= sunsetStartMinutes && currentMinutes <= sunsetEndMinutes) {
-      return 'Sunset in progress';
+      return 'Sunset in progress$locationStatus';
     } else if (currentMinutes > sunriseEndMinutes && currentMinutes < sunsetStartMinutes) {
       // Calculate day progress for more detailed status
       final dayProgress = (currentMinutes - sunriseEndMinutes) / (sunsetStartMinutes - sunriseEndMinutes);
-      
+
       if (dayProgress < 0.3) {
-        return 'Morning - Full brightness (warm + white)';
+        return 'Morning - Full brightness$locationStatus';
       } else if (dayProgress < 0.7) {
-        return 'Midday - Full brightness (warm + white)';
+        return 'Midday - Full brightness$locationStatus';
       } else {
-        return 'Late afternoon - Warm light only';
+        return 'Late afternoon - Warm light$locationStatus';
       }
     } else {
-      return 'Night time - Off';
+      return 'Night time - Off$locationStatus';
     }
   }
   
