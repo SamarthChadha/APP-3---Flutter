@@ -43,43 +43,91 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
   }
 
   Future<void> _startProvisioning() async {
-    // EspTouchV2 tends to be more reliable on modern phones/routers
-    final provisioner = Provisioner.espTouchV2();
+    Logger.root.info('Starting provisioning with SSID: ${ssidController.text}');
 
-    provisioner.listen((response) {
-      Navigator.of(context).pop(response);
+    final provisioner = Provisioner.espTouchV2();
+    ProvisioningResponse? response;
+    bool completed = false;
+
+    // Listen for successful provisioning
+    late final subscription = provisioner.listen((provisioningResponse) {
+      Logger.root.info('Provisioning response received: ${provisioningResponse.ipAddressText}');
+      if (!completed) {
+        completed = true;
+        response = provisioningResponse;
+        Navigator.of(context).pop();
+      }
     });
 
-    provisioner.start(ProvisioningRequest.fromStrings(
-      ssid: ssidController.text,
-      // bssid is optional; library defaults to 00:00:00:00:00:00 internally
-      password: passwordController.text,
-    ));
-
-    ProvisioningResponse? response = await showDialog<ProvisioningResponse>(
+    // Show progress dialog
+    showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Provisioning'),
-          content: const Text('Provisioning started. Please wait...'),
+          title: const Text('Provisioning Device'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text('Sending credentials to device...\n\nSSID: ${ssidController.text}'),
+              const SizedBox(height: 8),
+              const Text('Make sure your ESP32 is in SmartConfig mode',
+                style: TextStyle(fontSize: 12, color: Colors.grey)),
+            ],
+          ),
           actions: <Widget>[
             TextButton(
               onPressed: () {
+                completed = true;
+                subscription.cancel();
+                provisioner.stop();
                 Navigator.of(context).pop();
               },
-              child: const Text('Stop'),
+              child: const Text('Cancel'),
             ),
           ],
         );
       },
     );
 
-    if(provisioner.running) {
-      provisioner.stop();
+    try {
+      Logger.root.info('Starting ESP-Touch V2 provisioning...');
+      await provisioner.start(ProvisioningRequest.fromStrings(
+        ssid: ssidController.text,
+        password: passwordController.text,
+      ));
+      Logger.root.info('Provisioning started, waiting for response...');
+
+      // Wait for 45 seconds maximum
+      await Future.delayed(const Duration(seconds: 45));
+
+      if (!completed) {
+        completed = true;
+        subscription.cancel();
+        if (mounted) {
+          Navigator.of(context).pop(); // Close loading dialog
+          _showTimeoutDialog();
+        }
+      }
+
+    } catch (e) {
+      Logger.root.severe('Provisioning error: $e');
+      completed = true;
+      subscription.cancel();
+      if (mounted) {
+        Navigator.of(context).pop();
+        _showErrorDialog(e.toString());
+      }
+    } finally {
+      if (provisioner.running) {
+        provisioner.stop();
+      }
     }
 
     if (response != null) {
-      _onDeviceProvisioned(response);
+      _onDeviceProvisioned(response!);
     }
   }
 
@@ -88,15 +136,34 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Device provisioned'),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 24),
+              SizedBox(width: 8),
+              Text('Success!'),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Text('Device successfully connected to the ${ssidController.text} network'),
-              SizedBox.fromSize(size: const Size.fromHeight(20)),
-              const Text('Device:'),
-              Text('IP: ${response.ipAddressText}'),
-              Text('BSSID: ${response.bssidText}'),
+              Text('Device connected to ${ssidController.text}'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Device IP: ${response.ipAddressText}',
+                         style: const TextStyle(fontFamily: 'monospace')),
+                    Text('BSSID: ${response.bssidText}',
+                         style: const TextStyle(fontFamily: 'monospace')),
+                  ],
+                ),
+              ),
             ],
           ),
           actions: <Widget>[
@@ -105,6 +172,80 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
                 Navigator.of(context).pop(); // Close dialog
                 Navigator.of(context).pop(true); // Return success to previous screen
               },
+              child: const Text('Done'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showTimeoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.timer_off, color: Colors.orange, size: 24),
+              SizedBox(width: 8),
+              Text('Timeout'),
+            ],
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text('No response from device after 45 seconds.'),
+              SizedBox(height: 12),
+              Text('Troubleshooting:', style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              Text('• Make sure ESP32 is powered on'),
+              Text('• Check ESP32 serial output for SmartConfig status'),
+              Text('• Verify ESP32 is in SmartConfig mode'),
+              Text('• Try resetting ESP32 and retry'),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(String error) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error, color: Colors.red, size: 24),
+              SizedBox(width: 8),
+              Text('Error'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Text('Provisioning failed:'),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(error, style: const TextStyle(fontFamily: 'monospace')),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('OK'),
             ),
           ],

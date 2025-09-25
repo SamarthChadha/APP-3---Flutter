@@ -684,6 +684,8 @@ void setup() {
   } else {
     Serial.println("mDNS responder started");
     MDNS.addService("_ws", "_tcp", 80);          // advertise the WebSocket port
+    MDNS.addService("_circadian", "_tcp", 80);   // advertise circadian service for app discovery
+    Serial.println("mDNS services: _ws._tcp.80, _circadian._tcp.80");
   }
   // -----------------
 
