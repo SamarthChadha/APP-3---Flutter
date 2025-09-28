@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'dart:math' as math;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:logging/logging.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:http/http.dart' as http;
 
 class LocationService {
   LocationService._();
@@ -141,12 +142,17 @@ class LocationService {
 
       _logger.info('Calculating sunrise/sunset for ${position.latitude}, ${position.longitude} on ${date.toString()}');
 
-      // Calculate sunrise and sunset using astronomical formulas
-      final result = _calculateSunriseSunsetAstronomical(
+      // Calculate sunrise and sunset using sunrisesunset.io API
+      final result = await _fetchSunriseSunsetFromAPI(
         position.latitude,
         position.longitude,
         date,
       );
+
+      if (result == null) {
+        _logger.warning('API call failed, could not get sunrise/sunset times');
+        return null;
+      }
 
       // Cache the results
       _lastCalculationDate = date;
@@ -163,68 +169,87 @@ class LocationService {
     }
   }
 
-  /// Astronomical calculation for sunrise and sunset
-  ({TimeOfDay sunrise, TimeOfDay sunset}) _calculateSunriseSunsetAstronomical(
+  /// Fetch sunrise and sunset times from sunrisesunset.io API
+  Future<({TimeOfDay sunrise, TimeOfDay sunset})?> _fetchSunriseSunsetFromAPI(
     double latitude,
     double longitude,
     DateTime date,
-  ) {
-    // Convert latitude and longitude to radians
-    final latRad = latitude * math.pi / 180;
+  ) async {
+    try {
+      // Format date as YYYY-MM-DD
+      final dateString = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
-    // Calculate day of year
-    final dayOfYear = date.difference(DateTime(date.year, 1, 1)).inDays + 1;
+      // Build API URL
+      final url = Uri.parse('https://api.sunrisesunset.io/json')
+          .replace(queryParameters: {
+        'lat': latitude.toString(),
+        'lng': longitude.toString(),
+        'date': dateString,
+        'time_format': '24', // Use 24-hour format for easier parsing
+      });
 
-    // Solar declination angle
-    final declination = 23.45 * math.sin((360 * (284 + dayOfYear) / 365) * math.pi / 180);
-    final declinationRad = declination * math.pi / 180;
+      _logger.info('Fetching sunrise/sunset from API: $url');
 
-    // Hour angle for sunrise/sunset (civil twilight = -6 degrees)
-    // Using -0.833 degrees for geometric horizon (accounting for atmospheric refraction)
-    final zenithAngle = 90.833 * math.pi / 180;
+      // Make HTTP request with timeout
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('API request timed out', const Duration(seconds: 10));
+        },
+      );
 
-    final hourAngleRad = math.acos(
-      math.cos(zenithAngle) / (math.cos(latRad) * math.cos(declinationRad)) -
-      math.tan(latRad) * math.tan(declinationRad)
-    );
+      if (response.statusCode != 200) {
+        _logger.severe('API request failed with status ${response.statusCode}: ${response.body}');
+        return null;
+      }
 
-    final hourAngle = hourAngleRad * 180 / math.pi;
+      // Parse JSON response
+      final data = json.decode(response.body);
 
-    // Calculate sunrise and sunset times (in hours from solar noon)
-    // Note: longitude / 15 gives us the time zone offset in hours
-    final sunriseHour = 12 - hourAngle / 15;
-    final sunsetHour = 12 + hourAngle / 15;
+      if (data['status'] != 'OK') {
+        _logger.severe('API returned error status: ${data['status']}');
+        return null;
+      }
 
-    // Apply timezone offset (local timezone offset from UTC)
-    final now = DateTime.now();
-    final utcNow = now.toUtc();
-    final timezoneOffsetHours = (now.millisecondsSinceEpoch - utcNow.millisecondsSinceEpoch) / (1000 * 60 * 60);
+      final results = data['results'];
+      final sunriseString = results['sunrise'] as String;
+      final sunsetString = results['sunset'] as String;
 
-    final localSunriseHour = sunriseHour + timezoneOffsetHours;
-    final localSunsetHour = sunsetHour + timezoneOffsetHours;
+      // Parse time strings (format: "HH:MM:SS" in 24-hour format)
+      final sunrise = _parseTimeString(sunriseString);
+      final sunset = _parseTimeString(sunsetString);
 
-    // Convert to TimeOfDay, handling day boundary crossing
-    TimeOfDay sunrise = _hoursToTimeOfDay(localSunriseHour);
-    TimeOfDay sunset = _hoursToTimeOfDay(localSunsetHour);
+      if (sunrise == null || sunset == null) {
+        _logger.severe('Failed to parse sunrise/sunset times from API response');
+        return null;
+      }
 
-    return (sunrise: sunrise, sunset: sunset);
+      _logger.info('Successfully fetched times from API - Sunrise: ${sunrise.hour}:${sunrise.minute.toString().padLeft(2, '0')}, Sunset: ${sunset.hour}:${sunset.minute.toString().padLeft(2, '0')}');
+
+      return (sunrise: sunrise, sunset: sunset);
+
+    } catch (e) {
+      _logger.severe('Error fetching sunrise/sunset from API: $e');
+      return null;
+    }
   }
 
-  /// Convert decimal hours to TimeOfDay
-  TimeOfDay _hoursToTimeOfDay(double hours) {
-    // Normalize hours to 0-24 range
-    while (hours < 0) {
-      hours += 24;
+  /// Parse time string in format "HH:MM:SS" to TimeOfDay
+  TimeOfDay? _parseTimeString(String timeString) {
+    try {
+      final parts = timeString.split(':');
+      if (parts.length >= 2) {
+        final hour = int.parse(parts[0]);
+        final minute = int.parse(parts[1]);
+        return TimeOfDay(hour: hour, minute: minute);
+      }
+      return null;
+    } catch (e) {
+      _logger.severe('Error parsing time string "$timeString": $e');
+      return null;
     }
-    while (hours >= 24) {
-      hours -= 24;
-    }
-
-    final hour = hours.floor();
-    final minute = ((hours - hour) * 60).round();
-
-    return TimeOfDay(hour: hour, minute: minute);
   }
+
 
   /// Open device settings for location permissions
   Future<void> openLocationSettings() async {
