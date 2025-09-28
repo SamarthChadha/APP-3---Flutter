@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/sam/Projects/Circadian light/APP 3 - Flutter/circadian_light/lib/screens/**)",
+      "Read(//Users/sam/Projects/Circadian light/APP 3 - Flutter/circadian_light/lib/services/**)",
+      "Read(//Users/sam/Projects/Circadian light/APP 3 - Flutter/circadian_light/ios/Runner/**)",
+      "Read(//Users/sam/Projects/Circadian light/APP 3 - Flutter/circadian_light/**)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__brave-search__brave_web_search",
+      "WebFetch(domain:pub.dev)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

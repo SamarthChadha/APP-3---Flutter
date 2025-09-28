@@ -50,7 +50,7 @@ class SunriseSunsetManager {
       if (result != null) {
         sunriseTime = result.sunrise;
         sunsetTime = result.sunset;
-        debugPrint('SunriseSunsetManager: Updated to location-based times - Sunrise: ${sunriseTime.format(null)}, Sunset: ${sunsetTime.format(null)}');
+        debugPrint('SunriseSunsetManager: Updated to location-based times - Sunrise: ${sunriseTime.hour}:${sunriseTime.minute.toString().padLeft(2, '0')}, Sunset: ${sunsetTime.hour}:${sunsetTime.minute.toString().padLeft(2, '0')}');
       } else {
         debugPrint('SunriseSunsetManager: Could not get location-based times, using defaults');
       }

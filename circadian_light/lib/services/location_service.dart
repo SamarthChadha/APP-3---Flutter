@@ -26,8 +26,8 @@ class LocationService {
     try {
       _logger.info('Requesting location permission...');
 
-      // Check current permission status
-      PermissionStatus permission = await Permission.location.status;
+      // Check current permission status for "when in use" location
+      PermissionStatus permission = await Permission.locationWhenInUse.status;
 
       if (permission.isGranted) {
         _hasLocationPermission = true;
@@ -37,7 +37,7 @@ class LocationService {
 
       if (permission.isDenied) {
         // Request permission
-        permission = await Permission.location.request();
+        permission = await Permission.locationWhenInUse.request();
       }
 
       if (permission.isGranted) {
@@ -221,7 +221,7 @@ class LocationService {
   /// Check if location permissions are granted without requesting
   Future<bool> checkLocationPermission() async {
     try {
-      final permission = await Permission.location.status;
+      final permission = await Permission.locationWhenInUse.status;
       _hasLocationPermission = permission.isGranted;
       return _hasLocationPermission;
     } catch (e) {

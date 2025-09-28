@@ -39,6 +39,10 @@
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app discovers and controls a local ESP32 light on your Wi‑Fi network and connects to the Dart VM Service for debugging.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs location access to calculate accurate sunrise and sunset times for your circadian lighting schedule.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>This app needs location access to calculate accurate sunrise and sunset times for your circadian lighting schedule.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app needs location access to calculate accurate sunrise and sunset times for your circadian lighting schedule.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

@@ -17,7 +17,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _isConnected = false;
   bool _sunriseSunsetEnabled = false;
-  bool _useLocationBasedTimes = false;
   bool _hasLocationPermission = false;
   UserSettings? _userSettings;
 
@@ -40,7 +39,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _userSettings = settings;
         _sunriseSunsetEnabled = settings.sunriseSunsetEnabled;
         _hasLocationPermission = hasLocationPermission;
-        _useLocationBasedTimes = SunriseSunsetManager.I.useLocationBasedTimes;
       });
 
       // Update the sunrise/sunset manager state
@@ -345,16 +343,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Switch(
                         value: _sunriseSunsetEnabled,
                         onChanged: (value) async {
-                          setState(() {
-                            _sunriseSunsetEnabled = value;
-                          });
-                          
                           if (value) {
-                            SunriseSunsetManager.I.enable();
+                            // When enabling Sun Sync, automatically request location permission
+                            final messenger = ScaffoldMessenger.of(context);
+
+                            if (!_hasLocationPermission) {
+                              final granted = await LocationService.I.requestLocationPermission();
+                              if (!mounted) return;
+
+                              if (granted) {
+                                setState(() {
+                                  _hasLocationPermission = true;
+                                  _sunriseSunsetEnabled = true;
+                                });
+                                SunriseSunsetManager.I.enable();
+                                await SunriseSunsetManager.I.setLocationBasedTimes(true);
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Sun Sync enabled with location-based sunrise/sunset times!'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } else {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: const Text('Location permission is required for Sun Sync. You can enable it in Settings.'),
+                                    backgroundColor: Colors.orange,
+                                    action: SnackBarAction(
+                                      label: 'Settings',
+                                      onPressed: () {
+                                        LocationService.I.openLocationSettings();
+                                      },
+                                    ),
+                                  ),
+                                );
+                                return; // Don't enable Sun Sync if location permission denied
+                              }
+                            } else {
+                              // Already have permission, just enable Sun Sync
+                              setState(() {
+                                _sunriseSunsetEnabled = true;
+                              });
+                              SunriseSunsetManager.I.enable();
+                              await SunriseSunsetManager.I.setLocationBasedTimes(true);
+                            }
                           } else {
+                            // Disable Sun Sync
+                            setState(() {
+                              _sunriseSunsetEnabled = false;
+                            });
                             SunriseSunsetManager.I.disable();
                           }
-                          
+
                           await _saveSettings();
                         },
                       ),
@@ -436,105 +476,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-                          // Location-based times toggle
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.location_on,
-                                          size: 16,
-                                          color: _hasLocationPermission
-                                              ? Colors.green
-                                              : Colors.orange,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Location-based Times',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
-                                            color: ThemeManager.I.primaryTextColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _hasLocationPermission
-                                          ? 'Calculate times for your location'
-                                          : 'Location permission required',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: ThemeManager.I.secondaryTextColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Switch(
-                                value: _useLocationBasedTimes && _hasLocationPermission,
-                                onChanged: _hasLocationPermission
-                                    ? (value) async {
-                                        setState(() {
-                                          _useLocationBasedTimes = value;
-                                        });
-                                        await SunriseSunsetManager.I.setLocationBasedTimes(value);
-                                      }
-                                    : null,
-                              ),
-                            ],
-                          ),
-                          if (!_hasLocationPermission) ...[
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () async {
-                                  final granted = await LocationService.I.requestLocationPermission();
-                                  if (!mounted) return;
-
-                                  if (granted) {
-                                    setState(() {
-                                      _hasLocationPermission = true;
-                                    });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Location permission granted! You can now enable location-based sunrise/sunset times.'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text('Location permission denied. You can enable it in Settings.'),
-                                        backgroundColor: Colors.orange,
-                                        action: SnackBarAction(
-                                          label: 'Settings',
-                                          onPressed: () {
-                                            LocationService.I.openLocationSettings();
-                                          },
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                                icon: const Icon(Icons.location_on, size: 16),
-                                label: const Text('Request Location Permission'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orange,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                ),
-                              ),
-                            ),
-                          ],
                           const SizedBox(height: 8),
                           Text(
                             'Note: When enabled, all other routines are disabled.',
