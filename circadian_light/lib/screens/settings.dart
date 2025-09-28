@@ -19,6 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _sunriseSunsetEnabled = false;
   bool _hasLocationPermission = false;
   UserSettings? _userSettings;
+  String? _locationName;
 
   @override
   void initState() {
@@ -35,10 +36,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // Check location permission status
       final hasLocationPermission = await LocationService.I.checkLocationPermission();
 
+      // Get location name if sun sync is enabled and we have permission
+      String? locationName;
+      if (settings.sunriseSunsetEnabled && hasLocationPermission) {
+        locationName = await LocationService.I.getLocationName();
+      }
+
       setState(() {
         _userSettings = settings;
         _sunriseSunsetEnabled = settings.sunriseSunsetEnabled;
         _hasLocationPermission = hasLocationPermission;
+        _locationName = locationName;
       });
 
       // Update the sunrise/sunset manager state
@@ -327,7 +335,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const SizedBox(height: 4),
                             Text(
                               _sunriseSunsetEnabled
-                                ? 'Automatically adjusts lamp brightness'
+                                ? _locationName != null
+                                    ? 'Location: $_locationName'
+                                    : 'Automatically adjusts lamp brightness'
                                 : 'Manual control enabled',
                               style: TextStyle(
                                 fontSize: 14,
@@ -352,9 +362,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               if (!mounted) return;
 
                               if (granted) {
+                                // Get location name
+                                final locationName = await LocationService.I.getLocationName();
+
                                 setState(() {
                                   _hasLocationPermission = true;
                                   _sunriseSunsetEnabled = true;
+                                  _locationName = locationName;
                                 });
                                 SunriseSunsetManager.I.enable();
                                 await SunriseSunsetManager.I.setLocationBasedTimes(true);
@@ -381,8 +395,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               }
                             } else {
                               // Already have permission, just enable Sun Sync
+                              // Get location name
+                              final locationName = await LocationService.I.getLocationName();
+
                               setState(() {
                                 _sunriseSunsetEnabled = true;
+                                _locationName = locationName;
                               });
                               SunriseSunsetManager.I.enable();
                               await SunriseSunsetManager.I.setLocationBasedTimes(true);
@@ -391,6 +409,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             // Disable Sun Sync
                             setState(() {
                               _sunriseSunsetEnabled = false;
+                              _locationName = null;
                             });
                             SunriseSunsetManager.I.disable();
                           }

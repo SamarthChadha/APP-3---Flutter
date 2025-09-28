@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:logging/logging.dart';
+import 'package:geocoding/geocoding.dart';
 
 class LocationService {
   LocationService._();
@@ -18,8 +19,12 @@ class LocationService {
   TimeOfDay? _cachedSunrise;
   TimeOfDay? _cachedSunset;
 
+  // Cache for location name
+  String? _cachedLocationName;
+
   bool get hasLocationPermission => _hasLocationPermission;
   Position? get lastKnownPosition => _lastKnownPosition;
+  String? get cachedLocationName => _cachedLocationName;
 
   /// Request location permission from the user
   Future<bool> requestLocationPermission() async {
@@ -89,6 +94,9 @@ class LocationService {
 
       _lastKnownPosition = position;
       _logger.info('Location obtained: ${position.latitude}, ${position.longitude}');
+
+      // Update location name cache in background
+      _updateLocationName(position);
 
       return position;
 
@@ -183,12 +191,21 @@ class LocationService {
     final hourAngle = hourAngleRad * 180 / math.pi;
 
     // Calculate sunrise and sunset times (in hours from solar noon)
-    final sunriseHour = 12 - hourAngle / 15 - longitude / 15;
-    final sunsetHour = 12 + hourAngle / 15 - longitude / 15;
+    // Note: longitude / 15 gives us the time zone offset in hours
+    final sunriseHour = 12 - hourAngle / 15;
+    final sunsetHour = 12 + hourAngle / 15;
+
+    // Apply timezone offset (local timezone offset from UTC)
+    final now = DateTime.now();
+    final utcNow = now.toUtc();
+    final timezoneOffsetHours = (now.millisecondsSinceEpoch - utcNow.millisecondsSinceEpoch) / (1000 * 60 * 60);
+
+    final localSunriseHour = sunriseHour + timezoneOffsetHours;
+    final localSunsetHour = sunsetHour + timezoneOffsetHours;
 
     // Convert to TimeOfDay, handling day boundary crossing
-    TimeOfDay sunrise = _hoursToTimeOfDay(sunriseHour);
-    TimeOfDay sunset = _hoursToTimeOfDay(sunsetHour);
+    TimeOfDay sunrise = _hoursToTimeOfDay(localSunriseHour);
+    TimeOfDay sunset = _hoursToTimeOfDay(localSunsetHour);
 
     return (sunrise: sunrise, sunset: sunset);
   }
@@ -245,5 +262,69 @@ class LocationService {
     }
 
     return 'Location available';
+  }
+
+  /// Update location name cache using reverse geocoding
+  Future<void> _updateLocationName(Position position) async {
+    try {
+      _logger.info('Getting location name for ${position.latitude}, ${position.longitude}');
+
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final placemark = placemarks.first;
+
+        // Build location string prioritizing city and country
+        String locationName = '';
+
+        if (placemark.locality != null && placemark.locality!.isNotEmpty) {
+          locationName = placemark.locality!;
+        } else if (placemark.subAdministrativeArea != null && placemark.subAdministrativeArea!.isNotEmpty) {
+          locationName = placemark.subAdministrativeArea!;
+        } else if (placemark.administrativeArea != null && placemark.administrativeArea!.isNotEmpty) {
+          locationName = placemark.administrativeArea!;
+        }
+
+        if (placemark.country != null && placemark.country!.isNotEmpty) {
+          if (locationName.isNotEmpty) {
+            locationName += ', ${placemark.country!}';
+          } else {
+            locationName = placemark.country!;
+          }
+        }
+
+        if (locationName.isNotEmpty) {
+          _cachedLocationName = locationName;
+          _logger.info('Location name updated: $_cachedLocationName');
+        } else {
+          _cachedLocationName = 'Unknown Location';
+        }
+      } else {
+        _cachedLocationName = 'Unknown Location';
+      }
+    } catch (e) {
+      _logger.severe('Error getting location name: $e');
+      _cachedLocationName = 'Unknown Location';
+    }
+  }
+
+  /// Get location name for current position
+  Future<String?> getLocationName() async {
+    // Return cached location name if available
+    if (_cachedLocationName != null) {
+      return _cachedLocationName;
+    }
+
+    // Try to get current location and update name
+    final position = await getCurrentLocation();
+    if (position != null) {
+      await _updateLocationName(position);
+      return _cachedLocationName;
+    }
+
+    return null;
   }
 }
