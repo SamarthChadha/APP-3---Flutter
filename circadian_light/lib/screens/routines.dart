@@ -9,6 +9,7 @@ import '../widgets/time_picker_sheet.dart';
 import '../widgets/alarm_duration_selector.dart';
 import '../widgets/routine_card.dart';
 import '../widgets/alarm_card.dart';
+import '../core/theme_manager.dart';
 
 
 class RoutinesScreen extends StatefulWidget {
@@ -20,6 +21,10 @@ class RoutinesScreen extends StatefulWidget {
 
 class _RoutinesScreenState extends State<RoutinesScreen> {
   late final RoutineCore _core;
+
+  // For undo functionality
+  Routine? _recentlyDeletedRoutine;
+  Alarm? _recentlyDeletedAlarm;
 
   @override
   void initState() {
@@ -58,7 +63,42 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
   Future<void> _deleteRoutine(int id) async {
     try {
+      // Find the routine before deleting
+      final routineToDelete = _core.routines.firstWhere((r) => r.id == id);
+      _recentlyDeletedRoutine = routineToDelete;
+
+      // Delete immediately
       await _core.deleteRoutine(id);
+
+      if (mounted) {
+        // Show undo snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${routineToDelete.name} was deleted'),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () async {
+                if (_recentlyDeletedRoutine != null) {
+                  try {
+                    await _saveRoutine(_recentlyDeletedRoutine!.copyWith(id: null));
+                    _recentlyDeletedRoutine = null;
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error restoring routine: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        ).closed.then((_) {
+          // Clear the stored routine when snackbar is dismissed
+          _recentlyDeletedRoutine = null;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -88,7 +128,42 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
   Future<void> _deleteAlarm(int id) async {
     try {
+      // Find the alarm before deleting
+      final alarmToDelete = _core.alarms.firstWhere((a) => a.id == id);
+      _recentlyDeletedAlarm = alarmToDelete;
+
+      // Delete immediately
       await _core.deleteAlarm(id);
+
+      if (mounted) {
+        // Show undo snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${alarmToDelete.name} was deleted'),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () async {
+                if (_recentlyDeletedAlarm != null) {
+                  try {
+                    await _saveAlarm(_recentlyDeletedAlarm!.copyWith(id: null));
+                    _recentlyDeletedAlarm = null;
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error restoring alarm: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        ).closed.then((_) {
+          // Clear the stored alarm when snackbar is dismissed
+          _recentlyDeletedAlarm = null;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -917,15 +992,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFFFDFDFD), Color(0xFFE3E3E3)],
+                  colors: ThemeManager.I.neumorphicGradient,
                 ),
-                boxShadow: const [
-                  BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
-                  BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
-                ],
+                boxShadow: ThemeManager.I.neumorphicShadows,
               ),
               child: Column(
                 children: [
@@ -955,7 +1027,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         ),
                       ),
                       const SizedBox(width: 18),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -964,7 +1036,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF2F2F2F),
+                                color: ThemeManager.I.primaryTextColor,
                               ),
                             ),
                           ],
@@ -976,10 +1048,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   // Status text
                   Text(
                     SunriseSunsetManager.I.getCurrentStatus(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF666666),
+                      color: ThemeManager.I.secondaryTextColor,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -988,7 +1060,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF8F0),
+                      color: ThemeManager.I.infoBackgroundColor,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: const [
                         BoxShadow(
@@ -1003,42 +1075,42 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       children: [
                         Column(
                           children: [
-                            const Text(
+                            Text(
                               'Sunrise',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
-                                color: Color(0xFF666666),
+                                color: ThemeManager.I.secondaryTextColor,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               SunriseSunsetManager.I.sunriseTime.format(context),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF2F2F2F),
+                                color: ThemeManager.I.primaryTextColor,
                               ),
                             ),
                           ],
                         ),
                         Column(
                           children: [
-                            const Text(
+                            Text(
                               'Sunset',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
-                                color: Color(0xFF666666),
+                                color: ThemeManager.I.secondaryTextColor,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               SunriseSunsetManager.I.sunsetTime.format(context),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF2F2F2F),
+                                color: ThemeManager.I.primaryTextColor,
                               ),
                             ),
                           ],
@@ -1047,12 +1119,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'All manual routines are disabled while sunrise/sunset sync is active. '
                     'You can disable this feature in Settings.',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF888888),
+                      color: ThemeManager.I.tertiaryTextColor,
                       fontStyle: FontStyle.italic,
                     ),
                     textAlign: TextAlign.center,
@@ -1062,12 +1134,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
             ),
             const SizedBox(height: 20),
             if (_core.routines.isNotEmpty || _core.alarms.isNotEmpty) ...[
-              const Text(
+              Text(
                 'Disabled Routines & Alarms',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF888888),
+                  color: ThemeManager.I.tertiaryTextColor,
                 ),
               ),
               const SizedBox(height: 12),
@@ -1146,9 +1218,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F5F5),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         title: const Text(
           'Routines & Alarms',
           style: TextStyle(
@@ -1194,23 +1266,34 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 children: [
                   Expanded(
                     child: Material(
-                      color: Colors.white,
+                      color: Colors.transparent,
                       elevation: 10,
                       shadowColor: Colors.black.withValues(alpha: 0.12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                       clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: _openAddRoutineSheet,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          child: Center(
-                            child: Text(
-                              'Add Routine',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: Color(0xFF3D3D3D),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: ThemeManager.I.neumorphicGradient,
+                          ),
+                          boxShadow: ThemeManager.I.neumorphicShadows,
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: _openAddRoutineSheet,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: Text(
+                                'Add Routine',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  color: ThemeManager.I.primaryTextColor,
+                                ),
                               ),
                             ),
                           ),
@@ -1221,23 +1304,34 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Material(
-                      color: Colors.white,
+                      color: Colors.transparent,
                       elevation: 10,
                       shadowColor: Colors.black.withValues(alpha: 0.12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                       clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: _openAddAlarmSheet,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          child: Center(
-                            child: Text(
-                              'Add Alarm',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: Color(0xFF3D3D3D),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: ThemeManager.I.neumorphicGradient,
+                          ),
+                          boxShadow: ThemeManager.I.neumorphicShadows,
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: _openAddAlarmSheet,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: Text(
+                                'Add Alarm',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  color: ThemeManager.I.primaryTextColor,
+                                ),
                               ),
                             ),
                           ),
