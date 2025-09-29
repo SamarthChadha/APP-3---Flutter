@@ -7,7 +7,9 @@
       "Read(//Users/sam/Projects/Circadian light/APP 3 - Flutter/circadian_light/**)",
       "mcp__sequential-thinking__sequentialthinking",
       "mcp__brave-search__brave_web_search",
-      "WebFetch(domain:pub.dev)"
+      "WebFetch(domain:pub.dev)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter build:*)"
     ],
     "deny": [],
     "ask": []

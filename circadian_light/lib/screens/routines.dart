@@ -992,15 +992,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFFFDFDFD), Color(0xFFE3E3E3)],
+                  colors: ThemeManager.I.neumorphicGradient,
                 ),
-                boxShadow: const [
-                  BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
-                  BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
-                ],
+                boxShadow: ThemeManager.I.neumorphicShadows,
               ),
               child: Column(
                 children: [
@@ -1030,7 +1027,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         ),
                       ),
                       const SizedBox(width: 18),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1039,7 +1036,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF2F2F2F),
+                                color: ThemeManager.I.primaryTextColor,
                               ),
                             ),
                           ],
@@ -1051,10 +1048,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   // Status text
                   Text(
                     SunriseSunsetManager.I.getCurrentStatus(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF666666),
+                      color: ThemeManager.I.secondaryTextColor,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -1063,7 +1060,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF8F0),
+                      color: ThemeManager.I.infoBackgroundColor,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: const [
                         BoxShadow(
@@ -1078,42 +1075,42 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       children: [
                         Column(
                           children: [
-                            const Text(
+                            Text(
                               'Sunrise',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
-                                color: Color(0xFF666666),
+                                color: ThemeManager.I.secondaryTextColor,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               SunriseSunsetManager.I.sunriseTime.format(context),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF2F2F2F),
+                                color: ThemeManager.I.primaryTextColor,
                               ),
                             ),
                           ],
                         ),
                         Column(
                           children: [
-                            const Text(
+                            Text(
                               'Sunset',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
-                                color: Color(0xFF666666),
+                                color: ThemeManager.I.secondaryTextColor,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               SunriseSunsetManager.I.sunsetTime.format(context),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF2F2F2F),
+                                color: ThemeManager.I.primaryTextColor,
                               ),
                             ),
                           ],
@@ -1122,12 +1119,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'All manual routines are disabled while sunrise/sunset sync is active. '
                     'You can disable this feature in Settings.',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF888888),
+                      color: ThemeManager.I.tertiaryTextColor,
                       fontStyle: FontStyle.italic,
                     ),
                     textAlign: TextAlign.center,
@@ -1137,12 +1134,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
             ),
             const SizedBox(height: 20),
             if (_core.routines.isNotEmpty || _core.alarms.isNotEmpty) ...[
-              const Text(
+              Text(
                 'Disabled Routines & Alarms',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF888888),
+                  color: ThemeManager.I.tertiaryTextColor,
                 ),
               ),
               const SizedBox(height: 12),
