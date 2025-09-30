@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/alarm.dart';
+import '../core/theme_manager.dart';
 
 class AlarmCard extends StatefulWidget {
   final Alarm alarm;
@@ -98,13 +99,10 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isEffectivelyDisabled
-              ? [const Color(0xFFE5E5E5), const Color(0xFFD4D4D4)]
-              : [const Color(0xFFFDFDFD), const Color(0xFFE3E3E3)],
+              ? [ThemeManager.I.disabledColor, ThemeManager.I.disabledColor.withValues(alpha: 0.8)]
+              : ThemeManager.I.neumorphicGradient,
         ),
-        boxShadow: const [
-          BoxShadow(offset: Offset(6, 6), blurRadius: 18, color: Color(0x1F000000)),
-          BoxShadow(offset: Offset(-6, -6), blurRadius: 18, color: Color(0x88FFFFFF)),
-        ],
+        boxShadow: ThemeManager.I.neumorphicShadows,
       ),
       child: Row(
         children: [
@@ -129,7 +127,7 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
             ),
             child: Icon(
               Icons.alarm,
-              color: isEffectivelyDisabled ? Colors.grey.shade400 : const Color(0xFF2F2F2F),
+              color: isEffectivelyDisabled ? ThemeManager.I.tertiaryTextColor : ThemeManager.I.primaryTextColor,
               size: 22,
             ),
           ),
@@ -143,7 +141,7 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF2F2F2F).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                    color: ThemeManager.I.primaryTextColor.withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -152,7 +150,7 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF666666).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                    color: ThemeManager.I.secondaryTextColor.withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
                   ),
                 ),
                 Text(
@@ -160,7 +158,7 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: const Color(0xFF888888).withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                    color: ThemeManager.I.tertiaryTextColor.withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
                   ),
                 ),
               ],
@@ -170,12 +168,12 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
             Switch(
               value: widget.alarm.enabled,
               onChanged: widget.onChanged,
-              activeColor: const Color(0xFFFFC049),
+              activeColor: ThemeManager.I.currentAccentColor,
             )
           else
             Icon(
               Icons.lock_outline,
-              color: Colors.grey.shade400,
+              color: ThemeManager.I.tertiaryTextColor,
               size: 20,
             ),
         ],

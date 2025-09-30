@@ -5,6 +5,7 @@ import 'screens/routines.dart';
 import 'screens/settings.dart';
 import 'core/esp_connection.dart';
 import 'core/sunrise_sunset_manager.dart';
+import 'core/theme_manager.dart';
 import 'services/database_service.dart';
 import 'services/esp_sync_service.dart';
 
@@ -51,18 +52,23 @@ class _MainAppState extends State<MainApp> {
   Future<void> _initializeApp() async {
     try {
       _logger.info('Starting app initialization...');
-      
+
       // Initialize database first - this is critical for app functionality
       _logger.info('Initializing database...');
       await db.initialize();
       _logger.info('Database initialized successfully');
-      
+
+      // Initialize theme manager
+      _logger.info('Initializing theme manager...');
+      await ThemeManager.I.init();
+      _logger.info('Theme manager initialized successfully');
+
       // Start ESP connection - this is optional, app should work without it
       _logger.info('Starting ESP connection...');
       try {
         await EspConnection.I.connect();
         _logger.info('ESP connection attempt completed');
-        
+
         // Listen for ESP connection changes and sync when connected
         EspConnection.I.connection.listen((isConnected) {
           if (isConnected) {
@@ -74,7 +80,7 @@ class _MainAppState extends State<MainApp> {
         // ESP connection failure shouldn't prevent app from working
         _logger.warning('ESP connection failed, continuing without device connection', espError);
       }
-      
+
       // Initialize sunrise/sunset manager but don't enable it by default
       // It will be enabled when user turns it on in settings
       _logger.info('App initialization completed successfully');
@@ -182,36 +188,13 @@ class _MainAppState extends State<MainApp> {
       );
     }
 
-    return MaterialApp(
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFFC049), // warm yellow seed
-          brightness: Brightness.light,
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFFFFC049),
-            foregroundColor: const Color(0xFF3C3C3C),
-            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            padding: const EdgeInsets.symmetric(vertical: 18),
-          ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF5A4A00),
-            side: const BorderSide(color: Color(0xFFFFC049), width: 1.4),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.grey,
-          foregroundColor: Color(0xFF3C3C3C),
-          elevation: 0,
-        ),
-      ),
+    return ListenableBuilder(
+      listenable: ThemeManager.I,
+      builder: (context, child) {
+        return MaterialApp(
+          theme: ThemeManager.I.lightTheme,
+          darkTheme: ThemeManager.I.darkTheme,
+          themeMode: ThemeManager.I.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: Scaffold(
         extendBody: true,
         body: _screens[myIndex],
@@ -222,15 +205,9 @@ class _MainAppState extends State<MainApp> {
             height: 60,
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeManager.I.navigationBarColor,
               borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                ),
-              ],
+              boxShadow: ThemeManager.I.navigationBarShadow,
             ),
             child: BottomNavigationBar(
               backgroundColor: const Color.fromARGB(0, 22, 59, 31),
@@ -239,8 +216,8 @@ class _MainAppState extends State<MainApp> {
               currentIndex: myIndex,
               showSelectedLabels: false,
               showUnselectedLabels: false,
-              selectedItemColor: Colors.black,
-              unselectedItemColor: Colors.grey,
+              selectedItemColor: ThemeManager.I.currentAccentColor,
+              unselectedItemColor: ThemeManager.I.secondaryTextColor,
               items: const [
                 BottomNavigationBarItem(
                   icon: Icon(Icons.home),
@@ -259,6 +236,8 @@ class _MainAppState extends State<MainApp> {
           ),
         ),
       ),
+        );
+      },
     );
   }
 }

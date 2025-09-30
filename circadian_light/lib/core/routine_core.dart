@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import '../models/alarm.dart';
 import '../models/routine.dart';
 import '../services/database_service.dart';
+import '../services/esp_sync_service.dart';
+import '../core/esp_connection.dart';
 
 /// Thrown when attempting to save a routine that duplicates another
 class DuplicateRoutineException implements Exception {
@@ -53,6 +55,7 @@ class RoutineCore extends ChangeNotifier {
   }
 
   /// Save or update a routine. Throws [DuplicateRoutineException] on duplicate.
+  /// Also syncs to ESP32 if connected.
   Future<Routine> saveRoutine(Routine routine) async {
     if (_isDuplicateRoutine(routine)) {
       throw DuplicateRoutineException();
@@ -68,6 +71,12 @@ class RoutineCore extends ChangeNotifier {
       _routines.add(saved);
     }
     notifyListeners();
+
+    // Sync to ESP32 if connected and enabled
+    if (EspConnection.I.isConnected && saved.enabled) {
+      EspSyncService.I.syncRoutine(saved);
+    }
+
     return saved;
   }
 
@@ -78,6 +87,7 @@ class RoutineCore extends ChangeNotifier {
   }
 
   /// Save or update an alarm. Throws [DuplicateAlarmException] on duplicate.
+  /// Also syncs to ESP32 if connected.
   Future<Alarm> saveAlarm(Alarm alarm) async {
     if (_isDuplicateAlarm(alarm)) {
       throw DuplicateAlarmException();
@@ -92,6 +102,12 @@ class RoutineCore extends ChangeNotifier {
       _alarms.add(saved);
     }
     notifyListeners();
+
+    // Sync to ESP32 if connected and enabled
+    if (EspConnection.I.isConnected && saved.enabled) {
+      EspSyncService.I.syncAlarm(saved);
+    }
+
     return saved;
   }
 

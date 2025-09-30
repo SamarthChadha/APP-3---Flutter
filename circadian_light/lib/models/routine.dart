@@ -56,8 +56,8 @@ class Routine {
     return {
       'id': id,
       'name': name,
-      'start_hour': startTime.hour,
-      'start_minute': startTime.minute,
+      'start_hour': startTime.hour, //breaking timeOfDay into Hour
+      'start_minute': startTime.minute, //breaking timeOfDay into minutes
       'end_hour': endTime.hour,
       'end_minute': endTime.minute,
       'color_value': color.toARGB32(),
