@@ -9,7 +9,8 @@
       "mcp__brave-search__brave_web_search",
       "WebFetch(domain:pub.dev)",
       "Bash(flutter analyze:*)",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Bash(pio run:*)"
     ],
     "deny": [],
     "ask": []

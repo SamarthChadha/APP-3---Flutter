@@ -622,26 +622,10 @@ void setup() {
       // Stop SmartConfig first
       WiFi.stopSmartConfig();
 
-      Serial.println("\nSmartConfig data received, attempting connection...");
+      Serial.println("\nSmartConfig data received, waiting for connection...");
 
-      // Get the credentials from SmartConfig (they should be auto-applied)
-      String ssid = WiFi.SSID();
-      String psk = WiFi.psk();
-
-      Serial.print("Received SSID: ");
-      Serial.println(ssid.length() > 0 ? ssid : "(empty)");
-      Serial.print("Received PSK: ");
-      Serial.println(psk.length() > 0 ? "***hidden***" : "(empty)");
-
-      // Force reconnection with received credentials
-      if (ssid.length() > 0) {
-        WiFi.disconnect();
-        delay(100);
-        WiFi.begin(ssid.c_str(), psk.c_str());
-      }
-
-      // Wait for WiFi connection after SmartConfig
-      Serial.println("\nAttempting to connect to WiFi...");
+      // SmartConfig automatically configures and connects - just wait for it
+      Serial.println("Waiting for WiFi connection (SmartConfig handles this automatically)...");
       wifiStart = millis();
       int attempts = 0;
       while (WiFi.status() != WL_CONNECTED && millis() - wifiStart < 30000) { // 30 second timeout
@@ -669,11 +653,14 @@ void setup() {
       Serial.println("NTP time initialized");
     } else {
       Serial.println("\nFailed to connect with SmartConfig credentials.");
-      Serial.println("Please reset the device and try again.");
+      Serial.println("Please check your WiFi network and try again.");
+      Serial.println("Hold the button at startup to clear saved WiFi credentials.");
       digitalWrite(LED_BUILTIN, LOW); // LED off if failed
 
-      // Optionally restart ESP32 to try again
-      delay(5000);
+      // Wait before retrying to prevent boot loops
+      Serial.println("Waiting 30 seconds before retrying SmartConfig...");
+      delay(30000);
+      Serial.println("Restarting to retry provisioning...");
       ESP.restart();
     }
   }
@@ -769,6 +756,40 @@ void loop() {
   if (millis() - lastScheduleCheck >= SCHEDULE_CHECK_INTERVAL) {
     lastScheduleCheck = millis();
     checkSchedule();
+  }
+
+  // Monitor WiFi connection and reconnect if needed
+  static unsigned long lastWiFiCheck = 0;
+  if (millis() - lastWiFiCheck >= 5000) { // Check every 5 seconds
+    lastWiFiCheck = millis();
+
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("[WiFi] Connection lost, attempting reconnect...");
+      digitalWrite(LED_BUILTIN, LOW); // Turn off LED to indicate disconnection
+      WiFi.reconnect();
+
+      // Wait briefly for reconnection
+      unsigned long reconnectStart = millis();
+      while (WiFi.status() != WL_CONNECTED && millis() - reconnectStart < 10000) {
+        delay(500);
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); // Blink during reconnection
+      }
+
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.printf("[WiFi] Reconnected! IP: %s\n", WiFi.localIP().toString().c_str());
+        digitalWrite(LED_BUILTIN, HIGH); // LED on when connected
+
+        // Restart mDNS after reconnection
+        MDNS.end();
+        if (MDNS.begin("circadian-light")) {
+          MDNS.addService("_ws", "_tcp", 80);
+          MDNS.addService("_circadian", "_tcp", 80);
+          Serial.println("[mDNS] Restarted after reconnection");
+        }
+      } else {
+        Serial.println("[WiFi] Reconnection failed, will retry...");
+      }
+    }
   }
 
   ws.cleanupClients();
