@@ -45,6 +45,8 @@
 	<string>This app needs location access to calculate accurate sunrise and sunset times for your circadian lighting schedule.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app needs location access to calculate accurate sunrise and sunset times for your circadian lighting schedule.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>This app uses Bluetooth to configure and provision your Circadian Lamp with WiFi credentials.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

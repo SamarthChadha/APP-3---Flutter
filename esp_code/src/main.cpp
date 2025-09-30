@@ -98,6 +98,7 @@ void handleAlarmSync(JsonDocument& doc);
 void handleFullSync(JsonDocument& doc);
 void handleTimeSync(JsonDocument& doc);
 void sendSyncResponse(const char* type, bool success, const char* message);
+void startBLEProvisioning();
 
 // ===== Helpers =====
 void sendStateUpdate() {
@@ -687,6 +688,25 @@ void sysProvEvent(arduino_event_t *sys_event) {
   }
 }
 
+// Start BLE provisioning
+void startBLEProvisioning() {
+  Serial.println("🔵 Starting BLE provisioning...");
+
+  uint8_t uuid[16] = {0xb4, 0xdf, 0x5a, 0x1c, 0x3f, 0x6b, 0xf4, 0xbf,
+                      0xea, 0x4a, 0x82, 0x03, 0x04, 0x90, 0x1a, 0x02};
+
+  WiFiProv.beginProvision(WIFI_PROV_SCHEME_BLE, WIFI_PROV_SCHEME_HANDLER_FREE_BLE,
+                          WIFI_PROV_SECURITY_1, "circadian123", "CircadianLight",
+                          NULL, uuid, true);
+
+  Serial.println("✅ BLE provisioning active");
+  Serial.println("Service Name: CircadianLight");
+  Serial.println("Pop/Password: circadian123");
+
+  // Print QR code for easy setup
+  WiFiProv.printQR("CircadianLight", "circadian123", "ble");
+}
+
 void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
@@ -698,23 +718,9 @@ void setup() {
   // WiFi provisioning setup
   WiFi.begin(); // Start WiFi without credentials - will be provided via provisioning or from NVS
   WiFi.onEvent(sysProvEvent);
-  
+
   // Start BLE provisioning
-  uint8_t uuid[16] = {0xb4, 0xdf, 0x5a, 0x1c, 0x3f, 0x6b, 0xf4, 0xbf, 
-                      0xea, 0x4a, 0x82, 0x03, 0x04, 0x90, 0x1a, 0x02};
-  
-  Serial.println("Starting BLE provisioning...");
-  WiFiProv.beginProvision(WIFI_PROV_SCHEME_BLE, WIFI_PROV_SCHEME_HANDLER_FREE_BLE,
-                          WIFI_PROV_SECURITY_1, "circadian123", "CircadianLight", 
-                          NULL, uuid, true);
-  
-  Serial.println("BLE provisioning started");
-  Serial.println("Use the ESP32 WiFi Provisioning app to connect:");
-  Serial.println("Service Name: CircadianLight");
-  Serial.println("Pop/Password: circadian123");
-  
-  // Print QR code for easy setup
-  WiFiProv.printQR("CircadianLight", "circadian123", "ble");
+  startBLEProvisioning();
   
   // Wait for WiFi connection
   unsigned long wifiStart = millis();
@@ -791,19 +797,47 @@ void loop() {
     }
   }
 
-  // --- Button: single click = toggle on/off; double click = cycle modes ---
+  // --- Button: single click = toggle on/off; double click = cycle modes; long press = BLE provisioning ---
   static bool prevPressed = false;            // logical pressed state (polarity-agnostic)
   static unsigned long lastChange = 0;
+  static unsigned long pressStartTime = 0;     // when button was first pressed
+  static bool longPressTriggered = false;      // prevent multiple long press triggers
   unsigned long now = millis();
 
   int raw = digitalRead(ROTARY_BTN);
   bool pressed = BUTTON_ACTIVE_LOW ? (raw == LOW) : (raw == HIGH);
 
+  // Detect button press start (for long press timing)
+  if (pressed && !prevPressed) {
+    pressStartTime = now;
+    longPressTriggered = false;
+  }
+
+  // Check for long press (5 seconds)
+  if (pressed && !longPressTriggered && (now - pressStartTime) >= 5000) {
+    longPressTriggered = true;
+    Serial.println("🔵 LONG PRESS detected! Starting BLE provisioning...");
+
+    // Blink LED to indicate provisioning mode
+    for (int i = 0; i < 3; i++) {
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(100);
+      digitalWrite(LED_BUILTIN, LOW);
+      delay(100);
+    }
+
+    // Restart BLE provisioning
+    startBLEProvisioning();
+
+    // Reset click tracking to avoid false clicks
+    clickCount = 0;
+  }
+
   if (pressed != prevPressed && (now - lastChange) > DEBOUNCE_MS) {
     lastChange = now;
 
-    // Trigger on RELEASE edge regardless of polarity
-    if (prevPressed && !pressed) {
+    // Trigger on RELEASE edge regardless of polarity (but not if long press was triggered)
+    if (prevPressed && !pressed && !longPressTriggered) {
       if (clickCount == 0) firstClickTime = now;
       clickCount++;
       Serial.println("Button RELEASE detected");

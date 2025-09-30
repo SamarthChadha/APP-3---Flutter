@@ -3,15 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:logging/logging.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:http/http.dart' as http;
 
 class LocationService {
   LocationService._();
   static final LocationService I = LocationService._();
-
-  static final Logger _logger = Logger('LocationService');
   Position? _lastKnownPosition;
   bool _hasLocationPermission = false;
 
@@ -30,14 +27,14 @@ class LocationService {
   /// Request location permission from the user
   Future<bool> requestLocationPermission() async {
     try {
-      _logger.info('Requesting location permission...');
+      debugPrint('Requesting location permission...');
 
       // Check current permission status for "when in use" location
       PermissionStatus permission = await Permission.locationWhenInUse.status;
 
       if (permission.isGranted) {
         _hasLocationPermission = true;
-        _logger.info('Location permission already granted');
+        debugPrint('Location permission already granted');
         return true;
       }
 
@@ -48,19 +45,19 @@ class LocationService {
 
       if (permission.isGranted) {
         _hasLocationPermission = true;
-        _logger.info('Location permission granted');
+        debugPrint('Location permission granted');
         return true;
       } else if (permission.isPermanentlyDenied) {
-        _logger.warning('Location permission permanently denied');
+        debugPrint('Location permission permanently denied');
         // User needs to enable it from app settings
         return false;
       } else {
-        _logger.warning('Location permission denied');
+        debugPrint('Location permission denied');
         return false;
       }
 
     } catch (e) {
-      _logger.severe('Error requesting location permission: $e');
+      debugPrint('Error requesting location permission: $e');
       return false;
     }
   }
@@ -71,17 +68,17 @@ class LocationService {
       if (!_hasLocationPermission) {
         final granted = await requestLocationPermission();
         if (!granted) {
-          _logger.warning('Cannot get location without permission');
+          debugPrint('Cannot get location without permission');
           return null;
         }
       }
 
-      _logger.info('Getting current location...');
+      debugPrint('Getting current location...');
 
       // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _logger.warning('Location services are disabled');
+        debugPrint('Location services are disabled');
         return null;
       }
 
@@ -94,7 +91,7 @@ class LocationService {
       );
 
       _lastKnownPosition = position;
-      _logger.info('Location obtained: ${position.latitude}, ${position.longitude}');
+      debugPrint('Location obtained: ${position.latitude}, ${position.longitude}');
 
       // Update location name cache in background
       _updateLocationName(position);
@@ -102,11 +99,11 @@ class LocationService {
       return position;
 
     } catch (e) {
-      _logger.severe('Error getting current location: $e');
+      debugPrint('Error getting current location: $e');
 
       // Try to return last known position if available
       if (_lastKnownPosition != null) {
-        _logger.info('Returning last known position');
+        debugPrint('Returning last known position');
         return _lastKnownPosition;
       }
 
@@ -123,7 +120,7 @@ class LocationService {
       // Use provided position or get current location
       position ??= await getCurrentLocation();
       if (position == null) {
-        _logger.warning('Cannot calculate sunrise/sunset without location');
+        debugPrint('Cannot calculate sunrise/sunset without location');
         return null;
       }
 
@@ -136,11 +133,11 @@ class LocationService {
           _lastCalculationDate?.year == date.year &&
           _cachedSunrise != null &&
           _cachedSunset != null) {
-        _logger.info('Using cached sunrise/sunset times');
+        debugPrint('Using cached sunrise/sunset times');
         return (sunrise: _cachedSunrise!, sunset: _cachedSunset!);
       }
 
-      _logger.info('Calculating sunrise/sunset for ${position.latitude}, ${position.longitude} on ${date.toString()}');
+      debugPrint('Calculating sunrise/sunset for ${position.latitude}, ${position.longitude} on ${date.toString()}');
 
       // Calculate sunrise and sunset using sunrisesunset.io API
       final result = await _fetchSunriseSunsetFromAPI(
@@ -150,7 +147,7 @@ class LocationService {
       );
 
       if (result == null) {
-        _logger.warning('API call failed, could not get sunrise/sunset times');
+        debugPrint('API call failed, could not get sunrise/sunset times');
         return null;
       }
 
@@ -159,12 +156,12 @@ class LocationService {
       _cachedSunrise = result.sunrise;
       _cachedSunset = result.sunset;
 
-      _logger.info('Calculated sunrise: ${result.sunrise.hour}:${result.sunrise.minute.toString().padLeft(2, '0')}, sunset: ${result.sunset.hour}:${result.sunset.minute.toString().padLeft(2, '0')}');
+      debugPrint('Calculated sunrise: ${result.sunrise.hour}:${result.sunrise.minute.toString().padLeft(2, '0')}, sunset: ${result.sunset.hour}:${result.sunset.minute.toString().padLeft(2, '0')}');
 
       return result;
 
     } catch (e) {
-      _logger.severe('Error calculating sunrise/sunset: $e');
+      debugPrint('Error calculating sunrise/sunset: $e');
       return null;
     }
   }
@@ -188,7 +185,7 @@ class LocationService {
         'time_format': '24', // Use 24-hour format for easier parsing
       });
 
-      _logger.info('Fetching sunrise/sunset from API: $url');
+      debugPrint('Fetching sunrise/sunset from API: $url');
 
       // Make HTTP request with timeout
       final response = await http.get(url).timeout(
@@ -199,7 +196,7 @@ class LocationService {
       );
 
       if (response.statusCode != 200) {
-        _logger.severe('API request failed with status ${response.statusCode}: ${response.body}');
+        debugPrint('API request failed with status ${response.statusCode}: ${response.body}');
         return null;
       }
 
@@ -207,7 +204,7 @@ class LocationService {
       final data = json.decode(response.body);
 
       if (data['status'] != 'OK') {
-        _logger.severe('API returned error status: ${data['status']}');
+        debugPrint('API returned error status: ${data['status']}');
         return null;
       }
 
@@ -220,16 +217,16 @@ class LocationService {
       final sunset = _parseTimeString(sunsetString);
 
       if (sunrise == null || sunset == null) {
-        _logger.severe('Failed to parse sunrise/sunset times from API response');
+        debugPrint('Failed to parse sunrise/sunset times from API response');
         return null;
       }
 
-      _logger.info('Successfully fetched times from API - Sunrise: ${sunrise.hour}:${sunrise.minute.toString().padLeft(2, '0')}, Sunset: ${sunset.hour}:${sunset.minute.toString().padLeft(2, '0')}');
+      debugPrint('Successfully fetched times from API - Sunrise: ${sunrise.hour}:${sunrise.minute.toString().padLeft(2, '0')}, Sunset: ${sunset.hour}:${sunset.minute.toString().padLeft(2, '0')}');
 
       return (sunrise: sunrise, sunset: sunset);
 
     } catch (e) {
-      _logger.severe('Error fetching sunrise/sunset from API: $e');
+      debugPrint('Error fetching sunrise/sunset from API: $e');
       return null;
     }
   }
@@ -245,7 +242,7 @@ class LocationService {
       }
       return null;
     } catch (e) {
-      _logger.severe('Error parsing time string "$timeString": $e');
+      debugPrint('Error parsing time string "$timeString": $e');
       return null;
     }
   }
@@ -256,7 +253,7 @@ class LocationService {
     try {
       await openAppSettings();
     } catch (e) {
-      _logger.severe('Error opening location settings: $e');
+      debugPrint('Error opening location settings: $e');
     }
   }
 
@@ -267,7 +264,7 @@ class LocationService {
       _hasLocationPermission = permission.isGranted;
       return _hasLocationPermission;
     } catch (e) {
-      _logger.severe('Error checking location permission: $e');
+      debugPrint('Error checking location permission: $e');
       return false;
     }
   }
@@ -292,7 +289,7 @@ class LocationService {
   /// Update location name cache using reverse geocoding
   Future<void> _updateLocationName(Position position) async {
     try {
-      _logger.info('Getting location name for ${position.latitude}, ${position.longitude}');
+      debugPrint('Getting location name for ${position.latitude}, ${position.longitude}');
 
       final placemarks = await placemarkFromCoordinates(
         position.latitude,
@@ -323,7 +320,7 @@ class LocationService {
 
         if (locationName.isNotEmpty) {
           _cachedLocationName = locationName;
-          _logger.info('Location name updated: $_cachedLocationName');
+          debugPrint('Location name updated: $_cachedLocationName');
         } else {
           _cachedLocationName = 'Unknown Location';
         }
@@ -331,7 +328,7 @@ class LocationService {
         _cachedLocationName = 'Unknown Location';
       }
     } catch (e) {
-      _logger.severe('Error getting location name: $e');
+      debugPrint('Error getting location name: $e');
       _cachedLocationName = 'Unknown Location';
     }
   }

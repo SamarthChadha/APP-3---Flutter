@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
 import 'screens/home.dart';
 import 'screens/routines.dart';
 import 'screens/settings.dart';
@@ -26,12 +25,10 @@ class _MainAppState extends State<MainApp> {
   late final List<Widget> _screens;
   bool _initializationFailed = false;
   String? _initializationError;
-  static final Logger _logger = Logger('MainApp');
 
   @override
   void initState() {
     super.initState();
-    _setupLogging();
     _initializeApp();
     
     _screens = [
@@ -41,52 +38,44 @@ class _MainAppState extends State<MainApp> {
     ];
   }
 
-  void _setupLogging() {
-    Logger.root.level = Level.INFO;
-    Logger.root.onRecord.listen((record) {
-      if (record.error != null) {}
-      if (record.stackTrace != null) {}
-    });
-  }
-
   Future<void> _initializeApp() async {
     try {
-      _logger.info('Starting app initialization...');
+      debugPrint('Starting app initialization...');
 
       // Initialize database first - this is critical for app functionality
-      _logger.info('Initializing database...');
+      debugPrint('Initializing database...');
       await db.initialize();
-      _logger.info('Database initialized successfully');
+      debugPrint('Database initialized successfully');
 
       // Initialize theme manager
-      _logger.info('Initializing theme manager...');
+      debugPrint('Initializing theme manager...');
       await ThemeManager.I.init();
-      _logger.info('Theme manager initialized successfully');
+      debugPrint('Theme manager initialized successfully');
 
       // Start ESP connection - this is optional, app should work without it
-      _logger.info('Starting ESP connection...');
+      debugPrint('Starting ESP connection...');
       try {
         await EspConnection.I.connect();
-        _logger.info('ESP connection attempt completed');
+        debugPrint('ESP connection attempt completed');
 
         // Listen for ESP connection changes and sync when connected
         EspConnection.I.connection.listen((isConnected) {
           if (isConnected) {
-            _logger.info('ESP32 connected, triggering full sync...');
+            debugPrint('ESP32 connected, triggering full sync...');
             EspSyncService.I.onEspConnected();
           }
         });
       } catch (espError) {
         // ESP connection failure shouldn't prevent app from working
-        _logger.warning('ESP connection failed, continuing without device connection', espError);
+        debugPrint('ESP connection failed, continuing without device connection: $espError');
       }
 
       // Initialize sunrise/sunset manager but don't enable it by default
       // It will be enabled when user turns it on in settings
-      _logger.info('App initialization completed successfully');
-      
+      debugPrint('App initialization completed successfully');
+
     } catch (error, stackTrace) {
-      _logger.severe('Critical app initialization failed', error, stackTrace);
+      debugPrint('Critical app initialization failed: $error\n$stackTrace');
       
       setState(() {
         _initializationFailed = true;

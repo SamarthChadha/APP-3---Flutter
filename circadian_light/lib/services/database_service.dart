@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart';
-import 'package:logging/logging.dart';
 import '../models/routine.dart';
 import '../models/alarm.dart';
 import '../models/user_settings.dart';
@@ -14,7 +14,6 @@ class DatabaseService {
   static DatabaseService? _instance;
   static Database? _database;
   static SharedPreferences? _prefs;
-  static final Logger _logger = Logger('DatabaseService');
 
   DatabaseService._internal();
 
@@ -86,23 +85,23 @@ class DatabaseService {
       // Check if alarms table exists
       final alarmsTableExists = await _tableExists(db, 'alarms');
       if (!alarmsTableExists) {
-        _logger.warning('Alarms table missing, creating it...');
+        debugPrint('Alarms table missing, creating it...');
         await db.execute(Alarm.createTableSql);
-        _logger.info('Alarms table created successfully');
+        debugPrint('Alarms table created successfully');
       }
 
       // Check if routines table exists
       final routinesTableExists = await _tableExists(db, 'routines');
       if (!routinesTableExists) {
-        _logger.warning('Routines table missing, creating it...');
+        debugPrint('Routines table missing, creating it...');
         await db.execute(Routine.createTableSql);
-        _logger.info('Routines table created successfully');
+        debugPrint('Routines table created successfully');
       }
 
       // Check if app_metadata table exists
       final metadataTableExists = await _tableExists(db, 'app_metadata');
       if (!metadataTableExists) {
-        _logger.warning('App metadata table missing, creating it...');
+        debugPrint('App metadata table missing, creating it...');
         await db.execute('''
           CREATE TABLE app_metadata (
             key TEXT PRIMARY KEY,
@@ -117,18 +116,18 @@ class DatabaseService {
           'value': _databaseVersion.toString(),
           'updated_at': DateTime.now().millisecondsSinceEpoch,
         });
-        _logger.info('App metadata table created successfully');
+        debugPrint('App metadata table created successfully');
       }
 
       // Check if lamp_state table exists
       final lampStateTableExists = await _tableExists(db, 'lamp_state');
       if (!lampStateTableExists) {
-        _logger.warning('Lamp state table missing, creating it...');
+        debugPrint('Lamp state table missing, creating it...');
         await db.execute(LampState.createTableSql);
-        _logger.info('Lamp state table created successfully');
+        debugPrint('Lamp state table created successfully');
       }
     } catch (e) {
-      _logger.severe('Error ensuring tables exist: $e');
+      debugPrint('Error ensuring tables exist: $e');
       rethrow;
     }
   }
@@ -142,7 +141,7 @@ class DatabaseService {
       );
       return result.isNotEmpty;
     } catch (e) {
-      _logger.warning('Error checking if table $tableName exists: $e');
+      debugPrint('Error checking if table $tableName exists: $e');
       return false;
     }
   }
@@ -208,7 +207,7 @@ class DatabaseService {
       await EspSyncService.I.syncRoutine(routineWithId);
     } catch (e) {
       // Don't fail the save operation if ESP sync fails
-      _logger.warning('Failed to sync routine to ESP32: $e');
+      debugPrint('Failed to sync routine to ESP32: $e');
     }
     
     return routineId;
@@ -255,7 +254,7 @@ class DatabaseService {
       await EspSyncService.I.deleteRoutineFromEsp(id);
     } catch (e) {
       // Don't fail the delete operation if ESP sync fails
-      _logger.warning('Failed to sync routine deletion to ESP32: $e');
+      debugPrint('Failed to sync routine deletion to ESP32: $e');
     }
   }
 
@@ -292,7 +291,7 @@ class DatabaseService {
       await EspSyncService.I.syncAlarm(alarmWithId);
     } catch (e) {
       // Don't fail the save operation if ESP sync fails
-      _logger.warning('Failed to sync alarm to ESP32: $e');
+      debugPrint('Failed to sync alarm to ESP32: $e');
     }
     
     return alarmId;
@@ -339,7 +338,7 @@ class DatabaseService {
       await EspSyncService.I.deleteAlarmFromEsp(id);
     } catch (e) {
       // Don't fail the delete operation if ESP sync fails
-      _logger.warning('Failed to sync alarm deletion to ESP32: $e');
+      debugPrint('Failed to sync alarm deletion to ESP32: $e');
     }
   }
 
@@ -434,7 +433,7 @@ class DatabaseService {
       );
     }
     
-    _logger.info('Saved lamp state: $state');
+    debugPrint('Saved lamp state: $state');
   }
 
   /// Load the current lamp state from database
@@ -548,7 +547,7 @@ class DatabaseService {
   /// Recreate the database from scratch (useful for fixing corruption or missing tables)
   Future<void> recreateDatabase() async {
     try {
-      _logger.info('Recreating database from scratch...');
+      debugPrint('Recreating database from scratch...');
       
       // Close existing database
       if (_database != null) {
@@ -562,15 +561,15 @@ class DatabaseService {
       final file = File(path);
       if (await file.exists()) {
         await file.delete();
-        _logger.info('Deleted existing database file');
+        debugPrint('Deleted existing database file');
       }
       
       // Reinitialize the database (this will trigger onCreate)
       _database = await _initDatabase();
-      _logger.info('Database recreated successfully');
+      debugPrint('Database recreated successfully');
       
     } catch (e) {
-      _logger.severe('Error recreating database: $e');
+      debugPrint('Error recreating database: $e');
       rethrow;
     }
   }
