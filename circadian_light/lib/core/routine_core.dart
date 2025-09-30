@@ -56,9 +56,20 @@ class RoutineCore extends ChangeNotifier {
 
   /// Save or update a routine. Throws [DuplicateRoutineException] on duplicate.
   /// Also syncs to ESP32 if connected.
+  /// If the routine is enabled, disables all overlapping routines and alarms.
   Future<Routine> saveRoutine(Routine routine) async {
     if (_isDuplicateRoutine(routine)) {
       throw DuplicateRoutineException();
+    }
+
+    // If this routine is being enabled, disable all overlapping items
+    if (routine.enabled) {
+      await _disableOverlappingItems(
+        routine.startTime,
+        routine.endTime,
+        routine.id,
+        'routine',
+      );
     }
 
     final id = await db.saveRoutine(routine);
@@ -88,9 +99,20 @@ class RoutineCore extends ChangeNotifier {
 
   /// Save or update an alarm. Throws [DuplicateAlarmException] on duplicate.
   /// Also syncs to ESP32 if connected.
+  /// If the alarm is enabled, disables all overlapping routines and alarms.
   Future<Alarm> saveAlarm(Alarm alarm) async {
     if (_isDuplicateAlarm(alarm)) {
       throw DuplicateAlarmException();
+    }
+
+    // If this alarm is being enabled, disable all overlapping items
+    if (alarm.enabled) {
+      await _disableOverlappingItems(
+        alarm.startTime,
+        alarm.wakeUpTime,
+        alarm.id,
+        'alarm',
+      );
     }
 
     final id = await db.saveAlarm(alarm);
@@ -118,6 +140,99 @@ class RoutineCore extends ChangeNotifier {
   }
 
   // ===================== Helpers =====================
+
+  /// Convert TimeOfDay to total minutes since midnight
+  int _toMinutes(TimeOfDay time) => time.hour * 60 + time.minute;
+
+  /// Check if two time ranges overlap, accounting for 24-hour wraparound
+  bool _timeRangesOverlap(
+    TimeOfDay start1,
+    TimeOfDay end1,
+    TimeOfDay start2,
+    TimeOfDay end2,
+  ) {
+    final s1 = _toMinutes(start1);
+    final e1 = _toMinutes(end1);
+    final s2 = _toMinutes(start2);
+    final e2 = _toMinutes(end2);
+
+    final wraps1 = s1 > e1; // first range wraps midnight
+    final wraps2 = s2 > e2; // second range wraps midnight
+
+    if (!wraps1 && !wraps2) {
+      // Neither wraps: standard overlap check
+      return s1 < e2 && s2 < e1;
+    } else if (wraps1 && wraps2) {
+      // Both wrap: they always overlap
+      return true;
+    } else if (wraps1) {
+      // Only first wraps: [s1, 24h) + [0, e1) overlaps with [s2, e2)
+      return s2 < e1 || e2 > s1;
+    } else {
+      // Only second wraps: [s2, 24h) + [0, e2) overlaps with [s1, e1)
+      return s1 < e2 || e1 > s2;
+    }
+  }
+
+  /// Disable all routines and alarms that overlap with the given time range
+  Future<void> _disableOverlappingItems(
+    TimeOfDay startTime,
+    TimeOfDay endTime,
+    int? excludeId,
+    String excludeType, // 'routine' or 'alarm'
+  ) async {
+    // Find overlapping routines
+    for (final routine in _routines) {
+      // Skip the routine being saved
+      if (excludeType == 'routine' && routine.id == excludeId) continue;
+
+      // Skip if already disabled
+      if (!routine.enabled) continue;
+
+      // Check for overlap
+      if (_timeRangesOverlap(startTime, endTime, routine.startTime, routine.endTime)) {
+        // Disable this routine
+        final disabled = routine.copyWith(enabled: false);
+        await db.saveRoutine(disabled);
+
+        final index = _routines.indexWhere((r) => r.id == routine.id);
+        if (index >= 0) {
+          _routines[index] = disabled;
+        }
+
+        // Sync disabled state to ESP32 if connected
+        if (EspConnection.I.isConnected) {
+          EspSyncService.I.syncRoutine(disabled);
+        }
+      }
+    }
+
+    // Find overlapping alarms
+    for (final alarm in _alarms) {
+      // Skip the alarm being saved
+      if (excludeType == 'alarm' && alarm.id == excludeId) continue;
+
+      // Skip if already disabled
+      if (!alarm.enabled) continue;
+
+      // Check for overlap
+      if (_timeRangesOverlap(startTime, endTime, alarm.startTime, alarm.wakeUpTime)) {
+        // Disable this alarm
+        final disabled = alarm.copyWith(enabled: false);
+        await db.saveAlarm(disabled);
+
+        final index = _alarms.indexWhere((a) => a.id == alarm.id);
+        if (index >= 0) {
+          _alarms[index] = disabled;
+        }
+
+        // Sync disabled state to ESP32 if connected
+        if (EspConnection.I.isConnected) {
+          EspSyncService.I.syncAlarm(disabled);
+        }
+      }
+    }
+  }
 
   bool _isDuplicateRoutine(Routine newRoutine) {
     return _routines.any((existingRoutine) {
