@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 // import 'package:flutter_gl/flutter_gl.dart';
 // import 'package:flutter_3d_controller/'
@@ -23,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     const base = Color(0xFFEFEFEF);
     return Scaffold(
-      backgroundColor: Colors.grey,
+      backgroundColor: Colors.white,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.only(top: 55),
@@ -39,99 +40,63 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              NeumorphicPillButton(
-                label: _isOn ? 'Turn Off' : 'Turn On',
-                onTap: () => setState(() => _isOn = !_isOn),
+              // iOS-style toggle switch
+              Transform.scale(
+                scale: 1.2,
+                child: CupertinoSwitch(
+                  value: _isOn,
+                  activeColor: const Color(0xFFFF9500),
+                  onChanged: (value) => setState(() => _isOn = value),
+                ),
               ),
               const SizedBox(height: 28),
-              // Brightness label
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Brightness',
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF3C3C3C),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Brightness slider (neumorphic track)
+              // Brightness card with label and slider
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Container(
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: base,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            offset: const Offset(6, 6),
-                            blurRadius: 18,
-                            color: Colors.black.withValues(alpha: 0.12),
-                          ),
-                          BoxShadow(
-                            offset: const Offset(-6, -6),
-                            blurRadius: 18,
-                            color: Colors.white.withValues(alpha: 0.5),
-                          ),
-                        ],
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: base,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        offset: const Offset(10, 10),
+                        blurRadius: 24,
+                        color: Colors.black.withValues(alpha: 0.12),
                       ),
-                    ),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 18,
-                        activeTrackColor: Colors.transparent,
-                        inactiveTrackColor: Colors.transparent,
-                        thumbColor: base,
-                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
+                      BoxShadow(
+                        offset: const Offset(-10, -10),
+                        blurRadius: 24,
+                        color: Colors.white.withValues(alpha: 0.5),
                       ),
-                      child: Slider(
-                        min: 0.0,
-                        max: 1.0,
-                        value: _brightness,
-                        onChanged: (v) => setState(() => _brightness = v),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 28),
-              // Color Temperature label
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Color Temperature',
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF3C3C3C),
-                      letterSpacing: 0.2,
-                    ),
+                    ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Temperature slider + value pill
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    // slider
-                    Expanded(
-                      child: Stack(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Brightness',
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF3C3C3C),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Intensity indicator
+                      Text(
+                        '${(_brightness * 100).round()}% intensity',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF888888),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Brightness slider with gradient
+                      Stack(
                         alignment: Alignment.centerLeft,
                         children: [
                           Container(
@@ -142,8 +107,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
                                 colors: [
-                                  Color(0xFFFFC477), // warm
-                                  Color(0xFFBFD7FF), // cool
+                                  Color(0xFF888888), // grey
+                                  Color(0xFFFFFFFF), // white
                                 ],
                               ),
                               boxShadow: [
@@ -170,46 +135,141 @@ class _HomeScreenState extends State<HomeScreen> {
                               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
                             ),
                             child: Slider(
-                              min: 1800,
-                              max: 6500,
-                              value: _tempK,
-                              onChanged: (v) => setState(() => _tempK = v),
+                              min: 0.0,
+                              max: 1.0,
+                              value: _brightness,
+                              onChanged: (v) => setState(() => _brightness = v),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    // value pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: base,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            offset: const Offset(6, 6),
-                            blurRadius: 18,
-                            color: Colors.black.withValues(alpha: 0.12),
-                          ),
-                          BoxShadow(
-                            offset: const Offset(-6, -6),
-                            blurRadius: 18,
-                            color: Colors.white.withValues(alpha: 0.5),
-                          ),
-                        ],
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 28),
+              // Temperature card with label and slider
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: base,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        offset: const Offset(10, 10),
+                        blurRadius: 24,
+                        color: Colors.black.withValues(alpha: 0.12),
                       ),
-                      child: Text(
-                        '${_tempK.round()} K',
+                      BoxShadow(
+                        offset: const Offset(-10, -10),
+                        blurRadius: 24,
+                        color: Colors.white.withValues(alpha: 0.5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Color Temperature',
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 26,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF3C3C3C),
                           letterSpacing: 0.2,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      // Temperature slider + value pill
+                      Row(
+                        children: [
+                          // slider
+                          Expanded(
+                            child: Stack(
+                              alignment: Alignment.centerLeft,
+                              children: [
+                                Container(
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    gradient: const LinearGradient(
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                      colors: [
+                                        Color(0xFFFFC477), // warm
+                                        Color(0xFFBFD7FF), // cool
+                                      ],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        offset: const Offset(6, 6),
+                                        blurRadius: 18,
+                                        color: Colors.black.withValues(alpha: 0.12),
+                                      ),
+                                      BoxShadow(
+                                        offset: const Offset(-6, -6),
+                                        blurRadius: 18,
+                                        color: Colors.white.withValues(alpha: 0.5),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SliderTheme(
+                                  data: SliderTheme.of(context).copyWith(
+                                    trackHeight: 18,
+                                    activeTrackColor: Colors.transparent,
+                                    inactiveTrackColor: Colors.transparent,
+                                    thumbColor: base,
+                                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+                                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
+                                  ),
+                                  child: Slider(
+                                    min: 1800,
+                                    max: 6500,
+                                    value: _tempK,
+                                    onChanged: (v) => setState(() => _tempK = v),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // value pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: base,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  offset: const Offset(6, 6),
+                                  blurRadius: 18,
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                ),
+                                BoxShadow(
+                                  offset: const Offset(-6, -6),
+                                  blurRadius: 18,
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              '${_tempK.round()} K',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF3C3C3C),
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/sam/Projects/Circadian light/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
