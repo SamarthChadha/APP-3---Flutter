@@ -692,10 +692,6 @@ void sysProvEvent(arduino_event_t *sys_event) {
 void startBLEProvisioning() {
   Serial.println("🔵 Starting BLE provisioning...");
 
-  // End any existing provisioning session to avoid ESP_ERR_INVALID_STATE
-  WiFiProv.endProvision();
-  delay(100);
-
   // If WiFi is already connected, disconnect first
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("WiFi connected, disconnecting before provisioning...");
@@ -730,17 +726,29 @@ void setup() {
   WiFi.begin(); // Start WiFi without credentials - will be provided via provisioning or from NVS
   WiFi.onEvent(sysProvEvent);
 
-  // Start BLE provisioning
-  startBLEProvisioning();
-  
-  // Wait for WiFi connection
+  // Wait for WiFi connection (try stored credentials first)
+  Serial.println("Attempting WiFi connection with stored credentials...");
   unsigned long wifiStart = millis();
-  const unsigned long wifiTimeout = 60000; // 60 seconds timeout for provisioning
+  const unsigned long wifiTimeout = 10000; // 10 seconds timeout for stored credentials
   while (WiFi.status() != WL_CONNECTED && millis() - wifiStart < wifiTimeout) {
     delay(500);
     Serial.print(".");
   }
-  
+
+  // Only start BLE provisioning if WiFi failed to connect
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("\nWiFi not connected, starting BLE provisioning...");
+    startBLEProvisioning();
+
+    // Wait longer for provisioning
+    wifiStart = millis();
+    const unsigned long provTimeout = 60000; // 60 seconds for provisioning
+    while (WiFi.status() != WL_CONNECTED && millis() - wifiStart < provTimeout) {
+      delay(500);
+      Serial.print(".");
+    }
+  }
+
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println();
     Serial.print("Connected! IP: ");

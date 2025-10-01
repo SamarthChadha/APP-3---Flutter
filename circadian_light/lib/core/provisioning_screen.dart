@@ -29,7 +29,6 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
 
   // Standard ESP32 provisioning characteristic UUIDs
   static const String provConfigUuid = "0000ff52-0000-1000-8000-00805f9b34fb";
-  static const String provSessionUuid = "0000ff51-0000-1000-8000-00805f9b34fb";
 
   @override
   void initState() {
