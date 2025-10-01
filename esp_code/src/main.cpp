@@ -5,11 +5,11 @@
 #include <RotaryEncoder.h>
 #include <time.h>
 
-const char* SSID     = "MAGS LAB";
-const char* PASSWORD = "vXJC@(Lw";
+// const char* SSID     = "MAGS LAB";
+// const char* PASSWORD = "vXJC@(Lw";
 
-// const char* SSID     = "HUAWEI-2.4G-g3AY";
-// const char* PASSWORD = "FW9ta64r";
+const char* SSID     = "HUAWEI-2.4G-g3AY";
+const char* PASSWORD = "FW9ta64r";
 
 
 #define LED_BUILTIN 2   // builtin LED (GPIO2)
@@ -65,7 +65,7 @@ int alarm_count = 0;
 
 // Schedule tracking
 unsigned long lastScheduleCheck = 0;
-const unsigned long SCHEDULE_CHECK_INTERVAL = 60000; // Check every minute
+const unsigned long SCHEDULE_CHECK_INTERVAL = 1000; // Check every second for precise timing
 
 // ===== New simplified control state =====
 enum Mode { MODE_WARM = 0, MODE_WHITE = 1, MODE_BOTH = 2 };
@@ -77,6 +77,7 @@ int activeRoutineId = -1;            // ID of currently active routine
 int originalBrightness = 8;          // Brightness before routine
 Mode originalMode = MODE_BOTH;       // Mode before routine
 bool originalIsOn = true;            // On/off state before routine
+int lastRoutineMinute = -1;          // Track last minute routine was checked to prevent repeated triggers
 
 // ===== Alarm state tracking =====
 bool alarmActive = false;            // Is an alarm currently running?
@@ -85,6 +86,7 @@ int activeAlarmId = -1;              // ID of currently active alarm
 int alarmOriginalBrightness = 8;     // Brightness before alarm
 Mode alarmOriginalMode = MODE_BOTH;  // Mode before alarm
 bool alarmOriginalIsOn = true;       // On/off state before alarm
+int lastAlarmMinute = -1;            // Track last minute alarm was checked
 
 Mode mode = MODE_BOTH;                 // double-click cycles this
 int brightness = 0;                  // 0-15 master brightness (independent of on/off & mode)
@@ -498,34 +500,24 @@ void checkSchedule() {
   int currentHour = timeinfo.tm_hour;
   int currentMinute = timeinfo.tm_min;
   int currentTime = currentHour * 60 + currentMinute; // Convert to minutes since midnight
-  
-  // Debug: Print current time every minute
-  static int lastMinute = -1;
-  if (currentMinute != lastMinute) {
-    Serial.printf("🕐 SCHEDULE CHECK: Current time %02d:%02d (%d minutes), Routines: %d, Alarms: %d\n", 
+
+  // Debug: Print current time only when minute changes
+  static int lastDebugMinute = -1;
+  if (currentMinute != lastDebugMinute) {
+    Serial.printf("🕐 SCHEDULE CHECK: Current time %02d:%02d (%d minutes), Routines: %d, Alarms: %d\n",
                   currentHour, currentMinute, currentTime, routine_count, alarm_count);
-    lastMinute = currentMinute;
+    lastDebugMinute = currentMinute;
   }
-  
+
   bool foundActiveRoutine = false;
-  
+
   // Check routines
   for (int i = 0; i < routine_count; i++) {
-    if (!routines[i].enabled) {
-      // Debug: Show disabled routines occasionally
-      static unsigned long lastDisabledLog = 0;
-      if (millis() - lastDisabledLog > 60000) { // Every minute
-        Serial.printf("📅 Routine %d: DISABLED (%02d:%02d-%02d:%02d)\n", 
-                      routines[i].id, routines[i].start_hour, routines[i].start_minute,
-                      routines[i].end_hour, routines[i].end_minute);
-        lastDisabledLog = millis();
-      }
-      continue;
-    }
-    
+    if (!routines[i].enabled) continue;
+
     int startTime = routines[i].start_hour * 60 + routines[i].start_minute;
     int endTime = routines[i].end_hour * 60 + routines[i].end_minute;
-    
+
     // Handle routines that span midnight
     bool inTimeRange;
     if (endTime > startTime) {
@@ -533,128 +525,137 @@ void checkSchedule() {
     } else {
       inTimeRange = (currentTime >= startTime || currentTime <= endTime);
     }
-    
-    // Debug: Show routine evaluation
-    static unsigned long lastRoutineLog = 0;
-    if (millis() - lastRoutineLog > 60000) { // Every minute
-      Serial.printf("📅 Routine %d: %02d:%02d-%02d:%02d (start=%d, end=%d, current=%d) -> %s\n", 
-                    routines[i].id, routines[i].start_hour, routines[i].start_minute,
-                    routines[i].end_hour, routines[i].end_minute,
-                    startTime, endTime, currentTime, inTimeRange ? "ACTIVE" : "inactive");
-      lastRoutineLog = millis();
-    }
-    
+
     if (inTimeRange) {
       foundActiveRoutine = true;
-      
-      // If this is a new routine starting
+
+      // Only trigger routine activation once per minute to avoid repeated triggers
+      bool shouldActivate = false;
       if (!routineActive || activeRoutineId != routines[i].id) {
+        shouldActivate = true;
+      } else if (lastRoutineMinute != currentMinute) {
+        // Minute has changed, allow update (for gradual changes, etc.)
+        shouldActivate = true;
+      }
+
+      if (shouldActivate) {
         // Save current state if starting a new routine
         if (!routineActive) {
           originalIsOn = isOn;
           originalBrightness = brightness;
           originalMode = mode;
           wasOffBeforeRoutine = !isOn;
-          Serial.printf("Starting routine %d: saved state (isOn=%s, brightness=%d, mode=%d)\n",
+          Serial.printf("✨ Starting routine %d: saved state (isOn=%s, brightness=%d, mode=%d)\n",
                         routines[i].id, originalIsOn ? "true" : "false", originalBrightness, (int)originalMode);
         }
-        
+
         routineActive = true;
         activeRoutineId = routines[i].id;
+        lastRoutineMinute = currentMinute;
+
+        // Apply routine settings
+        brightness = routines[i].brightness;
+        mode = (Mode)routines[i].mode;
+        isOn = true;  // Routine always turns lamp on
+        applyOutput();
+
+        Serial.printf("📅 Applied routine %d: brightness=%d, mode=%d at %02d:%02d\n",
+                      routines[i].id, brightness, (int)mode, currentHour, currentMinute);
+        sendStateUpdate();
       }
-      
-      // Apply routine settings
-      brightness = routines[i].brightness;
-      mode = (Mode)routines[i].mode;
-      isOn = true;  // Routine always turns lamp on
-      applyOutput();
-      
-      Serial.printf("Applied routine %d: brightness=%d, mode=%d\n", 
-                    routines[i].id, brightness, (int)mode);
-      sendStateUpdate();
       return; // Only apply one routine at a time
     }
   }
   
   // If no routine is active now but one was active before
   if (routineActive && !foundActiveRoutine) {
-    Serial.printf("Routine %d ended: restoring state (isOn=%s, brightness=%d, mode=%d)\n",
+    Serial.printf("⏹️  Routine %d ended: restoring state (isOn=%s, brightness=%d, mode=%d)\n",
                   activeRoutineId, originalIsOn ? "true" : "false", originalBrightness, (int)originalMode);
-    
+
     // Restore original state
     isOn = originalIsOn;
     brightness = originalBrightness;
     mode = originalMode;
-    
+
     routineActive = false;
     activeRoutineId = -1;
     wasOffBeforeRoutine = false;
-    
+    lastRoutineMinute = -1;
+
     applyOutput();
     sendStateUpdate();
     return;
   }
-  
+
   // Check alarms (sunrise simulation) - only if no routine is active
   if (!routineActive) {
     bool foundActiveAlarm = false;
-    
+
     for (int i = 0; i < alarm_count; i++) {
       if (!alarms[i].enabled) continue;
-      
+
       int startTime = alarms[i].start_hour * 60 + alarms[i].start_minute;
       int wakeTime = alarms[i].wake_hour * 60 + alarms[i].wake_minute;
-      
+
       if (currentTime >= startTime && currentTime <= wakeTime) {
         foundActiveAlarm = true;
-        
-        // If this is a new alarm starting
+
+        // Only trigger alarm updates once per minute
+        bool shouldUpdate = false;
         if (!alarmActive || activeAlarmId != alarms[i].id) {
+          shouldUpdate = true;
+        } else if (lastAlarmMinute != currentMinute) {
+          shouldUpdate = true; // Update every minute for gradual brightness increase
+        }
+
+        if (shouldUpdate) {
           // Save current state if starting a new alarm
           if (!alarmActive) {
             alarmOriginalIsOn = isOn;
             alarmOriginalBrightness = brightness;
             alarmOriginalMode = mode;
             wasOffBeforeAlarm = !isOn;
-            Serial.printf("Starting alarm %d: saved state (isOn=%s, brightness=%d, mode=%d)\n",
+            Serial.printf("🌅 Starting alarm %d: saved state (isOn=%s, brightness=%d, mode=%d)\n",
                           alarms[i].id, alarmOriginalIsOn ? "true" : "false", alarmOriginalBrightness, (int)alarmOriginalMode);
           }
-          
+
           alarmActive = true;
           activeAlarmId = alarms[i].id;
+          lastAlarmMinute = currentMinute;
+
+          // Calculate progress through alarm (0.0 to 1.0)
+          float progress = (float)(currentTime - startTime) / (float)alarms[i].duration_minutes;
+          progress = constrain(progress, 0.0, 1.0);
+
+          // Gradually increase brightness
+          brightness = (int)(progress * 15); // Scale to 0-15
+          mode = MODE_WARM; // Start with warm light for sunrise
+          isOn = true;
+          applyOutput();
+
+          Serial.printf("🌅 Alarm %d progress: %.2f, brightness=%d at %02d:%02d\n",
+                        alarms[i].id, progress, brightness, currentHour, currentMinute);
+          sendStateUpdate();
         }
-        
-        // Calculate progress through alarm (0.0 to 1.0)
-        float progress = (float)(currentTime - startTime) / (float)alarms[i].duration_minutes;
-        progress = constrain(progress, 0.0, 1.0);
-        
-        // Gradually increase brightness
-        brightness = (int)(progress * 15); // Scale to 0-15
-        mode = MODE_WARM; // Start with warm light for sunrise
-        isOn = true;
-        applyOutput();
-        
-        Serial.printf("Alarm %d progress: %.2f, brightness=%d\n", 
-                      alarms[i].id, progress, brightness);
-        sendStateUpdate();
         return; // Only apply one alarm at a time
       }
     }
-    
+
     // If no alarm is active now but one was active before
     if (alarmActive && !foundActiveAlarm) {
-      Serial.printf("Alarm %d ended: restoring state (isOn=%s, brightness=%d, mode=%d)\n",
+      Serial.printf("⏹️  Alarm %d ended: restoring state (isOn=%s, brightness=%d, mode=%d)\n",
                     activeAlarmId, alarmOriginalIsOn ? "true" : "false", alarmOriginalBrightness, (int)alarmOriginalMode);
-      
+
       // Restore original state
       isOn = alarmOriginalIsOn;
       brightness = alarmOriginalBrightness;
       mode = alarmOriginalMode;
-      
+
       alarmActive = false;
       activeAlarmId = -1;
       wasOffBeforeAlarm = false;
-      
+      lastAlarmMinute = -1;
+
       applyOutput();
       sendStateUpdate();
       return;
