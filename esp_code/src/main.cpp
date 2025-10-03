@@ -5,11 +5,9 @@
 #include <RotaryEncoder.h>
 #include <time.h>
 
-// const char* SSID     = "MAGS LAB";
-// const char* PASSWORD = "vXJC@(Lw";
-
-const char* SSID     = "HUAWEI-2.4G-g3AY";
-const char* PASSWORD = "FW9ta64r";
+// WiFi credentials loaded from .env file via platformio.ini
+const char* SSID     = WIFI_SSID;
+const char* PASSWORD = WIFI_PASSWORD;
 
 
 #define LED_BUILTIN 2   // builtin LED (GPIO2)
