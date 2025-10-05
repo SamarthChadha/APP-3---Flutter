@@ -4,8 +4,8 @@
 // #include "AudioOutputI2S.h"
 
 // // Replace with your Wi-Fi credentials
-// const char *ssid = "MAGS LAB";
-// const char *password = "vXJC@(Lw";
+// const char* SSID     = WIFI_SSID;
+// const char* PASSWORD = WIFI_PASSWORD;
 
 // // Your GitHub-hosted .wav file (RAW link)
 // const char *AUDIO_URL = "https://github.com/SamarthChadha/esp32-audio/blob/main/chirp.wav";

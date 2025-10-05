@@ -5,8 +5,8 @@
 // #include <RotaryEncoder.h>
 
 
-// const char* SSID     = "MAGS LAB";
-// const char* PASSWORD = "vXJC@(Lw";
+// const char* SSID     = WIFI_SSID;
+// const char* PASSWORD = WIFI_PASSWORD;
 
 // #define LED_BUILTIN 2   // builtin LED (GPIO2)  [oai_citation:15‡Circuits4You](https://circuits4you.com/2018/02/02/esp32-led-blink-example/?utm_source=chatgpt.com)
 // #define LED_A_PIN   16   // first LED group PWM

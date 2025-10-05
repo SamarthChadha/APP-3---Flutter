@@ -5,11 +5,10 @@
 #include <RotaryEncoder.h>
 #include <time.h>
 
-// const char* SSID     = "MAGS LAB";
-// const char* PASSWORD = "vXJC@(Lw";
+#include "wifi_credentials.h"
 
-const char* SSID     = "HUAWEI-2.4G-g3AY";
-const char* PASSWORD = "FW9ta64r";
+const char* SSID     = wifi_credentials::SSID;
+const char* PASSWORD = wifi_credentials::PASSWORD;
 
 
 #define LED_BUILTIN 2   // builtin LED (GPIO2)
