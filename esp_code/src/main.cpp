@@ -91,12 +91,24 @@ Mode mode = MODE_BOTH;                 // double-click cycles this
 int brightness = 0;                  // 0-15 master brightness (independent of on/off & mode)
 bool isOn = true;                      // single-click toggles this
 
+bool routineSuppressed = false;
+Routine suppressedRoutine = {};
+bool alarmSuppressed = false;
+Alarm suppressedAlarm = {};
+
+bool sunSyncActive = false;
+bool sunSyncDisabledByHardware = false;
+
+unsigned long lastClickReleaseTime = 0;
+
 // Button click state (robust, polarity-agnostic)
 uint8_t clickCount = 0;                // 1 = single (after timeout), 2 = double
 unsigned long firstClickTime = 0;      // time of first click
-const uint16_t DOUBLE_CLICK_MS = 500;  // double-click window (ms)
 const uint16_t DEBOUNCE_MS     = 35;   // debounce time (ms)
 const bool BUTTON_ACTIVE_LOW   = true; // set false if wired active-high
+const uint16_t MULTI_CLICK_WINDOW_MS = 600; // grouping window for single/double/triple click (ms)
+const uint8_t OVERRIDE_BLINK_COUNT   = 2;
+const uint16_t OVERRIDE_BLINK_INTERVAL_MS = 150;
 
 // ===== Forward Declarations =====
 void handleRoutineSync(JsonDocument& doc);
@@ -104,6 +116,16 @@ void handleAlarmSync(JsonDocument& doc);
 void handleFullSync(JsonDocument& doc);
 void handleTimeSync(JsonDocument& doc);
 void sendSyncResponse(const char* type, bool success, const char* message);
+void handleSunSyncState(bool active, const char* source);
+void handleTripleClick();
+bool isManualControlLocked();
+Routine* findRoutineById(int id);
+Alarm* findAlarmById(int id);
+bool isWithinTimeRange(int startHour, int startMinute, int endHour, int endMinute, int currentTime);
+void updateSuppressionWindows(int currentTime);
+void blinkLamp(uint8_t count, uint16_t intervalMs);
+void broadcastOverrideEvent(const char* source, bool routineWasActive, bool alarmWasActive, bool sunSyncWasActive);
+void sendSunSyncState(bool active, const char* source);
 
 // ===== Helpers =====
 void sendStateUpdate() {
@@ -113,6 +135,13 @@ void sendStateUpdate() {
   state["brightness"] = brightness;
   state["mode"] = (int)mode;
   state["on"] = isOn;
+  state["routine_active"] = routineActive;
+  state["alarm_active"] = alarmActive;
+  state["sun_sync_active"] = sunSyncActive;
+  state["routine_suppressed"] = routineSuppressed;
+  state["alarm_suppressed"] = alarmSuppressed;
+  state["sun_sync_disabled_by_hw"] = sunSyncDisabledByHardware;
+  state["manual_control_locked"] = isManualControlLocked();
   
   String jsonString;
   serializeJson(doc, jsonString);
@@ -253,6 +282,12 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
     }
     else if (strcmp(msgType, "time_sync") == 0) {
       handleTimeSync(doc);
+      recognized = true;
+    }
+    else if (strcmp(msgType, "sun_sync_state") == 0) {
+      bool active = doc["active"].is<bool>() ? doc["active"].as<bool>() : false;
+      const char* source = doc["source"].is<const char*>() ? doc["source"].as<const char*>() : "app";
+      handleSunSyncState(active, source);
       recognized = true;
     }
   }
@@ -448,6 +483,192 @@ void sendSyncResponse(const char* type, bool success, const char* message) {
   Serial.printf("Sent sync response: %s\n", jsonString.c_str());
 }
 
+bool isManualControlLocked() {
+  return (routineActive || alarmActive || sunSyncActive);
+}
+
+Routine* findRoutineById(int id) {
+  if (id < 0) return nullptr;
+  for (int i = 0; i < routine_count; i++) {
+    if (routines[i].id == id) {
+      return &routines[i];
+    }
+  }
+  return nullptr;
+}
+
+Alarm* findAlarmById(int id) {
+  if (id < 0) return nullptr;
+  for (int i = 0; i < alarm_count; i++) {
+    if (alarms[i].id == id) {
+      return &alarms[i];
+    }
+  }
+  return nullptr;
+}
+
+bool isWithinTimeRange(int startHour, int startMinute, int endHour, int endMinute, int currentTime) {
+  int startTime = startHour * 60 + startMinute;
+  int endTime = endHour * 60 + endMinute;
+
+  if (endTime > startTime) {
+    return currentTime >= startTime && currentTime <= endTime;
+  }
+  // wraps midnight
+  return currentTime >= startTime || currentTime <= endTime;
+}
+
+void updateSuppressionWindows(int currentTime) {
+  if (routineSuppressed) {
+    if (!isWithinTimeRange(suppressedRoutine.start_hour, suppressedRoutine.start_minute,
+                           suppressedRoutine.end_hour, suppressedRoutine.end_minute, currentTime)) {
+      Serial.printf("Routine %d suppression window ended\n", suppressedRoutine.id);
+      routineSuppressed = false;
+    }
+  }
+
+  if (alarmSuppressed) {
+    if (!isWithinTimeRange(suppressedAlarm.start_hour, suppressedAlarm.start_minute,
+                           suppressedAlarm.wake_hour, suppressedAlarm.wake_minute, currentTime)) {
+      Serial.printf("Alarm %d suppression window ended\n", suppressedAlarm.id);
+      alarmSuppressed = false;
+    }
+  }
+}
+
+void blinkLamp(uint8_t count, uint16_t intervalMs) {
+  int savedCh0 = ledcRead(0);
+  int savedCh1 = ledcRead(1);
+  bool lampWasOn = isOn;
+
+  for (uint8_t i = 0; i < count; ++i) {
+    // Off phase
+    ledcWrite(0, 15);
+    ledcWrite(1, 15);
+    delay(intervalMs);
+
+    // On phase - restore saved channels or provide a gentle pulse if lamp was off
+    if (lampWasOn) {
+      ledcWrite(0, savedCh0);
+      ledcWrite(1, savedCh1);
+    } else {
+      ledcWrite(0, 12);
+      ledcWrite(1, 12);
+    }
+    delay(intervalMs);
+  }
+
+  applyOutput();
+}
+
+void sendSunSyncState(bool active, const char* source) {
+  JsonDocument doc;
+  doc["type"] = "sun_sync_state";
+  doc["active"] = active;
+  doc["source"] = source;
+  doc["timestamp_ms"] = millis();
+
+  String jsonString;
+  serializeJson(doc, jsonString);
+  ws.textAll(jsonString);
+
+  Serial.printf("Sent sun sync state (%s): %s\n", source, jsonString.c_str());
+}
+
+void broadcastOverrideEvent(const char* source, bool routineWasActive, bool alarmWasActive, bool sunSyncWasActive) {
+  JsonDocument doc;
+  doc["type"] = "schedule_override_event";
+  doc["source"] = source;
+  doc["timestamp_ms"] = millis();
+  doc["routine_disabled"] = routineWasActive;
+  doc["alarm_disabled"] = alarmWasActive;
+  doc["sun_sync_disabled"] = sunSyncWasActive;
+  doc["routine_suppressed"] = routineSuppressed;
+  doc["alarm_suppressed"] = alarmSuppressed;
+  doc["sun_sync_active"] = sunSyncActive;
+
+  String jsonString;
+  serializeJson(doc, jsonString);
+  ws.textAll(jsonString);
+
+  Serial.printf("Sent override event: %s\n", jsonString.c_str());
+}
+
+void handleSunSyncState(bool active, const char* source) {
+  bool previous = sunSyncActive;
+  sunSyncActive = active;
+
+  if (active) {
+    sunSyncDisabledByHardware = false;
+  } else if (strcmp(source, "hardware") == 0) {
+    sunSyncDisabledByHardware = true;
+  } else {
+    sunSyncDisabledByHardware = false;
+  }
+
+  Serial.printf("Sun sync state updated by %s -> %s\n", source, active ? "ACTIVE" : "INACTIVE");
+
+  if (previous != sunSyncActive) {
+    sendStateUpdate();
+  }
+}
+
+void handleTripleClick() {
+  bool routineWasActive = routineActive;
+  bool alarmWasActive = alarmActive;
+  bool sunSyncWasActive = sunSyncActive;
+
+  Serial.println("Triple click detected: disabling active schedules for current instance");
+
+  if (routineActive) {
+    Routine* routinePtr = findRoutineById(activeRoutineId);
+    if (routinePtr != nullptr) {
+      suppressedRoutine = *routinePtr;
+      routineSuppressed = true;
+      Serial.printf("Routine %d suppressed for current window\n", suppressedRoutine.id);
+    } else {
+      routineSuppressed = false;
+      Serial.println("Warning: active routine ID not found for suppression");
+    }
+    routineActive = false;
+    activeRoutineId = -1;
+    lastRoutineMinute = -1;
+    wasOffBeforeRoutine = false;
+  }
+
+  if (alarmActive) {
+    Alarm* alarmPtr = findAlarmById(activeAlarmId);
+    if (alarmPtr != nullptr) {
+      suppressedAlarm = *alarmPtr;
+      alarmSuppressed = true;
+      Serial.printf("Alarm %d suppressed for current window\n", suppressedAlarm.id);
+    } else {
+      alarmSuppressed = false;
+      Serial.println("Warning: active alarm ID not found for suppression");
+    }
+    alarmActive = false;
+    activeAlarmId = -1;
+    lastAlarmMinute = -1;
+    wasOffBeforeAlarm = false;
+  }
+
+  if (sunSyncActive) {
+    sunSyncActive = false;
+    sunSyncDisabledByHardware = true;
+    sendSunSyncState(false, "hardware");
+  }
+
+  if (routineWasActive || alarmWasActive || sunSyncWasActive) {
+    blinkLamp(OVERRIDE_BLINK_COUNT, OVERRIDE_BLINK_INTERVAL_MS);
+  } else {
+    Serial.println("Triple click detected but no active routine/alarm/sun sync to disable");
+  }
+
+  applyOutput();
+  sendStateUpdate();
+  broadcastOverrideEvent("hardware", routineWasActive, alarmWasActive, sunSyncWasActive);
+}
+
 void handleTimeSync(JsonDocument& doc) {
   if (doc["timestamp"].is<long long>()) {
     long long timestamp = doc["timestamp"];
@@ -500,6 +721,8 @@ void checkSchedule() {
   int currentMinute = timeinfo.tm_min;
   int currentTime = currentHour * 60 + currentMinute; // Convert to minutes since midnight
 
+  updateSuppressionWindows(currentTime);
+
   // Debug: Print current time only when minute changes
   static int lastDebugMinute = -1;
   if (currentMinute != lastDebugMinute) {
@@ -526,6 +749,11 @@ void checkSchedule() {
     }
 
     if (inTimeRange) {
+      if (routineSuppressed && suppressedRoutine.id == routines[i].id) {
+        Serial.printf("📅 Routine %d is suppressed for current window; skipping application\n", routines[i].id);
+        return;
+      }
+
       foundActiveRoutine = true;
 
       // Only trigger routine activation once per minute to avoid repeated triggers
@@ -592,6 +820,11 @@ void checkSchedule() {
       int wakeTime = alarms[i].wake_hour * 60 + alarms[i].wake_minute;
 
       if (currentTime >= startTime && currentTime <= wakeTime) {
+        if (alarmSuppressed && suppressedAlarm.id == alarms[i].id) {
+          Serial.printf("⏰ Alarm %d is suppressed for current window; skipping application\n", alarms[i].id);
+          return;
+        }
+
         foundActiveAlarm = true;
 
         // Only trigger alarm updates once per minute
@@ -724,22 +957,26 @@ void loop() {
   if (pos != lastPos) {
     int delta = pos - lastPos;
     lastPos = pos;
-    
-    // Determine brightness limits based on lamp on/off state
-    int minBrightness = isOn ? 1 : 0;  // Minimum 1 when on, can be 0 when off
-    int maxBrightness = 15;
-    
-    int newBrightness = constrain(brightness + delta * 1, minBrightness, maxBrightness);
-    if (newBrightness != brightness) {
-      brightness = newBrightness;
-      Serial.printf("Brightness -> %d (limits: %d-%d, isOn: %s)\n", 
-                    brightness, minBrightness, maxBrightness, isOn ? "true" : "false");
-      applyOutput();
-      sendStateUpdate(); // Send update to Flutter app
+
+    if (isManualControlLocked()) {
+      Serial.println("Rotary input ignored: schedule or sun sync currently active");
+    } else {
+      // Determine brightness limits based on lamp on/off state
+      int minBrightness = isOn ? 1 : 0;  // Minimum 1 when on, can be 0 when off
+      int maxBrightness = 15;
+
+      int newBrightness = constrain(brightness + delta * 1, minBrightness, maxBrightness);
+      if (newBrightness != brightness) {
+        brightness = newBrightness;
+        Serial.printf("Brightness -> %d (limits: %d-%d, isOn: %s)\n", 
+                      brightness, minBrightness, maxBrightness, isOn ? "true" : "false");
+        applyOutput();
+        sendStateUpdate(); // Send update to Flutter app
+      }
     }
   }
 
-  // --- Button: single click = toggle on/off; double click = cycle modes ---
+  // --- Button: handle single/double/triple clicks ---
   static bool prevPressed = false;            // logical pressed state (polarity-agnostic)
   static unsigned long lastChange = 0;
   unsigned long now = millis();
@@ -752,16 +989,15 @@ void loop() {
 
     // Trigger on RELEASE edge regardless of polarity
     if (prevPressed && !pressed) {
-      if (clickCount == 0) firstClickTime = now;
+      if (clickCount == 0) {
+        firstClickTime = now;
+      }
       clickCount++;
+      lastClickReleaseTime = now;
       Serial.println("Button RELEASE detected");
 
-      // If second release arrives within window -> double click
-      if (clickCount == 2 && (now - firstClickTime) <= DOUBLE_CLICK_MS) {
-        mode = (Mode)((mode + 1) % 3); // warm -> white -> both -> warm ...
-        Serial.printf("Double click: mode -> %d (0=WARM,1=WHITE,2=BOTH)\n", (int)mode);
-        applyOutput();
-        sendStateUpdate(); // Send update to Flutter app
+      if (clickCount >= 3 && (now - firstClickTime) <= MULTI_CLICK_WINDOW_MS) {
+        handleTripleClick();
         clickCount = 0;
       }
     }
@@ -769,13 +1005,31 @@ void loop() {
     prevPressed = pressed;
   }
 
-  // If one release occurred and window expired -> single click
-  if (clickCount == 1 && (millis() - firstClickTime) > DOUBLE_CLICK_MS) {
-    isOn = !isOn;
-    Serial.printf("Single click: isOn -> %s\n", isOn ? "ON" : "OFF");
-    applyOutput();
-    sendStateUpdate(); // Send update to Flutter app
+  if (clickCount > 0 && (now - lastClickReleaseTime) > MULTI_CLICK_WINDOW_MS) {
+    uint8_t clicks = clickCount;
     clickCount = 0;
+
+    if (clicks >= 3) {
+      handleTripleClick();
+    } else if (clicks == 2) {
+      if (isManualControlLocked()) {
+        Serial.println("Double click ignored: schedule or sun sync active");
+      } else {
+        mode = (Mode)((mode + 1) % 3); // warm -> white -> both -> warm ...
+        Serial.printf("Double click: mode -> %d (0=WARM,1=WHITE,2=BOTH)\n", (int)mode);
+        applyOutput();
+        sendStateUpdate();
+      }
+    } else if (clicks == 1) {
+      if (isManualControlLocked()) {
+        Serial.println("Single click ignored: schedule or sun sync active");
+      } else {
+        isOn = !isOn;
+        Serial.printf("Single click: isOn -> %s\n", isOn ? "ON" : "OFF");
+        applyOutput();
+        sendStateUpdate();
+      }
+    }
   }
 
   // Check schedule for routines and alarms

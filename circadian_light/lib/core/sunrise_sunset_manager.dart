@@ -8,6 +8,7 @@ class SunriseSunsetManager {
   static final SunriseSunsetManager I = SunriseSunsetManager._();
 
   Timer? _timer;
+  StreamSubscription<Map<String, dynamic>>? _espMessagesSub;
   bool _isEnabled = false;
   bool _useLocationBasedTimes = false;
 
@@ -20,8 +21,16 @@ class SunriseSunsetManager {
 
   void enable() {
     if (_isEnabled) return;
+    _ensureEspMessageSubscription();
     _isEnabled = true;
     _startTimer();
+    if (EspConnection.I.isConnected) {
+      EspConnection.I.send({
+        'type': 'sun_sync_state',
+        'active': true,
+        'source': 'app',
+      });
+    }
     debugPrint('SunriseSunsetManager: Enabled');
   }
 
@@ -59,11 +68,8 @@ class SunriseSunsetManager {
     }
   }
   
-  void disable() {
-    if (!_isEnabled) return;
-    _isEnabled = false;
-    _stopTimer();
-    debugPrint('SunriseSunsetManager: Disabled');
+  void disable({bool notifyEsp = true}) {
+    _disableInternal(notifyEsp: notifyEsp);
   }
   
   void _startTimer() {
@@ -86,6 +92,45 @@ class SunriseSunsetManager {
   void _stopTimer() {
     _timer?.cancel();
     _timer = null;
+  }
+
+  void _ensureEspMessageSubscription() {
+    _espMessagesSub ??= EspConnection.I.messages.listen(_handleEspMessage);
+  }
+
+  void _handleEspMessage(Map<String, dynamic> message) {
+    final type = message['type'];
+    if (type == 'sun_sync_state') {
+      final bool active = message['active'] == true;
+      final String source = (message['source'] as String?) ?? 'app';
+      if (!active && source == 'hardware') {
+        debugPrint('SunriseSunsetManager: Received hardware sun sync disable');
+        _disableInternal(notifyEsp: false, source: 'hardware');
+      }
+    } else if (type == 'schedule_override_event') {
+      final String source = (message['source'] as String?) ?? 'app';
+      final bool sunSyncDisabled = message['sun_sync_disabled'] == true;
+      if (sunSyncDisabled && source == 'hardware') {
+        debugPrint('SunriseSunsetManager: Hardware override event (sun sync disabled)');
+        _disableInternal(notifyEsp: false, source: 'hardware');
+      }
+    }
+  }
+
+  void _disableInternal({bool notifyEsp = true, String source = 'app'}) {
+    if (!_isEnabled) {
+      return;
+    }
+    _isEnabled = false;
+    _stopTimer();
+    if (notifyEsp && EspConnection.I.isConnected) {
+      EspConnection.I.send({
+        'type': 'sun_sync_state',
+        'active': false,
+        'source': source,
+      });
+    }
+    debugPrint('SunriseSunsetManager: Disabled${source == 'hardware' ? ' by hardware override' : ''}');
   }
   
   void _checkAndExecuteTransitions() {
@@ -262,5 +307,7 @@ class SunriseSunsetManager {
   
   void dispose() {
     _stopTimer();
+    _espMessagesSub?.cancel();
+    _espMessagesSub = null;
   }
 }
