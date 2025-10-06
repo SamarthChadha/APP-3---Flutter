@@ -568,20 +568,15 @@ void checkSchedule() {
   
   // If no routine is active now but one was active before
   if (routineActive && !foundActiveRoutine) {
-    Serial.printf("⏹️  Routine %d ended: restoring state (isOn=%s, brightness=%d, mode=%d)\n",
-                  activeRoutineId, originalIsOn ? "true" : "false", originalBrightness, (int)originalMode);
-
-    // Restore original state
-    isOn = originalIsOn;
-    brightness = originalBrightness;
-    mode = originalMode;
+    Serial.printf("⏹️  Routine %d ended: keeping current state (isOn=%s, brightness=%d, mode=%d)\n",
+                  activeRoutineId, isOn ? "true" : "false", brightness, (int)mode);
 
     routineActive = false;
     activeRoutineId = -1;
     wasOffBeforeRoutine = false;
     lastRoutineMinute = -1;
 
-    applyOutput();
+    // State remains as the routine left it; notify clients so they stay in sync
     sendStateUpdate();
     return;
   }
@@ -642,13 +637,13 @@ void checkSchedule() {
 
     // If no alarm is active now but one was active before
     if (alarmActive && !foundActiveAlarm) {
-      Serial.printf("⏹️  Alarm %d ended: restoring state (isOn=%s, brightness=%d, mode=%d)\n",
-                    activeAlarmId, alarmOriginalIsOn ? "true" : "false", alarmOriginalBrightness, (int)alarmOriginalMode);
+      Serial.printf("⏹️  Alarm %d ended: holding daytime state (isOn=true, brightness=15, mode=%d)\n",
+                    activeAlarmId, (int)MODE_BOTH);
 
-      // Restore original state
-      isOn = alarmOriginalIsOn;
-      brightness = alarmOriginalBrightness;
-      mode = alarmOriginalMode;
+      // Lock in full brightness mixed mode until user or another event changes it
+      isOn = true;
+      brightness = 15;
+      mode = MODE_BOTH;
 
       alarmActive = false;
       activeAlarmId = -1;
