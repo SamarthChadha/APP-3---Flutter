@@ -854,9 +854,9 @@ void checkSchedule() {
           float progress = (float)(currentTime - startTime) / (float)alarms[i].duration_minutes;
           progress = constrain(progress, 0.0, 1.0);
 
-          // Gradually increase brightness
+          // Gradually increase brightness across both LED channels
           brightness = (int)(progress * 15); // Scale to 0-15
-          mode = MODE_WARM; // Start with warm light for sunrise
+          mode = MODE_BOTH; // Use mixed output so both LEDs ramp together
           isOn = true;
           applyOutput();
 
