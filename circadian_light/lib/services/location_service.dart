@@ -58,7 +58,6 @@ class LocationService {
         _logger.warning('Location permission denied');
         return false;
       }
-
     } catch (e) {
       _logger.severe('Error requesting location permission: $e');
       return false;
@@ -88,19 +87,21 @@ class LocationService {
       // Get current position with timeout
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.low, // We don't need high accuracy for sunrise/sunset
+          accuracy: LocationAccuracy
+              .low, // We don't need high accuracy for sunrise/sunset
           timeLimit: Duration(seconds: 10),
         ),
       );
 
       _lastKnownPosition = position;
-      _logger.info('Location obtained: ${position.latitude}, ${position.longitude}');
+      _logger.info(
+        'Location obtained: ${position.latitude}, ${position.longitude}',
+      );
 
       // Update location name cache in background
       _updateLocationName(position);
 
       return position;
-
     } catch (e) {
       _logger.severe('Error getting current location: $e');
 
@@ -140,7 +141,9 @@ class LocationService {
         return (sunrise: _cachedSunrise!, sunset: _cachedSunset!);
       }
 
-      _logger.info('Calculating sunrise/sunset for ${position.latitude}, ${position.longitude} on ${date.toString()}');
+      _logger.info(
+        'Calculating sunrise/sunset for ${position.latitude}, ${position.longitude} on ${date.toString()}',
+      );
 
       // Calculate sunrise and sunset using sunrisesunset.io API
       final result = await _fetchSunriseSunsetFromAPI(
@@ -159,10 +162,11 @@ class LocationService {
       _cachedSunrise = result.sunrise;
       _cachedSunset = result.sunset;
 
-      _logger.info('Calculated sunrise: ${result.sunrise.hour}:${result.sunrise.minute.toString().padLeft(2, '0')}, sunset: ${result.sunset.hour}:${result.sunset.minute.toString().padLeft(2, '0')}');
+      _logger.info(
+        'Calculated sunrise: ${result.sunrise.hour}:${result.sunrise.minute.toString().padLeft(2, '0')}, sunset: ${result.sunset.hour}:${result.sunset.minute.toString().padLeft(2, '0')}',
+      );
 
       return result;
-
     } catch (e) {
       _logger.severe('Error calculating sunrise/sunset: $e');
       return null;
@@ -177,29 +181,38 @@ class LocationService {
   ) async {
     try {
       // Format date as YYYY-MM-DD
-      final dateString = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final dateString =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
       // Build API URL
-      final url = Uri.parse('https://api.sunrisesunset.io/json')
-          .replace(queryParameters: {
-        'lat': latitude.toString(),
-        'lng': longitude.toString(),
-        'date': dateString,
-        'time_format': '24', // Use 24-hour format for easier parsing
-      });
+      final url = Uri.parse('https://api.sunrisesunset.io/json').replace(
+        queryParameters: {
+          'lat': latitude.toString(),
+          'lng': longitude.toString(),
+          'date': dateString,
+          'time_format': '24', // Use 24-hour format for easier parsing
+        },
+      );
 
       _logger.info('Fetching sunrise/sunset from API: $url');
 
       // Make HTTP request with timeout
-      final response = await http.get(url).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('API request timed out', const Duration(seconds: 10));
-        },
-      );
+      final response = await http
+          .get(url)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException(
+                'API request timed out',
+                const Duration(seconds: 10),
+              );
+            },
+          );
 
       if (response.statusCode != 200) {
-        _logger.severe('API request failed with status ${response.statusCode}: ${response.body}');
+        _logger.severe(
+          'API request failed with status ${response.statusCode}: ${response.body}',
+        );
         return null;
       }
 
@@ -220,14 +233,17 @@ class LocationService {
       final sunset = _parseTimeString(sunsetString);
 
       if (sunrise == null || sunset == null) {
-        _logger.severe('Failed to parse sunrise/sunset times from API response');
+        _logger.severe(
+          'Failed to parse sunrise/sunset times from API response',
+        );
         return null;
       }
 
-      _logger.info('Successfully fetched times from API - Sunrise: ${sunrise.hour}:${sunrise.minute.toString().padLeft(2, '0')}, Sunset: ${sunset.hour}:${sunset.minute.toString().padLeft(2, '0')}');
+      _logger.info(
+        'Successfully fetched times from API - Sunrise: ${sunrise.hour}:${sunrise.minute.toString().padLeft(2, '0')}, Sunset: ${sunset.hour}:${sunset.minute.toString().padLeft(2, '0')}',
+      );
 
       return (sunrise: sunrise, sunset: sunset);
-
     } catch (e) {
       _logger.severe('Error fetching sunrise/sunset from API: $e');
       return null;
@@ -249,7 +265,6 @@ class LocationService {
       return null;
     }
   }
-
 
   /// Open device settings for location permissions
   Future<void> openLocationSettings() async {
@@ -292,7 +307,9 @@ class LocationService {
   /// Update location name cache using reverse geocoding
   Future<void> _updateLocationName(Position position) async {
     try {
-      _logger.info('Getting location name for ${position.latitude}, ${position.longitude}');
+      _logger.info(
+        'Getting location name for ${position.latitude}, ${position.longitude}',
+      );
 
       final placemarks = await placemarkFromCoordinates(
         position.latitude,
@@ -307,9 +324,11 @@ class LocationService {
 
         if (placemark.locality != null && placemark.locality!.isNotEmpty) {
           locationName = placemark.locality!;
-        } else if (placemark.subAdministrativeArea != null && placemark.subAdministrativeArea!.isNotEmpty) {
+        } else if (placemark.subAdministrativeArea != null &&
+            placemark.subAdministrativeArea!.isNotEmpty) {
           locationName = placemark.subAdministrativeArea!;
-        } else if (placemark.administrativeArea != null && placemark.administrativeArea!.isNotEmpty) {
+        } else if (placemark.administrativeArea != null &&
+            placemark.administrativeArea!.isNotEmpty) {
           locationName = placemark.administrativeArea!;
         }
 

@@ -31,13 +31,18 @@ class EspState {
     if (brightness <= 1) return 0.0;
     return (brightness - 1) / 14.0; // Map 1-15 to 0.0-1.0
   }
+
   double get flutterTemperature {
     // Map ESP32 modes to temperature values
     switch (mode) {
-      case 0: return 2700; // warm
-      case 1: return 6500; // white  
-      case 2: return 4600; // both (exactly in the middle: (2700 + 6500) / 2)
-      default: return 4600;
+      case 0:
+        return 2700; // warm
+      case 1:
+        return 6500; // white
+      case 2:
+        return 4600; // both (exactly in the middle: (2700 + 6500) / 2)
+      default:
+        return 4600;
     }
   }
 }
@@ -69,7 +74,10 @@ class EspConnection {
   final _stateUpdates = StreamController<EspState>.broadcast();
   Stream<EspState> get stateUpdates => _stateUpdates.stream;
 
-  Future<void> connect({String? ipOrHost, Duration retry = const Duration(seconds: 2)}) async {
+  Future<void> connect({
+    String? ipOrHost,
+    Duration retry = const Duration(seconds: 2),
+  }) async {
     if (_connecting || _ch != null) return;
     _connecting = true;
     _manuallyClosed = false;
@@ -101,26 +109,27 @@ class EspConnection {
       final socket = await WebSocket.connect(url);
       _ch = IOWebSocketChannel(socket);
       _connection.add(true);
-      
 
       _sub = _ch!.stream.listen(
         (data) {
           try {
             final Map<String, dynamic> json = jsonDecode(data as String);
             _incoming.add(json);
-            
+
             // Check if this is a state update from ESP32
             if (json.containsKey('state')) {
               final state = EspState.fromJson(json['state']);
               _stateUpdates.add(state);
             }
-          } catch (_) {/* ignore non-JSON */}
+          } catch (_) {
+            /* ignore non-JSON */
+          }
         },
         onError: (_) => _handleDisconnect(retry),
         onDone: () => _handleDisconnect(retry),
         cancelOnError: true,
       );
-      
+
       // Request current state from ESP after successful connection
       Timer(const Duration(milliseconds: 500), () {
         requestCurrentState();
@@ -136,8 +145,8 @@ class EspConnection {
     _sub?.cancel();
     _sub = null;
     _ch = null;
-  // Notify disconnected
-  _connection.add(false);
+    // Notify disconnected
+    _connection.add(false);
     if (!_manuallyClosed) _scheduleReconnect(retry);
   }
 
@@ -151,22 +160,30 @@ class EspConnection {
     try {
       await client.start();
       // Prefer direct A lookup for circadian-light.local
-      final addrs = await client.lookup<IPAddressResourceRecord>(
-        ResourceRecordQuery.addressIPv4(host),
-      ).toList();
+      final addrs = await client
+          .lookup<IPAddressResourceRecord>(
+            ResourceRecordQuery.addressIPv4(host),
+          )
+          .toList();
       if (addrs.isNotEmpty) return addrs.first.address.address;
 
       // Fallback: discover the _ws._tcp service and read SRV/A
-      final services = await client.lookup<PtrResourceRecord>(
-        ResourceRecordQuery.serverPointer('_ws._tcp.local'),
-      ).toList();
+      final services = await client
+          .lookup<PtrResourceRecord>(
+            ResourceRecordQuery.serverPointer('_ws._tcp.local'),
+          )
+          .toList();
       for (final s in services) {
-        final srv = await client.lookup<SrvResourceRecord>(
-          ResourceRecordQuery.service(s.domainName),
-        ).first;
-        final a = await client.lookup<IPAddressResourceRecord>(
-          ResourceRecordQuery.addressIPv4(srv.target),
-        ).first;
+        final srv = await client
+            .lookup<SrvResourceRecord>(
+              ResourceRecordQuery.service(s.domainName),
+            )
+            .first;
+        final a = await client
+            .lookup<IPAddressResourceRecord>(
+              ResourceRecordQuery.addressIPv4(srv.target),
+            )
+            .first;
         port = srv.port;
         return a.address.address;
       }
@@ -175,7 +192,9 @@ class EspConnection {
       // Any mDNS issue should not crash the app; return null so caller can fallback
       return null;
     } finally {
-      try { client.stop(); } catch (_) {}
+      try {
+        client.stop();
+      } catch (_) {}
     }
   }
 
@@ -191,10 +210,11 @@ class EspConnection {
 
   // Firmware JSON protocol (see ESP32 main):
   // { "brightness": 0..15, "mode": 0..2, "on": true/false }
-  void setBrightness(int value) => send({'brightness': value.clamp(1, 15)}); // Min 1 instead of 0
+  void setBrightness(int value) =>
+      send({'brightness': value.clamp(1, 15)}); // Min 1 instead of 0
   void setMode(int value) => send({'mode': value.clamp(0, 2)});
   void setOn(bool on) => send({'on': on});
-  
+
   // Request current state from ESP32
   void requestCurrentState() => send({'request_state': true});
 

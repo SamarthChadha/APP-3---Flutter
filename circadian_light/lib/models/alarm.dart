@@ -17,13 +17,13 @@ class Alarm {
     this.enabled = true,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) : 
-    createdAt = createdAt ?? DateTime.now(),
-    updatedAt = updatedAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   // Calculate start time (when lamp begins to brighten)
   TimeOfDay get startTime {
-    final startMinutes = wakeUpTime.hour * 60 + wakeUpTime.minute - durationMinutes;
+    final startMinutes =
+        wakeUpTime.hour * 60 + wakeUpTime.minute - durationMinutes;
     final hour = (startMinutes ~/ 60) % 24;
     final minute = startMinutes % 60;
     return TimeOfDay(hour: hour < 0 ? hour + 24 : hour, minute: minute);
@@ -38,14 +38,14 @@ class Alarm {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Alarm(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        wakeUpTime: wakeUpTime ?? this.wakeUpTime,
-        durationMinutes: durationMinutes ?? this.durationMinutes,
-        enabled: enabled ?? this.enabled,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? DateTime.now(),
-      );
+    id: id ?? this.id,
+    name: name ?? this.name,
+    wakeUpTime: wakeUpTime ?? this.wakeUpTime,
+    durationMinutes: durationMinutes ?? this.durationMinutes,
+    enabled: enabled ?? this.enabled,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? DateTime.now(),
+  );
 
   // Convert to JSON for database storage
   Map<String, dynamic> toJson() {
@@ -79,8 +79,9 @@ class Alarm {
 
   // Database table schema
   static const String tableName = 'alarms';
-  
-  static const String createTableSql = '''
+
+  static const String createTableSql =
+      '''
     CREATE TABLE $tableName (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,

@@ -50,11 +50,13 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
       Navigator.of(context).pop(response);
     });
 
-    provisioner.start(ProvisioningRequest.fromStrings(
-      ssid: ssidController.text,
-      // bssid is optional; library defaults to 00:00:00:00:00:00 internally
-      password: passwordController.text,
-    ));
+    provisioner.start(
+      ProvisioningRequest.fromStrings(
+        ssid: ssidController.text,
+        // bssid is optional; library defaults to 00:00:00:00:00:00 internally
+        password: passwordController.text,
+      ),
+    );
 
     ProvisioningResponse? response = await showDialog<ProvisioningResponse>(
       context: context,
@@ -74,7 +76,7 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
       },
     );
 
-    if(provisioner.running) {
+    if (provisioner.running) {
       provisioner.stop();
     }
 
@@ -92,7 +94,9 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Text('Device successfully connected to the ${ssidController.text} network'),
+              Text(
+                'Device successfully connected to the ${ssidController.text} network',
+              ),
               SizedBox.fromSize(size: const Size.fromHeight(20)),
               const Text('Device:'),
               Text('IP: ${response.ipAddressText}'),
@@ -103,7 +107,9 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pop(true); // Return success to previous screen
+                Navigator.of(
+                  context,
+                ).pop(true); // Return success to previous screen
               },
               child: const Text('OK'),
             ),
@@ -151,9 +157,7 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
                 controller: ssidController,
               ),
               TextFormField(
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                ),
+                decoration: const InputDecoration(labelText: 'Password'),
                 obscureText: true,
                 controller: passwordController,
               ),

@@ -11,13 +11,11 @@ import '../widgets/routine_card.dart';
 import '../widgets/alarm_card.dart';
 import '../core/theme_manager.dart';
 
-
 class RoutinesScreen extends StatefulWidget {
   const RoutinesScreen({super.key});
   @override
   State<RoutinesScreen> createState() => _RoutinesScreenState();
 }
-
 
 class _RoutinesScreenState extends State<RoutinesScreen> {
   late final RoutineCore _core;
@@ -54,9 +52,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving routine: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving routine: $e')));
       }
     }
   }
@@ -72,38 +70,45 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
       if (mounted) {
         // Show undo snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${routineToDelete.name} was deleted'),
-            action: SnackBarAction(
-              label: 'Undo',
-              onPressed: () async {
-                if (_recentlyDeletedRoutine != null) {
-                  try {
-                    await _saveRoutine(_recentlyDeletedRoutine!.copyWith(id: null));
-                    _recentlyDeletedRoutine = null;
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error restoring routine: $e')),
-                      );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+              SnackBar(
+                content: Text('${routineToDelete.name} was deleted'),
+                action: SnackBarAction(
+                  label: 'Undo',
+                  onPressed: () async {
+                    if (_recentlyDeletedRoutine != null) {
+                      try {
+                        await _saveRoutine(
+                          _recentlyDeletedRoutine!.copyWith(id: null),
+                        );
+                        _recentlyDeletedRoutine = null;
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error restoring routine: $e'),
+                            ),
+                          );
+                        }
+                      }
                     }
-                  }
-                }
-              },
-            ),
-            duration: const Duration(seconds: 4),
-          ),
-        ).closed.then((_) {
-          // Clear the stored routine when snackbar is dismissed
-          _recentlyDeletedRoutine = null;
-        });
+                  },
+                ),
+                duration: const Duration(seconds: 4),
+              ),
+            )
+            .closed
+            .then((_) {
+              // Clear the stored routine when snackbar is dismissed
+              _recentlyDeletedRoutine = null;
+            });
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting routine: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error deleting routine: $e')));
       }
     }
   }
@@ -119,9 +124,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving alarm: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving alarm: $e')));
       }
     }
   }
@@ -137,38 +142,45 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
       if (mounted) {
         // Show undo snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${alarmToDelete.name} was deleted'),
-            action: SnackBarAction(
-              label: 'Undo',
-              onPressed: () async {
-                if (_recentlyDeletedAlarm != null) {
-                  try {
-                    await _saveAlarm(_recentlyDeletedAlarm!.copyWith(id: null));
-                    _recentlyDeletedAlarm = null;
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error restoring alarm: $e')),
-                      );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+              SnackBar(
+                content: Text('${alarmToDelete.name} was deleted'),
+                action: SnackBarAction(
+                  label: 'Undo',
+                  onPressed: () async {
+                    if (_recentlyDeletedAlarm != null) {
+                      try {
+                        await _saveAlarm(
+                          _recentlyDeletedAlarm!.copyWith(id: null),
+                        );
+                        _recentlyDeletedAlarm = null;
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error restoring alarm: $e'),
+                            ),
+                          );
+                        }
+                      }
                     }
-                  }
-                }
-              },
-            ),
-            duration: const Duration(seconds: 4),
-          ),
-        ).closed.then((_) {
-          // Clear the stored alarm when snackbar is dismissed
-          _recentlyDeletedAlarm = null;
-        });
+                  },
+                ),
+                duration: const Duration(seconds: 4),
+              ),
+            )
+            .closed
+            .then((_) {
+              // Clear the stored alarm when snackbar is dismissed
+              _recentlyDeletedAlarm = null;
+            });
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting alarm: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error deleting alarm: $e')));
       }
     }
   }
@@ -182,16 +194,18 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     TimeOfDay start = const TimeOfDay(hour: 7, minute: 0);
     TimeOfDay end = const TimeOfDay(hour: 22, minute: 0);
     double temperature = 4000;
-    Color selectedColor = RoutineCore.colorFromTemperature(temperature); 
+    Color selectedColor = RoutineCore.colorFromTemperature(temperature);
     double brightness = 70;
-  final nameCtrl = TextEditingController(text: 'Routine ${_core.routines.length + 1}');
+    final nameCtrl = TextEditingController(
+      text: 'Routine ${_core.routines.length + 1}',
+    );
 
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-  // Use app grey background for consistency with rest of app
-  backgroundColor: const Color.fromARGB(255, 208, 206, 206),
+      // Use app grey background for consistency with rest of app
+      backgroundColor: const Color.fromARGB(255, 208, 206, 206),
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -202,7 +216,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
           ),
           child: StatefulBuilder(
             builder: (context, setSheetState) {
-      const base = Color(0xFFEFEFEF);
+              const base = Color(0xFFEFEFEF);
 
               // Inline time picker replaced with reusable TimePickerSheet
 
@@ -268,7 +282,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     textCapitalization: TextCapitalization.words,
                     decoration: const InputDecoration(
                       labelText: 'Routine name',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(16)),
+                      ),
                       isDense: true,
                     ),
                   ),
@@ -318,7 +334,11 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${temperature.round()}K - ${temperature <= 3000 ? 'Warm' : temperature >= 5000 ? 'Cool' : 'Mixed'}',
+                    '${temperature.round()}K - ${temperature <= 3000
+                        ? 'Warm'
+                        : temperature >= 5000
+                        ? 'Cool'
+                        : 'Mixed'}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -341,7 +361,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     max: 6500,
                     onChanged: (v) => setSheetState(() {
                       temperature = v;
-                      selectedColor = RoutineCore.colorFromTemperature(temperature);
+                      selectedColor = RoutineCore.colorFromTemperature(
+                        temperature,
+                      );
                     }),
                   ),
                   const SizedBox(height: 12),
@@ -379,7 +401,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC049),
                         foregroundColor: const Color(0xFF3C3C3C),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(26),
+                        ),
                       ),
                       onPressed: () async {
                         final name = nameCtrl.text.trim().isEmpty
@@ -414,7 +438,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     TimeOfDay end = routine.endTime;
     double temperature = routine.temperature;
     double brightness = routine.brightness;
-  Color selectedColor = routine.color;
+    Color selectedColor = routine.color;
     final nameCtrl = TextEditingController(text: routine.name);
 
     showModalBottomSheet(
@@ -442,10 +466,14 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     initial: start,
                     onChanged: (t) => temp = t,
                     onCancel: () => Navigator.of(context).pop(),
-                    onSave: () { setSheetState(() => start = temp); Navigator.pop(context);},
+                    onSave: () {
+                      setSheetState(() => start = temp);
+                      Navigator.pop(context);
+                    },
                   ),
                 );
               }
+
               Future<void> pickEnd() async {
                 TimeOfDay temp = end;
                 await showCupertinoModalPopup<void>(
@@ -454,7 +482,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     initial: end,
                     onChanged: (t) => temp = t,
                     onCancel: () => Navigator.of(context).pop(),
-                    onSave: () { setSheetState(() => end = temp); Navigator.pop(context);},
+                    onSave: () {
+                      setSheetState(() => end = temp);
+                      Navigator.pop(context);
+                    },
                   ),
                 );
               }
@@ -466,15 +497,26 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Edit Routine', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                        const Text(
+                          'Edit Routine',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
                       ],
                     ),
                     TextField(
                       controller: nameCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Routine name',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(16)),
+                        ),
                         isDense: true,
                       ),
                     ),
@@ -487,7 +529,11 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                             children: [
                               const Text('Start'),
                               const SizedBox(height: 8),
-                              OutlinedButton.icon(onPressed: pickStart, icon: const Icon(Icons.schedule), label: Text(_formatTime(context, start))),
+                              OutlinedButton.icon(
+                                onPressed: pickStart,
+                                icon: const Icon(Icons.schedule),
+                                label: Text(_formatTime(context, start)),
+                              ),
                             ],
                           ),
                         ),
@@ -498,17 +544,31 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                             children: [
                               const Text('End'),
                               const SizedBox(height: 8),
-                              OutlinedButton.icon(onPressed: pickEnd, icon: const Icon(Icons.schedule_outlined), label: Text(_formatTime(context, end))),
+                              OutlinedButton.icon(
+                                onPressed: pickEnd,
+                                icon: const Icon(Icons.schedule_outlined),
+                                label: Text(_formatTime(context, end)),
+                              ),
                             ],
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Text('Color Temperature', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                    const Text(
+                      'Color Temperature',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
-                      '${temperature.round()}K - ${temperature <= 3000 ? 'Warm' : temperature >= 5000 ? 'Cool' : 'Mixed'}',
+                      '${temperature.round()}K - ${temperature <= 3000
+                          ? 'Warm'
+                          : temperature >= 5000
+                          ? 'Cool'
+                          : 'Mixed'}',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -518,14 +578,25 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     ),
                     const SizedBox(height: 6),
                     NeumorphicSlider(
-                      gradient: const LinearGradient(colors: [Color(0xFFFFC477), Color(0xFFBFD7FF)]),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFC477), Color(0xFFBFD7FF)],
+                      ),
                       value: temperature,
                       min: 2700,
                       max: 6500,
-                      onChanged: (v) => setSheetState(() { temperature = v; selectedColor = RoutineCore.colorFromTemperature(v); }),
+                      onChanged: (v) => setSheetState(() {
+                        temperature = v;
+                        selectedColor = RoutineCore.colorFromTemperature(v);
+                      }),
                     ),
                     const SizedBox(height: 16),
-                    const Text('Brightness', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                    const Text(
+                      'Brightness',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       '${brightness.round()}% intensity',
@@ -549,12 +620,16 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC049),
                         foregroundColor: const Color(0xFF3C3C3C),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
                         minimumSize: const Size.fromHeight(54),
                       ),
                       onPressed: () async {
                         final updatedRoutine = routine.copyWith(
-                          name: nameCtrl.text.trim().isEmpty ? routine.name : nameCtrl.text.trim(),
+                          name: nameCtrl.text.trim().isEmpty
+                              ? routine.name
+                              : nameCtrl.text.trim(),
                           startTime: start,
                           endTime: end,
                           color: selectedColor,
@@ -606,7 +681,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     initial: wakeUpTime,
                     onChanged: (t) => temp = t,
                     onCancel: () => Navigator.of(context).pop(),
-                    onSave: () { setSheetState(() => wakeUpTime = temp); Navigator.pop(context);},
+                    onSave: () {
+                      setSheetState(() => wakeUpTime = temp);
+                      Navigator.pop(context);
+                    },
                   ),
                 );
               }
@@ -637,7 +715,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       textCapitalization: TextCapitalization.words,
                       decoration: const InputDecoration(
                         labelText: 'Alarm name',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(16)),
+                        ),
                         isDense: true,
                       ),
                     ),
@@ -647,7 +727,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       children: [
                         const Text(
                           'Wake-up time',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 10),
                         SizedBox(
@@ -663,24 +746,32 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     const SizedBox(height: 20),
                     const Text(
                       'Ramp-up duration',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     AlarmDurationSelector(
                       value: durationMinutes,
-                      onChanged: (v) => setSheetState(() => durationMinutes = v),
+                      onChanged: (v) =>
+                          setSheetState(() => durationMinutes = v),
                     ),
                     const SizedBox(height: 20),
                     FilledButton(
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC049),
                         foregroundColor: const Color(0xFF3C3C3C),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
                         minimumSize: const Size.fromHeight(54),
                       ),
                       onPressed: () async {
                         final updatedAlarm = alarm.copyWith(
-                          name: nameCtrl.text.trim().isEmpty ? alarm.name : nameCtrl.text.trim(),
+                          name: nameCtrl.text.trim().isEmpty
+                              ? alarm.name
+                              : nameCtrl.text.trim(),
                           wakeUpTime: wakeUpTime,
                           durationMinutes: durationMinutes,
                         );
@@ -702,7 +793,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
   void _openAddAlarmSheet() async {
     TimeOfDay wakeUpTime = const TimeOfDay(hour: 6, minute: 0);
     int durationMinutes = 30; // Default to 30 minutes
-    final nameCtrl = TextEditingController(text: 'Alarm ${_core.alarms.length + 1}');
+    final nameCtrl = TextEditingController(
+      text: 'Alarm ${_core.alarms.length + 1}',
+    );
 
     await showModalBottomSheet(
       context: context,
@@ -736,7 +829,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               }
 
               // Calculate start time based on wake up time and duration
-              final startTime = RoutineCore.calculateAlarmStartTime(wakeUpTime, durationMinutes);
+              final startTime = RoutineCore.calculateAlarmStartTime(
+                wakeUpTime,
+                durationMinutes,
+              );
 
               return SingleChildScrollView(
                 child: Column(
@@ -765,7 +861,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       textCapitalization: TextCapitalization.words,
                       decoration: const InputDecoration(
                         labelText: 'Alarm name',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(16)),
+                        ),
                         isDense: true,
                       ),
                     ),
@@ -775,7 +873,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       children: [
                         const Text(
                           'Wake-up time',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 10),
                         SizedBox(
@@ -786,7 +887,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                             label: Text(_formatTime(context, wakeUpTime)),
                             style: OutlinedButton.styleFrom(
                               alignment: Alignment.centerLeft,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                             ),
                           ),
                         ),
@@ -795,24 +899,34 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     const SizedBox(height: 16),
                     const Text(
                       'Duration',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
                           child: Material(
-                            color: durationMinutes == 10 ? const Color(0xFFFFC049) : Colors.white,
+                            color: durationMinutes == 10
+                                ? const Color(0xFFFFC049)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
-                              onTap: () => setSheetState(() => durationMinutes = 10),
+                              onTap: () =>
+                                  setSheetState(() => durationMinutes = 10),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: durationMinutes == 10 ? const Color(0xFFFFC049) : Colors.grey.shade300,
+                                    color: durationMinutes == 10
+                                        ? const Color(0xFFFFC049)
+                                        : Colors.grey.shade300,
                                     width: 1,
                                   ),
                                 ),
@@ -820,14 +934,20 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     if (durationMinutes == 10) ...[
-                                      const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
+                                      const Icon(
+                                        Icons.check,
+                                        size: 16,
+                                        color: Color(0xFF3C3C3C),
+                                      ),
                                       const SizedBox(width: 4),
                                     ],
                                     Text(
                                       '10m',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
-                                        color: durationMinutes == 10 ? const Color(0xFF3C3C3C) : Colors.black87,
+                                        color: durationMinutes == 10
+                                            ? const Color(0xFF3C3C3C)
+                                            : Colors.black87,
                                       ),
                                     ),
                                   ],
@@ -839,17 +959,24 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Material(
-                            color: durationMinutes == 20 ? const Color(0xFFFFC049) : Colors.white,
+                            color: durationMinutes == 20
+                                ? const Color(0xFFFFC049)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
-                              onTap: () => setSheetState(() => durationMinutes = 20),
+                              onTap: () =>
+                                  setSheetState(() => durationMinutes = 20),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: durationMinutes == 20 ? const Color(0xFFFFC049) : Colors.grey.shade300,
+                                    color: durationMinutes == 20
+                                        ? const Color(0xFFFFC049)
+                                        : Colors.grey.shade300,
                                     width: 1,
                                   ),
                                 ),
@@ -857,14 +984,20 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     if (durationMinutes == 20) ...[
-                                      const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
+                                      const Icon(
+                                        Icons.check,
+                                        size: 16,
+                                        color: Color(0xFF3C3C3C),
+                                      ),
                                       const SizedBox(width: 4),
                                     ],
                                     Text(
                                       '20m',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
-                                        color: durationMinutes == 20 ? const Color(0xFF3C3C3C) : Colors.black87,
+                                        color: durationMinutes == 20
+                                            ? const Color(0xFF3C3C3C)
+                                            : Colors.black87,
                                       ),
                                     ),
                                   ],
@@ -876,17 +1009,24 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Material(
-                            color: durationMinutes == 30 ? const Color(0xFFFFC049) : Colors.white,
+                            color: durationMinutes == 30
+                                ? const Color(0xFFFFC049)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
-                              onTap: () => setSheetState(() => durationMinutes = 30),
+                              onTap: () =>
+                                  setSheetState(() => durationMinutes = 30),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: durationMinutes == 30 ? const Color(0xFFFFC049) : Colors.grey.shade300,
+                                    color: durationMinutes == 30
+                                        ? const Color(0xFFFFC049)
+                                        : Colors.grey.shade300,
                                     width: 1,
                                   ),
                                 ),
@@ -894,14 +1034,20 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     if (durationMinutes == 30) ...[
-                                      const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
+                                      const Icon(
+                                        Icons.check,
+                                        size: 16,
+                                        color: Color(0xFF3C3C3C),
+                                      ),
                                       const SizedBox(width: 4),
                                     ],
                                     Text(
                                       '30m',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
-                                        color: durationMinutes == 30 ? const Color(0xFF3C3C3C) : Colors.black87,
+                                        color: durationMinutes == 30
+                                            ? const Color(0xFF3C3C3C)
+                                            : Colors.black87,
                                       ),
                                     ),
                                   ],
@@ -925,7 +1071,11 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                              Icon(
+                                Icons.info_outline,
+                                color: Colors.blue.shade700,
+                                size: 20,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'How it works',
@@ -949,12 +1099,16 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC049),
                         foregroundColor: const Color(0xFF3C3C3C),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
                         minimumSize: const Size.fromHeight(54),
                       ),
                       onPressed: () async {
                         final alarm = Alarm(
-                          name: nameCtrl.text.trim().isEmpty ? 'Alarm ${_core.alarms.length + 1}' : nameCtrl.text.trim(),
+                          name: nameCtrl.text.trim().isEmpty
+                              ? 'Alarm ${_core.alarms.length + 1}'
+                              : nameCtrl.text.trim(),
                           wakeUpTime: wakeUpTime,
                           durationMinutes: durationMinutes,
                         );
@@ -979,8 +1133,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     final bool sunriseSunsetEnabled = SunriseSunsetManager.I.isEnabled;
 
     Widget content;
-    
-  if (sunriseSunsetEnabled) {
+
+    if (sunriseSunsetEnabled) {
       // Show sunrise/sunset status when enabled
       content = Padding(
         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomClearance + 16),
@@ -1058,7 +1212,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   const SizedBox(height: 16),
                   // Times container
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: ThemeManager.I.infoBackgroundColor,
                       borderRadius: BorderRadius.circular(16),
@@ -1085,7 +1242,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              SunriseSunsetManager.I.sunriseTime.format(context),
+                              SunriseSunsetManager.I.sunriseTime.format(
+                                context,
+                              ),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -1147,21 +1306,33 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 child: ListView(
                   children: [
                     // Show disabled routines
-                    ..._core.routines.map((r) => RoutineCard(
-                      routine: r.copyWith(enabled: false), // Force disabled appearance
-                      onChanged: (val) {}, // No-op when sunrise/sunset is active
-                      onTap: null, // Disable editing
-                      onDelete: null, // Disable deletion when sunrise/sunset is active
-                      isDisabledBySunriseSync: true,
-                    )),
+                    ..._core.routines.map(
+                      (r) => RoutineCard(
+                        routine: r.copyWith(
+                          enabled: false,
+                        ), // Force disabled appearance
+                        onChanged:
+                            (val) {}, // No-op when sunrise/sunset is active
+                        onTap: null, // Disable editing
+                        onDelete:
+                            null, // Disable deletion when sunrise/sunset is active
+                        isDisabledBySunriseSync: true,
+                      ),
+                    ),
                     // Show disabled alarms
-                    ..._core.alarms.map((a) => AlarmCard(
-                      alarm: a.copyWith(enabled: false), // Force disabled appearance
-                      onChanged: (val) {}, // No-op when sunrise/sunset is active
-                      onTap: null, // Disable editing
-                      onDelete: null, // Disable deletion when sunrise/sunset is active
-                      isDisabledBySunriseSync: true,
-                    )),
+                    ..._core.alarms.map(
+                      (a) => AlarmCard(
+                        alarm: a.copyWith(
+                          enabled: false,
+                        ), // Force disabled appearance
+                        onChanged:
+                            (val) {}, // No-op when sunrise/sunset is active
+                        onTap: null, // Disable editing
+                        onDelete:
+                            null, // Disable deletion when sunrise/sunset is active
+                        isDisabledBySunriseSync: true,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1172,43 +1343,47 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     } else {
       // Normal routines and alarms view
       final allItems = <Widget>[];
-      
+
       // Add routines
       for (int i = 0; i < _core.routines.length; i++) {
         final r = _core.routines[i];
-        allItems.add(RoutineCard(
-          routine: r,
-          onChanged: (val) async {
-            final updatedRoutine = r.copyWith(enabled: val);
-            await _saveRoutine(updatedRoutine);
-          },
-          onTap: () => _openEditRoutineSheet(i, r),
-          onDelete: () async {
-            if (r.id != null) {
-              await _deleteRoutine(r.id!);
-            }
-          },
-        ));
+        allItems.add(
+          RoutineCard(
+            routine: r,
+            onChanged: (val) async {
+              final updatedRoutine = r.copyWith(enabled: val);
+              await _saveRoutine(updatedRoutine);
+            },
+            onTap: () => _openEditRoutineSheet(i, r),
+            onDelete: () async {
+              if (r.id != null) {
+                await _deleteRoutine(r.id!);
+              }
+            },
+          ),
+        );
       }
-      
+
       // Add alarms
       for (int i = 0; i < _core.alarms.length; i++) {
         final a = _core.alarms[i];
-        allItems.add(AlarmCard(
-          alarm: a,
-          onChanged: (val) async {
-            final updatedAlarm = a.copyWith(enabled: val);
-            await _saveAlarm(updatedAlarm);
-          },
-          onTap: () => _openEditAlarmSheet(i, a),
-          onDelete: () async {
-            if (a.id != null) {
-              await _deleteAlarm(a.id!);
-            }
-          },
-        ));
+        allItems.add(
+          AlarmCard(
+            alarm: a,
+            onChanged: (val) async {
+              final updatedAlarm = a.copyWith(enabled: val);
+              await _saveAlarm(updatedAlarm);
+            },
+            onTap: () => _openEditAlarmSheet(i, a),
+            onDelete: () async {
+              if (a.id != null) {
+                await _deleteAlarm(a.id!);
+              }
+            },
+          ),
+        );
       }
-      
+
       content = allItems.isEmpty
           ? const Center(child: Text('No routines or alarms yet'))
           : ListView(
@@ -1223,35 +1398,34 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         title: const Text(
           'Routines & Alarms',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
         ),
-        actions: sunriseSunsetEnabled ? [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Sunrise/Sunset Sync'),
-                  content: const Text(
-                    'Manual routines are disabled while sunrise/sunset sync is active. '
-                    'The lamp will automatically adjust based on the time of day.\n\n'
-                    'To use manual routines again, disable sunrise/sunset sync in Settings.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('OK'),
-                    ),
-                  ],
+        actions: sunriseSunsetEnabled
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.info_outline),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Sunrise/Sunset Sync'),
+                        content: const Text(
+                          'Manual routines are disabled while sunrise/sunset sync is active. '
+                          'The lamp will automatically adjust based on the time of day.\n\n'
+                          'To use manual routines again, disable sunrise/sunset sync in Settings.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-        ] : null,
+              ]
+            : null,
       ),
       body: Stack(
         clipBehavior: Clip.none,
@@ -1269,7 +1443,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       color: Colors.transparent,
                       elevation: 10,
                       shadowColor: Colors.black.withValues(alpha: 0.12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                       clipBehavior: Clip.antiAlias,
                       child: Container(
                         decoration: BoxDecoration(
@@ -1307,7 +1483,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       color: Colors.transparent,
                       elevation: 10,
                       shadowColor: Colors.black.withValues(alpha: 0.12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                       clipBehavior: Clip.antiAlias,
                       child: Container(
                         decoration: BoxDecoration(

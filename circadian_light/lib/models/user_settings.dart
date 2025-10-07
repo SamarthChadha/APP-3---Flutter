@@ -25,9 +25,11 @@ class UserSettings {
   }) {
     return UserSettings(
       sunriseSunsetEnabled: sunriseSunsetEnabled ?? this.sunriseSunsetEnabled,
-      lastConnectedDeviceId: lastConnectedDeviceId ?? this.lastConnectedDeviceId,
+      lastConnectedDeviceId:
+          lastConnectedDeviceId ?? this.lastConnectedDeviceId,
       deviceName: deviceName ?? this.deviceName,
-      espConnectionSettings: espConnectionSettings ?? this.espConnectionSettings,
+      espConnectionSettings:
+          espConnectionSettings ?? this.espConnectionSettings,
       firstTimeSetup: firstTimeSetup ?? this.firstTimeSetup,
       lastUpdated: lastUpdated ?? DateTime.now(),
     );
@@ -49,9 +51,10 @@ class UserSettings {
       sunriseSunsetEnabled: json['sunrise_sunset_enabled'] as bool? ?? false,
       lastConnectedDeviceId: json['last_connected_device_id'] as String?,
       deviceName: json['device_name'] as String?,
-      espConnectionSettings: json['esp_connection_settings'] as Map<String, dynamic>? ?? {},
+      espConnectionSettings:
+          json['esp_connection_settings'] as Map<String, dynamic>? ?? {},
       firstTimeSetup: json['first_time_setup'] as bool? ?? true,
-      lastUpdated: json['last_updated'] != null 
+      lastUpdated: json['last_updated'] != null
           ? DateTime.fromMillisecondsSinceEpoch(json['last_updated'] as int)
           : DateTime.now(),
     );

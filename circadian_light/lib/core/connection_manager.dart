@@ -4,7 +4,7 @@ import 'provisioning_screen.dart';
 
 class ConnectionManager extends StatefulWidget {
   final Widget child;
-  
+
   const ConnectionManager({super.key, required this.child});
 
   @override
@@ -23,12 +23,14 @@ class _ConnectionManagerState extends State<ConnectionManager> {
 
   Future<void> _checkConnection() async {
     setState(() => _isChecking = true);
-    
+
     // Try to connect to ESP32
     try {
       await EspConnection.I.connect();
-      await Future.delayed(const Duration(seconds: 3)); // Give it time to connect
-      
+      await Future.delayed(
+        const Duration(seconds: 3),
+      ); // Give it time to connect
+
       if (mounted) {
         setState(() {
           _isConnected = EspConnection.I.isConnected;
@@ -48,12 +50,11 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   Future<void> _startProvisioning() async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (context) => const Scaffold(
-          body: ProvisioningScreen(title: 'Connect ESP32'),
-        ),
+        builder: (context) =>
+            const Scaffold(body: ProvisioningScreen(title: 'Connect ESP32')),
       ),
     );
-    
+
     if (result == true) {
       // Provisioning successful, try to connect
       _checkConnection();
@@ -93,11 +94,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.wifi_off,
-                  size: 80,
-                  color: Colors.grey,
-                ),
+                Icon(Icons.wifi_off, size: 80, color: Colors.grey),
                 const SizedBox(height: 20),
                 const Text(
                   'ESP32 not connected',

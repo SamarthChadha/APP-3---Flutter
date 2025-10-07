@@ -18,7 +18,9 @@ class DuplicateRoutineException implements Exception {
 /// Thrown when attempting to save an alarm that duplicates another
 class DuplicateAlarmException implements Exception {
   final String message;
-  DuplicateAlarmException([this.message = 'Alarm already exists with the same specifications']);
+  DuplicateAlarmException([
+    this.message = 'Alarm already exists with the same specifications',
+  ]);
   @override
   String toString() => message;
 }
@@ -190,7 +192,12 @@ class RoutineCore extends ChangeNotifier {
       if (!routine.enabled) continue;
 
       // Check for overlap
-      if (_timeRangesOverlap(startTime, endTime, routine.startTime, routine.endTime)) {
+      if (_timeRangesOverlap(
+        startTime,
+        endTime,
+        routine.startTime,
+        routine.endTime,
+      )) {
         // Disable this routine
         final disabled = routine.copyWith(enabled: false);
         await db.saveRoutine(disabled);
@@ -216,7 +223,12 @@ class RoutineCore extends ChangeNotifier {
       if (!alarm.enabled) continue;
 
       // Check for overlap
-      if (_timeRangesOverlap(startTime, endTime, alarm.startTime, alarm.wakeUpTime)) {
+      if (_timeRangesOverlap(
+        startTime,
+        endTime,
+        alarm.startTime,
+        alarm.wakeUpTime,
+      )) {
         // Disable this alarm
         final disabled = alarm.copyWith(enabled: false);
         await db.saveAlarm(disabled);
@@ -236,10 +248,13 @@ class RoutineCore extends ChangeNotifier {
 
   bool _isDuplicateRoutine(Routine newRoutine) {
     return _routines.any((existingRoutine) {
-      if (newRoutine.id != null && existingRoutine.id == newRoutine.id) return false;
-      final sameTimes = existingRoutine.startTime == newRoutine.startTime &&
+      if (newRoutine.id != null && existingRoutine.id == newRoutine.id)
+        return false;
+      final sameTimes =
+          existingRoutine.startTime == newRoutine.startTime &&
           existingRoutine.endTime == newRoutine.endTime;
-      final sameLevels = (existingRoutine.brightness - newRoutine.brightness).abs() < 0.01 &&
+      final sameLevels =
+          (existingRoutine.brightness - newRoutine.brightness).abs() < 0.01 &&
           (existingRoutine.temperature - newRoutine.temperature).abs() < 0.01;
       return sameTimes && sameLevels;
     });
@@ -273,11 +288,13 @@ class RoutineCore extends ChangeNotifier {
   }
 
   /// Calculate the start time given a wake-up time and ramp duration
-  static TimeOfDay calculateAlarmStartTime(TimeOfDay wakeUpTime, int durationMinutes) {
+  static TimeOfDay calculateAlarmStartTime(
+    TimeOfDay wakeUpTime,
+    int durationMinutes,
+  ) {
     final total = wakeUpTime.hour * 60 + wakeUpTime.minute - durationMinutes;
     final hour = ((total ~/ 60) % 24 + 24) % 24; // normalize
     final minute = (total % 60 + 60) % 60;
     return TimeOfDay(hour: hour, minute: minute);
   }
 }
-

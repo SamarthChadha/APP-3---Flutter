@@ -31,7 +31,9 @@ class AlarmDurationSelector extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: selected ? const Color(0xFFFFC049) : Colors.grey.shade300,
+                      color: selected
+                          ? const Color(0xFFFFC049)
+                          : Colors.grey.shade300,
                       width: 1,
                     ),
                   ),
@@ -39,14 +41,20 @@ class AlarmDurationSelector extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (selected) ...[
-                        const Icon(Icons.check, size: 16, color: Color(0xFF3C3C3C)),
+                        const Icon(
+                          Icons.check,
+                          size: 16,
+                          color: Color(0xFF3C3C3C),
+                        ),
                         const SizedBox(width: 4),
                       ],
                       Text(
                         '${opt}m',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: selected ? const Color(0xFF3C3C3C) : Colors.black87,
+                          color: selected
+                              ? const Color(0xFF3C3C3C)
+                              : Colors.black87,
                         ),
                       ),
                     ],

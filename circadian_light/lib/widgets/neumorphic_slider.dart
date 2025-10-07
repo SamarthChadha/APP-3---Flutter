@@ -21,7 +21,9 @@ class NeumorphicSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = ThemeManager.I.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFEFEFEF);
+    final base = ThemeManager.I.isDarkMode
+        ? const Color(0xFF2A2A2A)
+        : const Color(0xFFEFEFEF);
     final trackDecoration = BoxDecoration(
       color: gradient == null ? (solidColor ?? base) : null,
       gradient: gradient,

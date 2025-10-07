@@ -49,7 +49,13 @@ class TimePickerSheet extends StatelessWidget {
                 mode: CupertinoDatePickerMode.time,
                 minuteInterval: 1,
                 use24hFormat: MediaQuery.of(context).alwaysUse24HourFormat,
-                initialDateTime: DateTime(0, 1, 1, initial.hour, initial.minute),
+                initialDateTime: DateTime(
+                  0,
+                  1,
+                  1,
+                  initial.hour,
+                  initial.minute,
+                ),
                 onDateTimeChanged: (DateTime v) {
                   onChanged(TimeOfDay(hour: v.hour, minute: v.minute));
                 },

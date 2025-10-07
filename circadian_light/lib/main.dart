@@ -18,8 +18,6 @@ class MainApp extends StatefulWidget {
 
   @override
   State<MainApp> createState() => _MainAppState();
-
-
 }
 
 class _MainAppState extends State<MainApp> {
@@ -33,7 +31,7 @@ class _MainAppState extends State<MainApp> {
     super.initState();
     _setupLogging();
     _initializeApp();
-    
+
     _screens = [
       const HomeScreen(),
       const RoutinesScreen(),
@@ -78,21 +76,23 @@ class _MainAppState extends State<MainApp> {
         });
       } catch (espError) {
         // ESP connection failure shouldn't prevent app from working
-        _logger.warning('ESP connection failed, continuing without device connection', espError);
+        _logger.warning(
+          'ESP connection failed, continuing without device connection',
+          espError,
+        );
       }
 
       // Initialize sunrise/sunset manager but don't enable it by default
       // It will be enabled when user turns it on in settings
       _logger.info('App initialization completed successfully');
-      
     } catch (error, stackTrace) {
       _logger.severe('Critical app initialization failed', error, stackTrace);
-      
+
       setState(() {
         _initializationFailed = true;
         _initializationError = error.toString();
       });
-      
+
       // Show error to user
       if (mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -118,13 +118,14 @@ class _MainAppState extends State<MainApp> {
       }
     }
   }
-  
+
   @override
   void dispose() {
     // Clean up the sunrise/sunset manager when app is disposed
     SunriseSunsetManager.I.dispose();
     super.dispose();
   }
+
   int myIndex = 0;
   @override
   Widget build(BuildContext context) {
@@ -139,11 +140,7 @@ class _MainAppState extends State<MainApp> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red[600],
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[600]),
                   const SizedBox(height: 24),
                   Text(
                     'App Initialization Failed',
@@ -157,10 +154,7 @@ class _MainAppState extends State<MainApp> {
                   const SizedBox(height: 16),
                   Text(
                     _initializationError ?? 'Unknown error occurred',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.red[700],
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.red[700]),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
@@ -177,7 +171,10 @@ class _MainAppState extends State<MainApp> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red[600],
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ],
@@ -194,51 +191,52 @@ class _MainAppState extends State<MainApp> {
         return MaterialApp(
           theme: ThemeManager.I.lightTheme,
           darkTheme: ThemeManager.I.darkTheme,
-          themeMode: ThemeManager.I.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: Scaffold(
-        extendBody: true,
-        body: _screens[myIndex],
+          themeMode: ThemeManager.I.isDarkMode
+              ? ThemeMode.dark
+              : ThemeMode.light,
+          home: Scaffold(
+            extendBody: true,
+            body: _screens[myIndex],
 
-        bottomNavigationBar: SafeArea(
-          top: false,
-          child: Container(
-            height: 60,
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-            decoration: BoxDecoration(
-              color: ThemeManager.I.navigationBarColor,
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: ThemeManager.I.navigationBarShadow,
-            ),
-            child: BottomNavigationBar(
-              backgroundColor: const Color.fromARGB(0, 22, 59, 31),
-              elevation: 0,
-              onTap: (index) => setState(() => myIndex = index),
-              currentIndex: myIndex,
-              showSelectedLabels: false,
-              showUnselectedLabels: false,
-              selectedItemColor: ThemeManager.I.currentAccentColor,
-              unselectedItemColor: ThemeManager.I.secondaryTextColor,
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home),
-                  label: 'Home',
+            bottomNavigationBar: SafeArea(
+              top: false,
+              child: Container(
+                height: 60,
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                decoration: BoxDecoration(
+                  color: ThemeManager.I.navigationBarColor,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: ThemeManager.I.navigationBarShadow,
                 ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.schedule),
-                  label: 'Routines',
+                child: BottomNavigationBar(
+                  backgroundColor: const Color.fromARGB(0, 22, 59, 31),
+                  elevation: 0,
+                  onTap: (index) => setState(() => myIndex = index),
+                  currentIndex: myIndex,
+                  showSelectedLabels: false,
+                  showUnselectedLabels: false,
+                  selectedItemColor: ThemeManager.I.currentAccentColor,
+                  unselectedItemColor: ThemeManager.I.secondaryTextColor,
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.home),
+                      label: 'Home',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.schedule),
+                      label: 'Routines',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.settings),
+                      label: 'Settings',
+                    ),
+                  ],
                 ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.settings),
-                  label: 'Settings',
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
         );
       },
     );
   }
 }
- 

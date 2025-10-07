@@ -9,11 +9,9 @@ import '../core/theme_manager.dart';
 // import 'package:flutter_gl/flutter_gl.dart';
 // import 'package:flutter_3d_controller/'
 
-
 // void loadMyShader() async {
 //   var program = await FragmentProgram.fromAsset('assets/shaders/lamp_shader.frag');
 // }
-
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,14 +22,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _isOn = true;
   double _brightness = 0.7; // 0..1
-  double _tempK = 2800;     // 1800..6500
+  double _tempK = 2800; // 1800..6500
   Routine? _activeRoutine;
   bool _isCheckingRoutine = false;
 
   // Debounce timers for sliders
   Timer? _brightTimer;
   Timer? _tempTimer;
-  
+
   // Stream subscription for ESP state updates
   StreamSubscription? _stateSubscription;
 
@@ -41,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadStateFromDatabase();
-    
+
     // Listen for ESP connection changes
     EspConnection.I.connection.listen((isConnected) {
       if (isConnected) {
@@ -51,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     });
-    
+
     // Listen for state updates from ESP32
     _stateSubscription = EspConnection.I.stateUpdates.listen((state) {
       setState(() {
@@ -59,11 +57,13 @@ class _HomeScreenState extends State<HomeScreen> {
         _brightness = state.flutterBrightness;
         _tempK = state.flutterTemperature;
       });
-      
+
       // Save state when ESP updates (sync ESP state to database)
       _saveStateToDatabase();
       _refreshActiveRoutine();
-      debugPrint('Synced ESP state to app: isOn=${state.isOn}, brightness=${state.brightness}, mode=${state.mode}');
+      debugPrint(
+        'Synced ESP state to app: isOn=${state.isOn}, brightness=${state.brightness}, mode=${state.mode}',
+      );
     });
   }
 
@@ -84,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _brightness = lampState.flutterBrightness;
           _tempK = lampState.flutterTemperature;
         });
-        
+
         // Sync loaded state to ESP if connected
         if (EspConnection.I.isConnected) {
           EspConnection.I.setOn(_isOn);
@@ -98,8 +98,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _applyActiveRoutine(Routine routine) {
-    final double normalizedBrightness = (routine.brightness / 100).clamp(0.0, 1.0);
-    final double clampedTemp = routine.temperature.clamp(2700.0, 6500.0).toDouble();
+    final double normalizedBrightness = (routine.brightness / 100).clamp(
+      0.0,
+      1.0,
+    );
+    final double clampedTemp = routine.temperature
+        .clamp(2700.0, 6500.0)
+        .toDouble();
     setState(() {
       _activeRoutine = routine;
       _isOn = normalizedBrightness > 0.0;
@@ -116,9 +121,17 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
 
       if (routine != null) {
-        final bool brightnessChanged = _activeRoutine != null && (routine.brightness - _activeRoutine!.brightness).abs() > 0.01;
-        final bool temperatureChanged = _activeRoutine != null && (routine.temperature - _activeRoutine!.temperature).abs() > 0.1;
-        if (_activeRoutine == null || _activeRoutine!.id != routine.id || !_activeRoutine!.enabled || brightnessChanged || temperatureChanged) {
+        final bool brightnessChanged =
+            _activeRoutine != null &&
+            (routine.brightness - _activeRoutine!.brightness).abs() > 0.01;
+        final bool temperatureChanged =
+            _activeRoutine != null &&
+            (routine.temperature - _activeRoutine!.temperature).abs() > 0.1;
+        if (_activeRoutine == null ||
+            _activeRoutine!.id != routine.id ||
+            !_activeRoutine!.enabled ||
+            brightnessChanged ||
+            temperatureChanged) {
           _applyActiveRoutine(routine);
         }
       } else if (_activeRoutine != null) {
@@ -146,15 +159,15 @@ class _HomeScreenState extends State<HomeScreen> {
       await db.saveRoutine(routine.copyWith(enabled: false));
       await _refreshActiveRoutine();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${routine.name} disabled')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${routine.name} disabled')));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to disable routine: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to disable routine: $e')));
     }
   }
 
@@ -192,6 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (k >= 5000) return 1; // MODE_WHITE
     return 2; // MODE_BOTH
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -236,7 +250,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Transform(
                   alignment: Alignment.center,
                   transform: Matrix4.rotationX(3.1416),
-                  child: const Flutter3DViewer(src: 'assets/models/Textured_Lamp_Small.glb'),
+                  child: const Flutter3DViewer(
+                    src: 'assets/models/Textured_Lamp_Small.glb',
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -261,14 +277,25 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: FilledButton.styleFrom(
                               backgroundColor: const Color(0xFFFFC049),
                               foregroundColor: const Color(0xFF3C3C3C),
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                              textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 8,
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
                               elevation: 3,
                               minimumSize: const Size(0, 0),
                             ),
                             onPressed: _disableActiveRoutine,
-                            icon: const Icon(Icons.pause_circle_filled, size: 18),
+                            icon: const Icon(
+                              Icons.pause_circle_filled,
+                              size: 18,
+                            ),
                             label: const Text('Disable routine'),
                           ),
                         ],
@@ -285,7 +312,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           height: 42,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(21),
-                            color: _isOn ? const Color(0xFFFFC049) : const Color(0xFFE0E0E0),
+                            color: _isOn
+                                ? const Color(0xFFFFC049)
+                                : const Color(0xFFE0E0E0),
                             boxShadow: [
                               BoxShadow(
                                 offset: const Offset(2, 2),
@@ -301,7 +330,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           child: AnimatedAlign(
                             duration: const Duration(milliseconds: 200),
-                            alignment: _isOn ? Alignment.centerRight : Alignment.centerLeft,
+                            alignment: _isOn
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
                             child: Container(
                               width: 36,
                               height: 36,
@@ -330,7 +361,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.thermostat,
                   iconGradient: const [Color(0xFFFFC477), Color(0xFFFFD700)],
                   title: 'Color Temperature',
-                  subtitle: '${_tempK.round()}K - ${_tempK <= 3000 ? 'Warm' : _tempK >= 5000 ? 'Cool' : 'Mixed'}',
+                  subtitle:
+                      '${_tempK.round()}K - ${_tempK <= 3000
+                          ? 'Warm'
+                          : _tempK >= 5000
+                          ? 'Cool'
+                          : 'Mixed'}',
                   control: Stack(
                     alignment: Alignment.centerLeft,
                     children: [
@@ -366,8 +402,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           activeTrackColor: Colors.transparent,
                           inactiveTrackColor: Colors.transparent,
                           thumbColor: const Color(0xFFEFEFEF),
-                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 0,
+                          ),
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 12,
+                          ),
                         ),
                         child: IgnorePointer(
                           ignoring: _controlsLocked,
@@ -378,10 +418,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             onChanged: (v) {
                               setState(() => _tempK = v);
                               _tempTimer?.cancel();
-                              _tempTimer = Timer(const Duration(milliseconds: 80), () {
-                                EspConnection.I.setMode(_modeFromTemp(_tempK));
-                                _saveStateToDatabase(); // Save state when user changes temperature
-                              });
+                              _tempTimer = Timer(
+                                const Duration(milliseconds: 80),
+                                () {
+                                  EspConnection.I.setMode(
+                                    _modeFromTemp(_tempK),
+                                  );
+                                  _saveStateToDatabase(); // Save state when user changes temperature
+                                },
+                              );
                             },
                           ),
                         ),
@@ -435,8 +480,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           activeTrackColor: Colors.transparent,
                           inactiveTrackColor: Colors.transparent,
                           thumbColor: const Color(0xFFEFEFEF),
-                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 0,
+                          ),
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 12,
+                          ),
                         ),
                         child: IgnorePointer(
                           ignoring: _controlsLocked,
@@ -447,11 +496,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             onChanged: (v) {
                               setState(() => _brightness = v);
                               _brightTimer?.cancel();
-                              _brightTimer = Timer(const Duration(milliseconds: 60), () {
-                                final b = _mapBrightnessTo15(_brightness);
-                                EspConnection.I.setBrightness(b);
-                                _saveStateToDatabase(); // Save state when user changes brightness
-                              });
+                              _brightTimer = Timer(
+                                const Duration(milliseconds: 60),
+                                () {
+                                  final b = _mapBrightnessTo15(_brightness);
+                                  EspConnection.I.setBrightness(b);
+                                  _saveStateToDatabase(); // Save state when user changes brightness
+                                },
+                              );
                             },
                           ),
                         ),
@@ -463,7 +515,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        
       ),
     );
   }
@@ -473,7 +524,12 @@ class NeumorphicPillButton extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
   final Color? color; // custom base color
-  const NeumorphicPillButton({super.key, required this.label, required this.onTap, this.color});
+  const NeumorphicPillButton({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
 
   @override
   State<NeumorphicPillButton> createState() => _NeumorphicPillButtonState();
@@ -484,11 +540,11 @@ class _NeumorphicPillButtonState extends State<NeumorphicPillButton> {
 
   @override
   Widget build(BuildContext context) {
-  final base = widget.color ?? const Color(0xFFEFEFEF); // allow override
-  // derive dynamic shadow intensity based on luminance
-  final lum = base.computeLuminance();
-  final darkShadow = Colors.black.withValues(alpha: lum > 0.7 ? 0.18 : 0.30);
-  final lightShadow = Colors.white.withValues(alpha: lum > 0.5 ? 0.55 : 0.35);
+    final base = widget.color ?? const Color(0xFFEFEFEF); // allow override
+    // derive dynamic shadow intensity based on luminance
+    final lum = base.computeLuminance();
+    final darkShadow = Colors.black.withValues(alpha: lum > 0.7 ? 0.18 : 0.30);
+    final lightShadow = Colors.white.withValues(alpha: lum > 0.5 ? 0.55 : 0.35);
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapCancel: () => setState(() => _pressed = false),
@@ -505,26 +561,26 @@ class _NeumorphicPillButtonState extends State<NeumorphicPillButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-          offset: const Offset(2, 2),
-          blurRadius: 6,
-          color: darkShadow,
+                    offset: const Offset(2, 2),
+                    blurRadius: 6,
+                    color: darkShadow,
                   ),
                   BoxShadow(
-          offset: const Offset(-2, -2),
-          blurRadius: 6,
-          color: lightShadow,
+                    offset: const Offset(-2, -2),
+                    blurRadius: 6,
+                    color: lightShadow,
                   ),
                 ]
               : [
                   BoxShadow(
-          offset: const Offset(10, 10),
-          blurRadius: 24,
-          color: darkShadow,
+                    offset: const Offset(10, 10),
+                    blurRadius: 24,
+                    color: darkShadow,
                   ),
                   BoxShadow(
-          offset: const Offset(-10, -10),
-          blurRadius: 24,
-          color: lightShadow,
+                    offset: const Offset(-10, -10),
+                    blurRadius: 24,
+                    color: lightShadow,
                   ),
                 ],
         ),
@@ -557,8 +613,16 @@ class NeumorphicPanel extends StatelessWidget {
         color: base,
         borderRadius: BorderRadius.circular(30),
         boxShadow: const [
-          BoxShadow(offset: Offset(16, 16), blurRadius: 36, color: Color(0x1A000000)),
-          BoxShadow(offset: Offset(-16, -16), blurRadius: 36, color: Color(0xE6FFFFFF)),
+          BoxShadow(
+            offset: Offset(16, 16),
+            blurRadius: 36,
+            color: Color(0x1A000000),
+          ),
+          BoxShadow(
+            offset: Offset(-16, -16),
+            blurRadius: 36,
+            color: Color(0xE6FFFFFF),
+          ),
         ],
       ),
       child: Container(
@@ -566,8 +630,16 @@ class NeumorphicPanel extends StatelessWidget {
           color: const Color.fromARGB(255, 98, 93, 93),
           borderRadius: BorderRadius.circular(24),
           boxShadow: const [
-            BoxShadow(offset: Offset(8, 8), blurRadius: 18, color: Color(0x14000000)),
-            BoxShadow(offset: Offset(-8, -8), blurRadius: 18, color: Color(0xF2FFFFFF)),
+            BoxShadow(
+              offset: Offset(8, 8),
+              blurRadius: 18,
+              color: Color(0x14000000),
+            ),
+            BoxShadow(
+              offset: Offset(-8, -8),
+              blurRadius: 18,
+              color: Color(0xF2FFFFFF),
+            ),
           ],
         ),
         child: ClipRRect(
@@ -647,11 +719,7 @@ class ControlCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                child: Icon(icon, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 18),
               Expanded(
@@ -673,7 +741,8 @@ class ControlCard extends StatelessWidget {
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.2,
-                        color: subtitleColor ?? ThemeManager.I.secondaryTextColor,
+                        color:
+                            subtitleColor ?? ThemeManager.I.secondaryTextColor,
                       ),
                     ),
                   ],

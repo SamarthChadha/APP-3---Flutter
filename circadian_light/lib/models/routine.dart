@@ -23,9 +23,8 @@ class Routine {
     this.enabled = true,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) : 
-    createdAt = createdAt ?? DateTime.now(),
-    updatedAt = updatedAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   Routine copyWith({
     int? id,
@@ -39,17 +38,17 @@ class Routine {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Routine(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        startTime: startTime ?? this.startTime,
-        endTime: endTime ?? this.endTime,
-        color: color ?? this.color,
-        brightness: brightness ?? this.brightness,
-        temperature: temperature ?? this.temperature,
-        enabled: enabled ?? this.enabled,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? DateTime.now(),
-      );
+    id: id ?? this.id,
+    name: name ?? this.name,
+    startTime: startTime ?? this.startTime,
+    endTime: endTime ?? this.endTime,
+    color: color ?? this.color,
+    brightness: brightness ?? this.brightness,
+    temperature: temperature ?? this.temperature,
+    enabled: enabled ?? this.enabled,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? DateTime.now(),
+  );
 
   // Convert to JSON for database storage
   Map<String, dynamic> toJson() {
@@ -93,8 +92,9 @@ class Routine {
 
   // Database table schema
   static const String tableName = 'routines';
-  
-  static const String createTableSql = '''
+
+  static const String createTableSql =
+      '''
     CREATE TABLE $tableName (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,

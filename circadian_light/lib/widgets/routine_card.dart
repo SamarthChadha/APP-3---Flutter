@@ -22,7 +22,8 @@ class RoutineCard extends StatefulWidget {
   State<RoutineCard> createState() => _RoutineCardState();
 }
 
-class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStateMixin {
+class _RoutineCardState extends State<RoutineCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<double> _slideAnimation;
   bool _isSliding = false;
@@ -37,10 +38,7 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
     _slideAnimation = Tween<double>(
       begin: 0.0,
       end: -0.33, // Slide to 1/3 of width
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
   }
 
   @override
@@ -56,7 +54,10 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
     final dragAmount = details.delta.dx / screenWidth;
 
     if (details.delta.dx < 0) {
-      final newValue = (_slideController.value - dragAmount * 3).clamp(0.0, 1.0);
+      final newValue = (_slideController.value - dragAmount * 3).clamp(
+        0.0,
+        1.0,
+      );
       _slideController.value = newValue;
       setState(() {
         _isSliding = _slideController.value > 0;
@@ -95,11 +96,12 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
 
   Widget _buildCustomSwitch() {
     final isOn = widget.routine.enabled && !widget.isDisabledBySunriseSync;
-    final isEffectivelyDisabled = !widget.routine.enabled || widget.isDisabledBySunriseSync;
-    
+    final isEffectivelyDisabled =
+        !widget.routine.enabled || widget.isDisabledBySunriseSync;
+
     return GestureDetector(
-      onTap: widget.isDisabledBySunriseSync 
-          ? null 
+      onTap: widget.isDisabledBySunriseSync
+          ? null
           : () => widget.onChanged(!widget.routine.enabled),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -107,10 +109,12 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
         height: 32,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: isOn 
+          color: isOn
               ? ThemeManager.I.currentAccentColor
-              : (ThemeManager.I.isDarkMode ? const Color(0xFF424242) : const Color(0xFFE0E0E0)),
-          border: isEffectivelyDisabled 
+              : (ThemeManager.I.isDarkMode
+                    ? const Color(0xFF424242)
+                    : const Color(0xFFE0E0E0)),
+          border: isEffectivelyDisabled
               ? Border.all(color: Colors.grey.withValues(alpha: 0.3), width: 1)
               : null,
         ),
@@ -126,9 +130,13 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
               shape: BoxShape.circle,
               color: isEffectivelyDisabled
                   ? Colors.grey
-                  : (isOn 
-                      ? (ThemeManager.I.isDarkMode ? Colors.black : Colors.white)
-                      : (ThemeManager.I.isDarkMode ? const Color(0xFF9E9E9E) : Colors.white)),
+                  : (isOn
+                        ? (ThemeManager.I.isDarkMode
+                              ? Colors.black
+                              : Colors.white)
+                        : (ThemeManager.I.isDarkMode
+                              ? const Color(0xFF9E9E9E)
+                              : Colors.white)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.2),
@@ -145,8 +153,10 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    final timeRange = '${_formatTime(context, widget.routine.startTime)} – ${_formatTime(context, widget.routine.endTime)}';
-    final isEffectivelyDisabled = !widget.routine.enabled || widget.isDisabledBySunriseSync;
+    final timeRange =
+        '${_formatTime(context, widget.routine.startTime)} – ${_formatTime(context, widget.routine.endTime)}';
+    final isEffectivelyDisabled =
+        !widget.routine.enabled || widget.isDisabledBySunriseSync;
 
     final card = AnimatedContainer(
       duration: const Duration(milliseconds: 240),
@@ -158,7 +168,10 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isEffectivelyDisabled
-              ? [ThemeManager.I.disabledColor, ThemeManager.I.disabledColor.withValues(alpha: 0.8)]
+              ? [
+                  ThemeManager.I.disabledColor,
+                  ThemeManager.I.disabledColor.withValues(alpha: 0.8),
+                ]
               : ThemeManager.I.neumorphicGradient,
         ),
         boxShadow: ThemeManager.I.neumorphicShadows,
@@ -172,13 +185,19 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  widget.routine.color.withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.9),
-                  widget.routine.color.withValues(alpha: isEffectivelyDisabled ? 0.1 : 0.25)
+                  widget.routine.color.withValues(
+                    alpha: isEffectivelyDisabled ? 0.3 : 0.9,
+                  ),
+                  widget.routine.color.withValues(
+                    alpha: isEffectivelyDisabled ? 0.1 : 0.25,
+                  ),
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: widget.routine.color.withValues(alpha: isEffectivelyDisabled ? 0.15 : 0.45),
+                  color: widget.routine.color.withValues(
+                    alpha: isEffectivelyDisabled ? 0.15 : 0.45,
+                  ),
                   blurRadius: 12,
                   spreadRadius: 1,
                 ),
@@ -195,7 +214,9 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: ThemeManager.I.primaryTextColor.withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                    color: ThemeManager.I.primaryTextColor.withValues(
+                      alpha: isEffectivelyDisabled ? 0.4 : 1,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -205,7 +226,9 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.2,
-                    color: ThemeManager.I.secondaryTextColor.withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                    color: ThemeManager.I.secondaryTextColor.withValues(
+                      alpha: isEffectivelyDisabled ? 0.4 : 1,
+                    ),
                   ),
                 ),
                 if (widget.isDisabledBySunriseSync) ...[
@@ -269,11 +292,7 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.delete_outline,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                      Icon(Icons.delete_outline, color: Colors.white, size: 28),
                       SizedBox(height: 4),
                       Text(
                         'Delete',
@@ -293,7 +312,10 @@ class _RoutineCardState extends State<RoutineCard> with SingleTickerProviderStat
             animation: _slideAnimation,
             builder: (context, child) {
               return Transform.translate(
-                offset: Offset(_slideAnimation.value * MediaQuery.of(context).size.width, 0),
+                offset: Offset(
+                  _slideAnimation.value * MediaQuery.of(context).size.width,
+                  0,
+                ),
                 child: GestureDetector(
                   onHorizontalDragUpdate: _onHorizontalDragUpdate,
                   onHorizontalDragEnd: _onHorizontalDragEnd,

@@ -22,7 +22,8 @@ class AlarmCard extends StatefulWidget {
   State<AlarmCard> createState() => _AlarmCardState();
 }
 
-class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMixin {
+class _AlarmCardState extends State<AlarmCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<double> _slideAnimation;
   bool _isSliding = false;
@@ -51,7 +52,10 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
     final screenWidth = MediaQuery.of(context).size.width;
     final dragAmount = details.delta.dx / screenWidth;
     if (details.delta.dx < 0) {
-      final newValue = (_slideController.value - dragAmount * 3).clamp(0.0, 1.0);
+      final newValue = (_slideController.value - dragAmount * 3).clamp(
+        0.0,
+        1.0,
+      );
       _slideController.value = newValue;
       setState(() => _isSliding = _slideController.value > 0);
     }
@@ -85,7 +89,8 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    final bool isEffectivelyDisabled = widget.isDisabledBySunriseSync || !widget.alarm.enabled;
+    final bool isEffectivelyDisabled =
+        widget.isDisabledBySunriseSync || !widget.alarm.enabled;
     final String wakeUpTime = widget.alarm.wakeUpTime.format(context);
     final String startTime = widget.alarm.startTime.format(context);
     final String duration = '${widget.alarm.durationMinutes}min';
@@ -99,7 +104,10 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isEffectivelyDisabled
-              ? [ThemeManager.I.disabledColor, ThemeManager.I.disabledColor.withValues(alpha: 0.8)]
+              ? [
+                  ThemeManager.I.disabledColor,
+                  ThemeManager.I.disabledColor.withValues(alpha: 0.8),
+                ]
               : ThemeManager.I.neumorphicGradient,
         ),
         boxShadow: ThemeManager.I.neumorphicShadows,
@@ -113,13 +121,19 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFFFFB347).withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.9),
-                  const Color(0xFFFFB347).withValues(alpha: isEffectivelyDisabled ? 0.1 : 0.25)
+                  const Color(
+                    0xFFFFB347,
+                  ).withValues(alpha: isEffectivelyDisabled ? 0.3 : 0.9),
+                  const Color(
+                    0xFFFFB347,
+                  ).withValues(alpha: isEffectivelyDisabled ? 0.1 : 0.25),
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFFB347).withValues(alpha: isEffectivelyDisabled ? 0.15 : 0.45),
+                  color: const Color(
+                    0xFFFFB347,
+                  ).withValues(alpha: isEffectivelyDisabled ? 0.15 : 0.45),
                   blurRadius: 12,
                   spreadRadius: 1,
                 ),
@@ -127,7 +141,9 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
             ),
             child: Icon(
               Icons.alarm,
-              color: isEffectivelyDisabled ? ThemeManager.I.tertiaryTextColor : ThemeManager.I.primaryTextColor,
+              color: isEffectivelyDisabled
+                  ? ThemeManager.I.tertiaryTextColor
+                  : ThemeManager.I.primaryTextColor,
               size: 22,
             ),
           ),
@@ -141,7 +157,9 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: ThemeManager.I.primaryTextColor.withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                    color: ThemeManager.I.primaryTextColor.withValues(
+                      alpha: isEffectivelyDisabled ? 0.4 : 1,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -150,7 +168,9 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: ThemeManager.I.secondaryTextColor.withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                    color: ThemeManager.I.secondaryTextColor.withValues(
+                      alpha: isEffectivelyDisabled ? 0.4 : 1,
+                    ),
                   ),
                 ),
                 Text(
@@ -158,7 +178,9 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: ThemeManager.I.tertiaryTextColor.withValues(alpha: isEffectivelyDisabled ? 0.4 : 1),
+                    color: ThemeManager.I.tertiaryTextColor.withValues(
+                      alpha: isEffectivelyDisabled ? 0.4 : 1,
+                    ),
                   ),
                 ),
               ],
@@ -213,11 +235,7 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.delete_outline,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                      Icon(Icons.delete_outline, color: Colors.white, size: 28),
                       SizedBox(height: 4),
                       Text(
                         'Delete',
@@ -236,7 +254,10 @@ class _AlarmCardState extends State<AlarmCard> with SingleTickerProviderStateMix
             animation: _slideAnimation,
             builder: (context, child) {
               return Transform.translate(
-                offset: Offset(_slideAnimation.value * MediaQuery.of(context).size.width, 0),
+                offset: Offset(
+                  _slideAnimation.value * MediaQuery.of(context).size.width,
+                  0,
+                ),
                 child: GestureDetector(
                   onHorizontalDragUpdate: _onHorizontalDragUpdate,
                   onHorizontalDragEnd: _onHorizontalDragEnd,

@@ -32,15 +32,20 @@ class LampState {
   }
 
   // Convert to Flutter UI values for compatibility
-  double get flutterBrightness => (brightness - 1) / 14.0; // Map 1-15 to 0.0-1.0
-  
+  double get flutterBrightness =>
+      (brightness - 1) / 14.0; // Map 1-15 to 0.0-1.0
+
   double get flutterTemperature {
     // Map ESP32 modes to temperature values for UI
     switch (mode) {
-      case 0: return 2800.0; // MODE_WARM
-      case 1: return 5500.0; // MODE_WHITE
-      case 2: return temperature; // MODE_BOTH - use stored temperature
-      default: return 4000.0;
+      case 0:
+        return 2800.0; // MODE_WARM
+      case 1:
+        return 5500.0; // MODE_WHITE
+      case 2:
+        return temperature; // MODE_BOTH - use stored temperature
+      default:
+        return 4000.0;
     }
   }
 
@@ -58,10 +63,14 @@ class LampState {
 
   static double _temperatureFromMode(int mode) {
     switch (mode) {
-      case 0: return 2800.0; // MODE_WARM
-      case 1: return 5500.0; // MODE_WHITE
-      case 2: return 4000.0; // MODE_BOTH - default neutral
-      default: return 4000.0;
+      case 0:
+        return 2800.0; // MODE_WARM
+      case 1:
+        return 5500.0; // MODE_WHITE
+      case 2:
+        return 4000.0; // MODE_BOTH - default neutral
+      default:
+        return 4000.0;
     }
   }
 
@@ -73,7 +82,7 @@ class LampState {
   }) {
     final espBrightness = ((brightness * 14) + 1).round().clamp(1, 15);
     final mode = _modeFromTemperature(temperature);
-    
+
     return LampState(
       isOn: isOn,
       brightness: espBrightness,
@@ -113,8 +122,9 @@ class LampState {
 
   // Create table SQL for database
   static const String tableName = 'lamp_state';
-  
-  static const String createTableSql = '''
+
+  static const String createTableSql =
+      '''
     CREATE TABLE $tableName (
       id INTEGER PRIMARY KEY,
       is_on INTEGER NOT NULL DEFAULT 1,
@@ -136,7 +146,11 @@ class LampState {
           temperature == other.temperature;
 
   @override
-  int get hashCode => isOn.hashCode ^ brightness.hashCode ^ mode.hashCode ^ temperature.hashCode;
+  int get hashCode =>
+      isOn.hashCode ^
+      brightness.hashCode ^
+      mode.hashCode ^
+      temperature.hashCode;
 
   @override
   String toString() {
