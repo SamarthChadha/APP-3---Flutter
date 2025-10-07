@@ -231,63 +231,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
-              if (_activeRoutine != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: ThemeManager.I.neumorphicGradient,
-                      ),
-                      boxShadow: ThemeManager.I.neumorphicShadows,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.schedule, color: Color(0xFF3C3C3C)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Routine "${_activeRoutine!.name}" is controlling the lamp',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: ThemeManager.I.primaryTextColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Manual controls are locked until you disable this routine.',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: ThemeManager.I.secondaryTextColor,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.tonal(
-                            onPressed: _disableActiveRoutine,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFC049),
-                              foregroundColor: const Color(0xFF3C3C3C),
-                            ),
-                            child: const Text('Disable routine'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               // const Text('Hi This is home Screen'),
               NeumorphicPanel(
                 child: Transform(
@@ -299,57 +242,82 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 24),
               // Main Power Toggle
               Center(
-                child: IgnorePointer(
-                  ignoring: _controlsLocked,
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() => _isOn = !_isOn);
-                      EspConnection.I.setOn(_isOn);
-                      _saveStateToDatabase(); // Save state when user toggles
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 80,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(21),
-                        color: _isOn ? const Color(0xFFFFC049) : const Color(0xFFE0E0E0),
-                        boxShadow: [
-                          BoxShadow(
-                            offset: const Offset(2, 2),
-                            blurRadius: 4,
-                            color: Colors.black.withValues(alpha: 0.1),
+                child: _activeRoutine != null
+          ? Column(
+            mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${_activeRoutine!.name} is active',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: ThemeManager.I.secondaryTextColor,
+                            ),
                           ),
-                          BoxShadow(
-                            offset: const Offset(-1, -1),
-                            blurRadius: 3,
-                            color: Colors.white.withValues(alpha: 0.7),
+                          const SizedBox(height: 8),
+                          FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFC049),
+                              foregroundColor: const Color(0xFF3C3C3C),
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                              textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              elevation: 3,
+                            ),
+                            onPressed: _disableActiveRoutine,
+                            icon: const Icon(Icons.pause_circle_filled, size: 18),
+                            label: const Text('Disable routine'),
                           ),
                         ],
-                      ),
-                      child: AnimatedAlign(
-                        duration: const Duration(milliseconds: 200),
-                        alignment: _isOn ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          margin: const EdgeInsets.all(3),
+                      )
+                    : GestureDetector(
+                        onTap: () {
+                          setState(() => _isOn = !_isOn);
+                          EspConnection.I.setOn(_isOn);
+                          _saveStateToDatabase(); // Save state when user toggles
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 80,
+                          height: 42,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(21),
+                            color: _isOn ? const Color(0xFFFFC049) : const Color(0xFFE0E0E0),
                             boxShadow: [
                               BoxShadow(
-                                offset: const Offset(1, 1),
-                                blurRadius: 2,
-                                color: Colors.black.withValues(alpha: 0.2),
+                                offset: const Offset(2, 2),
+                                blurRadius: 4,
+                                color: Colors.black.withValues(alpha: 0.1),
+                              ),
+                              BoxShadow(
+                                offset: const Offset(-1, -1),
+                                blurRadius: 3,
+                                color: Colors.white.withValues(alpha: 0.7),
                               ),
                             ],
                           ),
+                          child: AnimatedAlign(
+                            duration: const Duration(milliseconds: 200),
+                            alignment: _isOn ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              margin: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    offset: const Offset(1, 1),
+                                    blurRadius: 2,
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
               ),
               const SizedBox(height: 28),
               // Color Temperature Card
