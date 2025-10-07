@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart';
@@ -223,6 +224,57 @@ class DatabaseService {
     );
 
     return List.generate(maps.length, (i) => Routine.fromJson(maps[i]));
+  }
+
+  /// Determine if there is an active routine for the provided time (defaults to now)
+  Future<Routine?> getActiveRoutine({DateTime? at}) async {
+    final referenceTime = at ?? DateTime.now();
+    final routines = await getAllRoutines();
+    if (routines.isEmpty) return null;
+
+    final time = TimeOfDay(hour: referenceTime.hour, minute: referenceTime.minute);
+    Routine? active;
+    Duration? shortestUntilEnd;
+
+    for (final routine in routines) {
+      if (!routine.enabled) continue;
+      if (_isTimeWithinRange(time, routine.startTime, routine.endTime)) {
+        final untilEnd = _durationUntilEnd(referenceTime, routine.endTime);
+        if (active == null || untilEnd < (shortestUntilEnd ?? untilEnd)) {
+          active = routine;
+          shortestUntilEnd = untilEnd;
+        }
+      }
+    }
+
+    return active;
+  }
+
+  bool _isTimeWithinRange(TimeOfDay time, TimeOfDay start, TimeOfDay end) {
+    final int timeMinutes = time.hour * 60 + time.minute;
+    final int startMinutes = start.hour * 60 + start.minute;
+    final int endMinutes = end.hour * 60 + end.minute;
+
+    if (startMinutes == endMinutes) {
+      // Covers full day when start == end
+      return true;
+    }
+
+    if (startMinutes < endMinutes) {
+      return timeMinutes >= startMinutes && timeMinutes < endMinutes;
+    }
+
+    // Range wraps past midnight
+    return timeMinutes >= startMinutes || timeMinutes < endMinutes;
+  }
+
+  Duration _durationUntilEnd(DateTime reference, TimeOfDay end) {
+    final DateTime endTimeToday = DateTime(reference.year, reference.month, reference.day, end.hour, end.minute);
+    DateTime adjustedEnd = endTimeToday;
+    if (!reference.isBefore(adjustedEnd)) {
+      adjustedEnd = adjustedEnd.add(const Duration(days: 1));
+    }
+    return adjustedEnd.difference(reference);
   }
 
   /// Get a specific routine by ID

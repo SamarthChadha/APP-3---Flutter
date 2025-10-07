@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:circadian_light/core/esp_connection.dart';
 import 'package:circadian_light/models/lamp_state.dart';
+import 'package:circadian_light/models/routine.dart';
 import 'package:circadian_light/services/database_service.dart';
 import '../core/theme_manager.dart';
 // import 'package:flutter_gl/flutter_gl.dart';
@@ -24,6 +25,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isOn = true;
   double _brightness = 0.7; // 0..1
   double _tempK = 2800;     // 1800..6500
+  Routine? _activeRoutine;
+  bool _isCheckingRoutine = false;
 
   // Debounce timers for sliders
   Timer? _brightTimer;
@@ -31,6 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
   
   // Stream subscription for ESP state updates
   StreamSubscription? _stateSubscription;
+
+  bool get _controlsLocked => _activeRoutine != null;
 
   @override
   void initState() {
@@ -57,6 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Save state when ESP updates (sync ESP state to database)
       _saveStateToDatabase();
+      _refreshActiveRoutine();
       debugPrint('Synced ESP state to app: isOn=${state.isOn}, brightness=${state.brightness}, mode=${state.mode}');
     });
   }
@@ -64,21 +70,91 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Load saved lamp state from database on startup
   Future<void> _loadStateFromDatabase() async {
     try {
-      final lampState = await db.getLampState();
-      setState(() {
-        _isOn = lampState.isOn;
-        _brightness = lampState.flutterBrightness;
-        _tempK = lampState.flutterTemperature;
-      });
-      
-      // Sync loaded state to ESP if connected
-      if (EspConnection.I.isConnected) {
-        EspConnection.I.setOn(_isOn);
-        EspConnection.I.setBrightness(_mapBrightnessTo15(_brightness));
-        EspConnection.I.setMode(_modeFromTemp(_tempK));
+      final Routine? routine = await db.getActiveRoutine();
+      if (!mounted) return;
+
+      if (routine != null) {
+        _applyActiveRoutine(routine);
+      } else {
+        final lampState = await db.getLampState();
+        if (!mounted) return;
+        setState(() {
+          _activeRoutine = null;
+          _isOn = lampState.isOn;
+          _brightness = lampState.flutterBrightness;
+          _tempK = lampState.flutterTemperature;
+        });
+        
+        // Sync loaded state to ESP if connected
+        if (EspConnection.I.isConnected) {
+          EspConnection.I.setOn(_isOn);
+          EspConnection.I.setBrightness(_mapBrightnessTo15(_brightness));
+          EspConnection.I.setMode(_modeFromTemp(_tempK));
+        }
       }
     } catch (e) {
       debugPrint('Error loading lamp state: $e');
+    }
+  }
+
+  void _applyActiveRoutine(Routine routine) {
+    final double normalizedBrightness = (routine.brightness / 100).clamp(0.0, 1.0);
+    final double clampedTemp = routine.temperature.clamp(2700.0, 6500.0).toDouble();
+    setState(() {
+      _activeRoutine = routine;
+      _isOn = normalizedBrightness > 0.0;
+      _brightness = normalizedBrightness;
+      _tempK = clampedTemp;
+    });
+  }
+
+  Future<void> _refreshActiveRoutine() async {
+    if (_isCheckingRoutine) return;
+    _isCheckingRoutine = true;
+    try {
+      final Routine? routine = await db.getActiveRoutine();
+      if (!mounted) return;
+
+      if (routine != null) {
+        final bool brightnessChanged = _activeRoutine != null && (routine.brightness - _activeRoutine!.brightness).abs() > 0.01;
+        final bool temperatureChanged = _activeRoutine != null && (routine.temperature - _activeRoutine!.temperature).abs() > 0.1;
+        if (_activeRoutine == null || _activeRoutine!.id != routine.id || !_activeRoutine!.enabled || brightnessChanged || temperatureChanged) {
+          _applyActiveRoutine(routine);
+        }
+      } else if (_activeRoutine != null) {
+        final lampState = await db.getLampState();
+        if (!mounted) return;
+        setState(() {
+          _activeRoutine = null;
+          _isOn = lampState.isOn;
+          _brightness = lampState.flutterBrightness;
+          _tempK = lampState.flutterTemperature;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error refreshing active routine: $e');
+    } finally {
+      _isCheckingRoutine = false;
+    }
+  }
+
+  Future<void> _disableActiveRoutine() async {
+    final routine = _activeRoutine;
+    if (routine == null || routine.id == null) return;
+
+    try {
+      await db.saveRoutine(routine.copyWith(enabled: false));
+      await _refreshActiveRoutine();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${routine.name} disabled')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to disable routine: $e')),
+      );
     }
   }
 
@@ -155,6 +231,63 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
+              if (_activeRoutine != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: ThemeManager.I.neumorphicGradient,
+                      ),
+                      boxShadow: ThemeManager.I.neumorphicShadows,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.schedule, color: Color(0xFF3C3C3C)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Routine "${_activeRoutine!.name}" is controlling the lamp',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: ThemeManager.I.primaryTextColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Manual controls are locked until you disable this routine.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: ThemeManager.I.secondaryTextColor,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.tonal(
+                            onPressed: _disableActiveRoutine,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFC049),
+                              foregroundColor: const Color(0xFF3C3C3C),
+                            ),
+                            child: const Text('Disable routine'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               // const Text('Hi This is home Screen'),
               NeumorphicPanel(
                 child: Transform(
@@ -166,49 +299,52 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 24),
               // Main Power Toggle
               Center(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() => _isOn = !_isOn);
-                    EspConnection.I.setOn(_isOn);
-                    _saveStateToDatabase(); // Save state when user toggles
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 80,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(21),
-                      color: _isOn ? const Color(0xFFFFC049) : const Color(0xFFE0E0E0),
-                      boxShadow: [
-                        BoxShadow(
-                          offset: const Offset(2, 2),
-                          blurRadius: 4,
-                          color: Colors.black.withValues(alpha: 0.1),
-                        ),
-                        BoxShadow(
-                          offset: const Offset(-1, -1),
-                          blurRadius: 3,
-                          color: Colors.white.withValues(alpha: 0.7),
-                        ),
-                      ],
-                    ),
-                    child: AnimatedAlign(
+                child: IgnorePointer(
+                  ignoring: _controlsLocked,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() => _isOn = !_isOn);
+                      EspConnection.I.setOn(_isOn);
+                      _saveStateToDatabase(); // Save state when user toggles
+                    },
+                    child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      alignment: _isOn ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        margin: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              offset: const Offset(1, 1),
-                              blurRadius: 2,
-                              color: Colors.black.withValues(alpha: 0.2),
-                            ),
-                          ],
+                      width: 80,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(21),
+                        color: _isOn ? const Color(0xFFFFC049) : const Color(0xFFE0E0E0),
+                        boxShadow: [
+                          BoxShadow(
+                            offset: const Offset(2, 2),
+                            blurRadius: 4,
+                            color: Colors.black.withValues(alpha: 0.1),
+                          ),
+                          BoxShadow(
+                            offset: const Offset(-1, -1),
+                            blurRadius: 3,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ],
+                      ),
+                      child: AnimatedAlign(
+                        duration: const Duration(milliseconds: 200),
+                        alignment: _isOn ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          margin: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                offset: const Offset(1, 1),
+                                blurRadius: 2,
+                                color: Colors.black.withValues(alpha: 0.2),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -266,14 +402,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           min: 2700,
                           max: 6500,
                           value: _tempK,
-                          onChanged: (v) {
-                            setState(() => _tempK = v);
-                            _tempTimer?.cancel();
-                            _tempTimer = Timer(const Duration(milliseconds: 80), () {
-                              EspConnection.I.setMode(_modeFromTemp(_tempK));
-                              _saveStateToDatabase(); // Save state when user changes temperature
-                            });
-                          },
+                          onChanged: _controlsLocked
+                              ? null
+                              : (v) {
+                                  setState(() => _tempK = v);
+                                  _tempTimer?.cancel();
+                                  _tempTimer = Timer(const Duration(milliseconds: 80), () {
+                                    EspConnection.I.setMode(_modeFromTemp(_tempK));
+                                    _saveStateToDatabase(); // Save state when user changes temperature
+                                  });
+                                },
                         ),
                       ),
                     ],
@@ -332,15 +470,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           min: 0.0,
                           max: 1.0,
                           value: _brightness,
-                          onChanged: (v) {
-                            setState(() => _brightness = v);
-                            _brightTimer?.cancel();
-                            _brightTimer = Timer(const Duration(milliseconds: 60), () {
-                              final b = _mapBrightnessTo15(_brightness);
-                              EspConnection.I.setBrightness(b);
-                              _saveStateToDatabase(); // Save state when user changes brightness
-                            });
-                          },
+                          onChanged: _controlsLocked
+                              ? null
+                              : (v) {
+                                  setState(() => _brightness = v);
+                                  _brightTimer?.cancel();
+                                  _brightTimer = Timer(const Duration(milliseconds: 60), () {
+                                    final b = _mapBrightnessTo15(_brightness);
+                                    EspConnection.I.setBrightness(b);
+                                    _saveStateToDatabase(); // Save state when user changes brightness
+                                  });
+                                },
                         ),
                       ),
                     ],
