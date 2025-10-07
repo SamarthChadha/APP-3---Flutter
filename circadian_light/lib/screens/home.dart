@@ -243,8 +243,9 @@ class _HomeScreenState extends State<HomeScreen> {
               // Main Power Toggle
               Center(
                 child: _activeRoutine != null
-          ? Column(
-            mainAxisSize: MainAxisSize.min,
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
                             '${_activeRoutine!.name} is active',
@@ -253,16 +254,18 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontWeight: FontWeight.w600,
                               color: ThemeManager.I.secondaryTextColor,
                             ),
+                            textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           FilledButton.icon(
                             style: FilledButton.styleFrom(
                               backgroundColor: const Color(0xFFFFC049),
                               foregroundColor: const Color(0xFF3C3C3C),
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                               textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                               elevation: 3,
+                              minimumSize: const Size(0, 0),
                             ),
                             onPressed: _disableActiveRoutine,
                             icon: const Icon(Icons.pause_circle_filled, size: 18),
@@ -319,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: _activeRoutine != null ? 16 : 28),
               // Color Temperature Card
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
