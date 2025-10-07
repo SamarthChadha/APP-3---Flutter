@@ -366,20 +366,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
                           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
                         ),
-                        child: Slider(
-                          min: 2700,
-                          max: 6500,
-                          value: _tempK,
-                          onChanged: _controlsLocked
-                              ? null
-                              : (v) {
-                                  setState(() => _tempK = v);
-                                  _tempTimer?.cancel();
-                                  _tempTimer = Timer(const Duration(milliseconds: 80), () {
-                                    EspConnection.I.setMode(_modeFromTemp(_tempK));
-                                    _saveStateToDatabase(); // Save state when user changes temperature
-                                  });
-                                },
+                        child: IgnorePointer(
+                          ignoring: _controlsLocked,
+                          child: Slider(
+                            min: 2700,
+                            max: 6500,
+                            value: _tempK,
+                            onChanged: (v) {
+                              setState(() => _tempK = v);
+                              _tempTimer?.cancel();
+                              _tempTimer = Timer(const Duration(milliseconds: 80), () {
+                                EspConnection.I.setMode(_modeFromTemp(_tempK));
+                                _saveStateToDatabase(); // Save state when user changes temperature
+                              });
+                            },
+                          ),
                         ),
                       ),
                     ],
@@ -434,21 +435,22 @@ class _HomeScreenState extends State<HomeScreen> {
                           overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
                           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
                         ),
-                        child: Slider(
-                          min: 0.0,
-                          max: 1.0,
-                          value: _brightness,
-                          onChanged: _controlsLocked
-                              ? null
-                              : (v) {
-                                  setState(() => _brightness = v);
-                                  _brightTimer?.cancel();
-                                  _brightTimer = Timer(const Duration(milliseconds: 60), () {
-                                    final b = _mapBrightnessTo15(_brightness);
-                                    EspConnection.I.setBrightness(b);
-                                    _saveStateToDatabase(); // Save state when user changes brightness
-                                  });
-                                },
+                        child: IgnorePointer(
+                          ignoring: _controlsLocked,
+                          child: Slider(
+                            min: 0.0,
+                            max: 1.0,
+                            value: _brightness,
+                            onChanged: (v) {
+                              setState(() => _brightness = v);
+                              _brightTimer?.cancel();
+                              _brightTimer = Timer(const Duration(milliseconds: 60), () {
+                                final b = _mapBrightnessTo15(_brightness);
+                                EspConnection.I.setBrightness(b);
+                                _saveStateToDatabase(); // Save state when user changes brightness
+                              });
+                            },
+                          ),
                         ),
                       ),
                     ],
