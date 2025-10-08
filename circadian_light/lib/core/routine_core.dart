@@ -248,8 +248,9 @@ class RoutineCore extends ChangeNotifier {
 
   bool _isDuplicateRoutine(Routine newRoutine) {
     return _routines.any((existingRoutine) {
-      if (newRoutine.id != null && existingRoutine.id == newRoutine.id)
+      if (newRoutine.id != null && existingRoutine.id == newRoutine.id) {
         return false;
+      }
       final sameTimes =
           existingRoutine.startTime == newRoutine.startTime &&
           existingRoutine.endTime == newRoutine.endTime;

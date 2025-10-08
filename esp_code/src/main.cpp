@@ -4,7 +4,6 @@
 #include <ESPmDNS.h>
 #include <RotaryEncoder.h>
 #include <time.h>
-
 #include "wifi_credentials.h"
 
 const char* SSID     = wifi_credentials::SSID;

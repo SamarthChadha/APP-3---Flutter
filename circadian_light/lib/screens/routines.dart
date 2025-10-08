@@ -1292,6 +1292,84 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
               ),
             ),
             const SizedBox(height: 20),
+            // Test Sequence Button
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  colors: SunriseSunsetManager.I.isTestSequenceRunning
+                      ? [const Color(0xFFEF5350), const Color(0xFFE57373)]
+                      : [const Color(0xFF4CAF50), const Color(0xFF66BB6A)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    offset: const Offset(2, 2),
+                    blurRadius: 8,
+                    color: (SunriseSunsetManager.I.isTestSequenceRunning
+                            ? Colors.red
+                            : Colors.green)
+                        .withValues(alpha: 0.3),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () {
+                    if (SunriseSunsetManager.I.isTestSequenceRunning) {
+                      SunriseSunsetManager.I.stopTestSequence();
+                      setState(() {});
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Test sequence stopped'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    } else {
+                      SunriseSunsetManager.I.startTestSequence();
+                      setState(() {});
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Starting 10-minute test sequence...',
+                          ),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          SunriseSunsetManager.I.isTestSequenceRunning
+                              ? Icons.stop
+                              : Icons.play_arrow,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          SunriseSunsetManager.I.isTestSequenceRunning
+                              ? 'Stop Test Sequence'
+                              : 'Start Test Sequence (10 min)',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             if (_core.routines.isNotEmpty || _core.alarms.isNotEmpty) ...[
               Text(
                 'Disabled Routines & Alarms',

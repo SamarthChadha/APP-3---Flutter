@@ -8,9 +8,11 @@ class SunriseSunsetManager {
   static final SunriseSunsetManager I = SunriseSunsetManager._();
 
   Timer? _timer;
+  Timer? _testSequenceTimer;
   StreamSubscription<Map<String, dynamic>>? _espMessagesSub;
   bool _isEnabled = false;
   bool _useLocationBasedTimes = false;
+  bool _isTestSequenceRunning = false;
 
   // Default times used when location is not available or disabled
   TimeOfDay sunriseTime = const TimeOfDay(hour: 6, minute: 30);
@@ -18,6 +20,7 @@ class SunriseSunsetManager {
 
   bool get isEnabled => _isEnabled;
   bool get useLocationBasedTimes => _useLocationBasedTimes;
+  bool get isTestSequenceRunning => _isTestSequenceRunning;
 
   void enable() {
     if (_isEnabled) return;
@@ -375,7 +378,95 @@ class SunriseSunsetManager {
 
   void dispose() {
     _stopTimer();
+    _stopTestSequence();
     _espMessagesSub?.cancel();
     _espMessagesSub = null;
+  }
+
+  // ===================== Test Sequence (10-minute simulation) =====================
+
+  /// Start a 10-minute test sequence that simulates the entire day's sun sync
+  void startTestSequence() {
+    if (_isTestSequenceRunning) {
+      debugPrint('Test sequence is already running');
+      return;
+    }
+
+    debugPrint('Starting 10-minute sun sync test sequence');
+    _isTestSequenceRunning = true;
+
+    // Total duration: 10 minutes (600 seconds)
+    // Phase breakdown:
+    // 0-60s: Sunrise (1 min) - brightness 0->15, mode both
+    // 60-180s: Morning (2 min) - brightness 15, mode both
+    // 180-300s: Midday (2 min) - brightness 15, mode both
+    // 300-420s: Late afternoon (2 min) - brightness 15, mode warm only
+    // 420-480s: Sunset (1 min) - brightness 15->0, mode warm only, then off
+    // 480-600s: Night (2 min) - off
+
+    final startTime = DateTime.now();
+
+    _testSequenceTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      final elapsed = DateTime.now().difference(startTime).inSeconds;
+
+      if (elapsed < 60) {
+        // Sunrise phase (0-60s)
+        final progress = elapsed / 60.0;
+        final brightness = (15 * _smoothStep(progress)).round();
+        debugPrint('Test: Sunrise - ${elapsed}s, brightness=$brightness');
+        EspConnection.I.setOn(true);
+        EspConnection.I.setMode(2); // MODE_BOTH
+        EspConnection.I.setBrightness(brightness);
+      } else if (elapsed < 180) {
+        // Morning phase (60-180s)
+        debugPrint('Test: Morning - ${elapsed}s');
+        EspConnection.I.setOn(true);
+        EspConnection.I.setMode(2); // MODE_BOTH
+        EspConnection.I.setBrightness(15);
+      } else if (elapsed < 300) {
+        // Midday phase (180-300s)
+        debugPrint('Test: Midday - ${elapsed}s');
+        EspConnection.I.setOn(true);
+        EspConnection.I.setMode(2); // MODE_BOTH
+        EspConnection.I.setBrightness(15);
+      } else if (elapsed < 420) {
+        // Late afternoon phase (300-420s)
+        debugPrint('Test: Late afternoon - ${elapsed}s');
+        EspConnection.I.setOn(true);
+        EspConnection.I.setMode(0); // MODE_WARM only
+        EspConnection.I.setBrightness(15);
+      } else if (elapsed < 480) {
+        // Sunset phase (420-480s)
+        final progress = (elapsed - 420) / 60.0;
+        final brightness = (15 * (1.0 - _smoothStep(progress))).round();
+        debugPrint('Test: Sunset - ${elapsed}s, brightness=$brightness');
+        EspConnection.I.setMode(0); // MODE_WARM only
+        EspConnection.I.setBrightness(brightness);
+        if (progress >= 1.0) {
+          EspConnection.I.setOn(false);
+        }
+      } else if (elapsed < 600) {
+        // Night phase (480-600s)
+        debugPrint('Test: Night - ${elapsed}s');
+        EspConnection.I.setOn(false);
+      } else {
+        // Sequence complete
+        debugPrint('Test sequence complete');
+        _stopTestSequence();
+      }
+    });
+  }
+
+  /// Stop the test sequence
+  void _stopTestSequence() {
+    _testSequenceTimer?.cancel();
+    _testSequenceTimer = null;
+    _isTestSequenceRunning = false;
+    debugPrint('Test sequence stopped');
+  }
+
+  /// Manually stop the test sequence (public method)
+  void stopTestSequence() {
+    _stopTestSequence();
   }
 }
