@@ -150,6 +150,7 @@ class SunriseSunsetManager {
 
   void _checkAndExecuteTransitions() {
     if (!_isEnabled) return;
+    if (_isTestSequenceRunning) return; // Don't interfere with test sequence
 
     final now = TimeOfDay.now();
     final currentMinutes = now.hour * 60 + now.minute;
@@ -395,6 +396,9 @@ class SunriseSunsetManager {
     debugPrint('Starting 10-minute sun sync test sequence');
     _isTestSequenceRunning = true;
 
+    // Stop the regular sun sync timer to prevent interference
+    _stopTimer();
+
     // Total duration: 10 minutes (600 seconds)
     // Phase breakdown:
     // 0-60s: Sunrise (1 min) - brightness 0->15, mode both
@@ -463,6 +467,12 @@ class SunriseSunsetManager {
     _testSequenceTimer = null;
     _isTestSequenceRunning = false;
     debugPrint('Test sequence stopped');
+
+    // Restart the regular sun sync timer if sun sync is still enabled
+    if (_isEnabled) {
+      _startTimer();
+      debugPrint('Regular sun sync timer restarted');
+    }
   }
 
   /// Manually stop the test sequence (public method)
