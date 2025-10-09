@@ -204,8 +204,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      // Use app grey background for consistency with rest of app
-      backgroundColor: const Color.fromARGB(255, 208, 206, 206),
+      backgroundColor: ThemeManager.I.sheetBackgroundColor,
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -216,8 +215,6 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
           ),
           child: StatefulBuilder(
             builder: (context, setSheetState) {
-              const base = Color(0xFFEFEFEF);
-
               // Inline time picker replaced with reusable TimePickerSheet
 
               Future<void> pickStart() async {
@@ -263,15 +260,19 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Create Routine',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
+                          color: ThemeManager.I.primaryTextColor,
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: Icon(
+                          Icons.close,
+                          color: ThemeManager.I.primaryTextColor,
+                        ),
                         onPressed: () => Navigator.of(ctx).pop(),
                       ),
                     ],
@@ -296,7 +297,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Routine start time'),
+                            Text(
+                              'Routine start time',
+                              style: TextStyle(
+                                color: ThemeManager.I.primaryTextColor,
+                              ),
+                            ),
                             const SizedBox(height: 10),
                             OutlinedButton.icon(
                               onPressed: pickStart,
@@ -311,7 +317,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Routine end time'),
+                            Text(
+                              'Routine end time',
+                              style: TextStyle(
+                                color: ThemeManager.I.primaryTextColor,
+                              ),
+                            ),
                             const SizedBox(height: 10),
                             OutlinedButton.icon(
                               onPressed: pickEnd,
@@ -323,12 +334,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       ),
                     ],
                   ),
-                  const Text(
+                  Text(
                     'Color Temperature',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF3C3C3C),
+                      color: ThemeManager.I.primaryTextColor,
                       letterSpacing: 0.2,
                     ),
                   ),
@@ -339,11 +350,11 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         : temperature >= 5000
                         ? 'Cool'
                         : 'Mixed'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.2,
-                      color: Color(0xFF5A5A5A),
+                      color: ThemeManager.I.secondaryTextColor,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -367,28 +378,35 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     }),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Brightness',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF3C3C3C),
+                      color: ThemeManager.I.primaryTextColor,
                       letterSpacing: 0.2,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${brightness.round()}% intensity',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.2,
-                      color: Color(0xFF5A5A5A),
+                      color: ThemeManager.I.secondaryTextColor,
                     ),
                   ),
                   const SizedBox(height: 8),
                   NeumorphicSlider(
-                    solidColor: base,
+                    gradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Color(0xFF424242), // dark/dim
+                        Color(0xFFFFFFFF), // bright/white
+                      ],
+                    ),
                     value: brightness,
                     min: 0,
                     max: 100,
@@ -445,7 +463,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: const Color.fromARGB(255, 208, 206, 206),
+      backgroundColor: ThemeManager.I.sheetBackgroundColor,
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -456,8 +474,6 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
           ),
           child: StatefulBuilder(
             builder: (context, setSheetState) {
-              const base = Color(0xFFEFEFEF);
-
               Future<void> pickStart() async {
                 TimeOfDay temp = start;
                 await showCupertinoModalPopup<void>(
@@ -497,15 +513,19 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Edit Routine',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
+                            color: ThemeManager.I.primaryTextColor,
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close),
+                          icon: Icon(
+                            Icons.close,
+                            color: ThemeManager.I.primaryTextColor,
+                          ),
                           onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
@@ -527,7 +547,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Start'),
+                              Text(
+                                'Start',
+                                style: TextStyle(
+                                  color: ThemeManager.I.primaryTextColor,
+                                ),
+                              ),
                               const SizedBox(height: 8),
                               OutlinedButton.icon(
                                 onPressed: pickStart,
@@ -542,7 +567,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('End'),
+                              Text(
+                                'End',
+                                style: TextStyle(
+                                  color: ThemeManager.I.primaryTextColor,
+                                ),
+                              ),
                               const SizedBox(height: 8),
                               OutlinedButton.icon(
                                 onPressed: pickEnd,
@@ -555,11 +585,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Color Temperature',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
+                        color: ThemeManager.I.primaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -569,11 +600,11 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           : temperature >= 5000
                           ? 'Cool'
                           : 'Mixed'}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.2,
-                        color: Color(0xFF5A5A5A),
+                        color: ThemeManager.I.secondaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -590,26 +621,34 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       }),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Brightness',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
+                        color: ThemeManager.I.primaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${brightness.round()}% intensity',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.2,
-                        color: Color(0xFF5A5A5A),
+                        color: ThemeManager.I.secondaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 6),
                     NeumorphicSlider(
-                      solidColor: base,
+                      gradient: const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Color(0xFF424242), // dark/dim
+                          Color(0xFFFFFFFF), // bright/white
+                        ],
+                      ),
                       value: brightness,
                       min: 0,
                       max: 100,
@@ -662,7 +701,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: const Color.fromARGB(255, 208, 206, 206),
+      backgroundColor: ThemeManager.I.sheetBackgroundColor,
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -696,15 +735,19 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Edit Alarm',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
+                            color: ThemeManager.I.primaryTextColor,
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close),
+                          icon: Icon(
+                            Icons.close,
+                            color: ThemeManager.I.primaryTextColor,
+                          ),
                           onPressed: () => Navigator.of(ctx).pop(),
                         ),
                       ],
@@ -725,11 +768,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Wake-up time',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            color: ThemeManager.I.primaryTextColor,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -744,11 +788,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Ramp-up duration',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: ThemeManager.I.primaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -801,7 +846,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: const Color.fromARGB(255, 208, 206, 206),
+      backgroundColor: ThemeManager.I.sheetBackgroundColor,
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -842,15 +887,19 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Create Alarm',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
+                            color: ThemeManager.I.primaryTextColor,
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close),
+                          icon: Icon(
+                            Icons.close,
+                            color: ThemeManager.I.primaryTextColor,
+                          ),
                           onPressed: () => Navigator.of(ctx).pop(),
                         ),
                       ],
@@ -871,11 +920,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Wake-up time',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            color: ThemeManager.I.primaryTextColor,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -897,11 +947,12 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Duration',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: ThemeManager.I.primaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 10),
