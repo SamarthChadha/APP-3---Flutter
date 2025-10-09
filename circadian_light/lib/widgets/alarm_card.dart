@@ -51,14 +51,14 @@ class _AlarmCardState extends State<AlarmCard>
     if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
     final screenWidth = MediaQuery.of(context).size.width;
     final dragAmount = details.delta.dx / screenWidth;
-    if (details.delta.dx < 0) {
-      final newValue = (_slideController.value - dragAmount * 3).clamp(
-        0.0,
-        1.0,
-      );
-      _slideController.value = newValue;
-      setState(() => _isSliding = _slideController.value > 0);
-    }
+
+    // Handle both left and right swipes
+    final newValue = (_slideController.value - dragAmount * 3).clamp(
+      0.0,
+      1.0,
+    );
+    _slideController.value = newValue;
+    setState(() => _isSliding = _slideController.value > 0);
   }
 
   void _onHorizontalDragEnd(DragEndDetails details) {
