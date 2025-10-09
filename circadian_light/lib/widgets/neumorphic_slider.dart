@@ -24,6 +24,18 @@ class NeumorphicSlider extends StatelessWidget {
     final base = ThemeManager.I.isDarkMode
         ? const Color(0xFF2A2A2A)
         : const Color(0xFFEFEFEF);
+
+    // Calculate thumb color based on gradient position
+    Color thumbColor = base;
+    if (gradient != null && gradient!.colors.length >= 2) {
+      final t = ((value - min) / (max - min)).clamp(0.0, 1.0);
+      thumbColor = Color.lerp(
+        gradient!.colors.first,
+        gradient!.colors.last,
+        t,
+      ) ?? base;
+    }
+
     final trackDecoration = BoxDecoration(
       color: gradient == null ? (solidColor ?? base) : null,
       gradient: gradient,
@@ -41,7 +53,7 @@ class NeumorphicSlider extends StatelessWidget {
               trackHeight: 18,
               activeTrackColor: Colors.transparent,
               inactiveTrackColor: Colors.transparent,
-              thumbColor: base,
+              thumbColor: thumbColor,
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
             ),
