@@ -218,63 +218,77 @@ class _AlarmCardState extends State<AlarmCard>
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Stack(
-        children: [
-          if (_isSliding)
-            Positioned.fill(
-              child: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 20),
-                margin: const EdgeInsets.symmetric(vertical: 0),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: GestureDetector(
-                  onTap: _onDelete,
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.delete_outline, color: Colors.white, size: 28),
-                      SizedBox(height: 4),
-                      Text(
-                        'Delete',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          AnimatedBuilder(
-            animation: _slideAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(
-                  _slideAnimation.value * MediaQuery.of(context).size.width,
-                  0,
-                ),
-                child: GestureDetector(
-                  onHorizontalDragUpdate: _onHorizontalDragUpdate,
-                  onHorizontalDragEnd: _onHorizontalDragEnd,
-                  onTap: _onTap,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
+      child: RepaintBoundary(
+        child: Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            AnimatedBuilder(
+              animation: _slideAnimation,
+              builder: (context, child) {
+                // Only show delete button when card is actually sliding
+                if (_slideAnimation.value >= -0.01) {
+                  return const SizedBox.shrink();
+                }
+                return Positioned.fill(
+                  child: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
                       borderRadius: BorderRadius.circular(28),
-                      onTap: null,
-                      child: card,
+                    ),
+                    child: GestureDetector(
+                      onTap: _onDelete,
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.delete_outline,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Delete',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-        ],
+                );
+              },
+            ),
+            AnimatedBuilder(
+              animation: _slideAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(
+                    _slideAnimation.value * MediaQuery.of(context).size.width,
+                    0,
+                  ),
+                  child: GestureDetector(
+                    onHorizontalDragUpdate: _onHorizontalDragUpdate,
+                    onHorizontalDragEnd: _onHorizontalDragEnd,
+                    onTap: _onTap,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(28),
+                        onTap: null,
+                        child: card,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
