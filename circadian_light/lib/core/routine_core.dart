@@ -33,6 +33,9 @@ class RoutineCore extends ChangeNotifier {
   final List<Routine> _routines = [];
   final List<Alarm> _alarms = [];
 
+  // Mutex to prevent simultaneous routine/alarm activations
+  bool _isActivating = false;
+
   List<Routine> get routines => List.unmodifiable(_routines);
   List<Alarm> get alarms => List.unmodifiable(_alarms);
 
@@ -64,14 +67,31 @@ class RoutineCore extends ChangeNotifier {
       throw DuplicateRoutineException();
     }
 
-    // If this routine is being enabled, disable all overlapping items
+    // If this routine is being enabled, use mutex to prevent race condition
     if (routine.enabled) {
-      await _disableOverlappingItems(
-        routine.startTime,
-        routine.endTime,
-        routine.id,
-        'routine',
-      );
+      // Check if another activation is in progress
+      if (_isActivating) {
+        // Another routine/alarm is being activated, reject this operation
+        return _routines.firstWhere(
+          (r) => r.id == routine.id,
+          orElse: () => routine.copyWith(enabled: false),
+        );
+      }
+
+      // Acquire the lock
+      _isActivating = true;
+      try {
+        // Disable all overlapping items
+        await _disableOverlappingItems(
+          routine.startTime,
+          routine.endTime,
+          routine.id,
+          'routine',
+        );
+      } finally {
+        // Always release the lock, even if an error occurs
+        _isActivating = false;
+      }
     }
 
     final id = await db.saveRoutine(routine);
@@ -107,14 +127,31 @@ class RoutineCore extends ChangeNotifier {
       throw DuplicateAlarmException();
     }
 
-    // If this alarm is being enabled, disable all overlapping items
+    // If this alarm is being enabled, use mutex to prevent race condition
     if (alarm.enabled) {
-      await _disableOverlappingItems(
-        alarm.startTime,
-        alarm.wakeUpTime,
-        alarm.id,
-        'alarm',
-      );
+      // Check if another activation is in progress
+      if (_isActivating) {
+        // Another routine/alarm is being activated, reject this operation
+        return _alarms.firstWhere(
+          (a) => a.id == alarm.id,
+          orElse: () => alarm.copyWith(enabled: false),
+        );
+      }
+
+      // Acquire the lock
+      _isActivating = true;
+      try {
+        // Disable all overlapping items
+        await _disableOverlappingItems(
+          alarm.startTime,
+          alarm.wakeUpTime,
+          alarm.id,
+          'alarm',
+        );
+      } finally {
+        // Always release the lock, even if an error occurs
+        _isActivating = false;
+      }
     }
 
     final id = await db.saveAlarm(alarm);
