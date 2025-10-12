@@ -53,10 +53,7 @@ class _AlarmCardState extends State<AlarmCard>
     final dragAmount = details.delta.dx / screenWidth;
 
     // Handle both left and right swipes
-    final newValue = (_slideController.value - dragAmount * 3).clamp(
-      0.0,
-      1.0,
-    );
+    final newValue = (_slideController.value - dragAmount * 3).clamp(0.0, 1.0);
     _slideController.value = newValue;
     setState(() => _isSliding = _slideController.value > 0);
   }

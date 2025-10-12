@@ -29,11 +29,8 @@ class NeumorphicSlider extends StatelessWidget {
     Color thumbColor = base;
     if (gradient != null && gradient!.colors.length >= 2) {
       final t = ((value - min) / (max - min)).clamp(0.0, 1.0);
-      thumbColor = Color.lerp(
-        gradient!.colors.first,
-        gradient!.colors.last,
-        t,
-      ) ?? base;
+      thumbColor =
+          Color.lerp(gradient!.colors.first, gradient!.colors.last, t) ?? base;
     }
 
     final trackDecoration = BoxDecoration(

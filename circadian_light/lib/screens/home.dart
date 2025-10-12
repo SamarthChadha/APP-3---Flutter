@@ -238,7 +238,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(width: 8),
                         Text(
                           ok ? 'Connected' : 'Disconnected',
-                          style: TextStyle(color: ThemeManager.I.primaryTextColor),
+                          style: TextStyle(
+                            color: ThemeManager.I.primaryTextColor,
+                          ),
                         ),
                       ],
                     );
@@ -399,12 +401,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       Builder(
                         builder: (context) {
                           // Calculate thumb color based on temperature position
-                          final t = ((_tempK - 2700) / (6500 - 2700)).clamp(0.0, 1.0);
-                          final thumbColor = Color.lerp(
-                            const Color(0xFFFFC477), // warm
-                            const Color(0xFFBFD7FF), // cool
-                            t,
-                          ) ?? const Color(0xFFEFEFEF);
+                          final t = ((_tempK - 2700) / (6500 - 2700)).clamp(
+                            0.0,
+                            1.0,
+                          );
+                          final thumbColor =
+                              Color.lerp(
+                                const Color(0xFFFFC477), // warm
+                                const Color(0xFFBFD7FF), // cool
+                                t,
+                              ) ??
+                              const Color(0xFFEFEFEF);
 
                           return SliderTheme(
                             data: SliderTheme.of(context).copyWith(
@@ -489,11 +496,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       Builder(
                         builder: (context) {
                           // Calculate thumb color based on brightness position
-                          final thumbColor = Color.lerp(
-                            const Color(0xFF424242), // dark/dim
-                            const Color(0xFFFFFFFF), // bright/white
-                            _brightness,
-                          ) ?? const Color(0xFFEFEFEF);
+                          final thumbColor =
+                              Color.lerp(
+                                const Color(0xFF424242), // dark/dim
+                                const Color(0xFFFFFFFF), // bright/white
+                                _brightness,
+                              ) ??
+                              const Color(0xFFEFEFEF);
 
                           return SliderTheme(
                             data: SliderTheme.of(context).copyWith(
