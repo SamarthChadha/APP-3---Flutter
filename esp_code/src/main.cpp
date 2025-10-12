@@ -318,9 +318,16 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
       recognized = true;
     }
     else if (strcmp(msgType, "sun_sync_state") == 0) {
-      bool active = doc["active"].is<bool>() ? doc["active"].as<bool>() : false;
-      const char* source = doc["source"].is<const char*>() ? doc["source"].as<const char*>() : "app";
-      handleSunSyncState(active, source);
+      JsonObject root = doc.as<JsonObject>();
+      bool active;
+      if (!readBoolField(root, "active", active)) {
+        Serial.println("🌞 ERROR: Sun sync payload missing active boolean");
+        sendSyncResponse("sun_sync_response", false, "Invalid field: active");
+      } else {
+        const char* source = root["source"].is<const char*>() ? root["source"].as<const char*>() : "app";
+        handleSunSyncState(active, source);
+        sendSyncResponse("sun_sync_response", true, active ? "Sun sync enabled" : "Sun sync disabled");
+      }
       recognized = true;
     }
   }
