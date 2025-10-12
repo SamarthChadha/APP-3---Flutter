@@ -126,6 +126,9 @@ void updateSuppressionWindows(int currentTime);
 void blinkLamp(uint8_t count, uint16_t intervalMs);
 void broadcastOverrideEvent(const char* source, bool routineWasActive, bool alarmWasActive, bool sunSyncWasActive);
 void sendSunSyncState(bool active, const char* source);
+void handleRotaryEncoder();
+void handleButtonClicks();
+void handleScheduleTick();
 
 // ===== Helpers =====
 void sendStateUpdate() {
@@ -949,8 +952,9 @@ void setup() {
   applyOutput();
 }
 
-void loop() {
-  // --- Rotary encoder: adjust master brightness (minimum 1 when on, 0-15 when off) ---
+// ===== Loop Helper Functions =====
+
+void handleRotaryEncoder() {
   encoder.tick();
   static int lastPos = encoder.getPosition();
   int pos = encoder.getPosition();
@@ -975,8 +979,9 @@ void loop() {
       }
     }
   }
+}
 
-  // --- Button: handle single/double/triple clicks ---
+void handleButtonClicks() {
   static bool prevPressed = false;            // logical pressed state (polarity-agnostic)
   static unsigned long lastChange = 0;
   unsigned long now = millis();
@@ -1031,12 +1036,23 @@ void loop() {
       }
     }
   }
+}
 
-  // Check schedule for routines and alarms
+void handleScheduleTick() {
   if (millis() - lastScheduleCheck >= SCHEDULE_CHECK_INTERVAL) {
     lastScheduleCheck = millis();
     checkSchedule();
   }
+}
 
+void loop() {
+  // Handle hardware inputs
+  handleRotaryEncoder();
+  handleButtonClicks();
+  
+  // Handle scheduled operations
+  handleScheduleTick();
+  
+  // Cleanup WebSocket connections
   ws.cleanupClients();
 }

@@ -206,6 +206,345 @@ class _HomeScreenState extends State<HomeScreen> {
     return 2; // MODE_BOTH
   }
 
+  // ===== Extracted UI Components =====
+
+  Widget _buildConnectionStatus() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: StreamBuilder<bool>(
+        initialData: EspConnection.I.isConnected,
+        stream: EspConnection.I.connection,
+        builder: (context, snap) {
+          final ok = snap.data == true;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: ok ? Colors.green : Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                ok ? 'Connected' : 'Disconnected',
+                style: TextStyle(
+                  color: ThemeManager.I.primaryTextColor,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _build3DLampModel() {
+    return NeumorphicPanel(
+      child: Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.rotationX(3.1416),
+        child: const Flutter3DViewer(
+          src: 'assets/models/Textured_Lamp_Small.glb',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPowerControl() {
+    if (_activeRoutine != null) {
+      return _buildActiveRoutineBanner();
+    } else {
+      return _buildPowerToggle();
+    }
+  }
+
+  Widget _buildActiveRoutineBanner() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          '${_activeRoutine!.name} is active',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: ThemeManager.I.secondaryTextColor,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 6),
+        FilledButton.icon(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFFFC049),
+            foregroundColor: const Color(0xFF3C3C3C),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 8,
+            ),
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            elevation: 3,
+            minimumSize: const Size(0, 0),
+          ),
+          onPressed: _disableActiveRoutine,
+          icon: const Icon(
+            Icons.pause_circle_filled,
+            size: 18,
+          ),
+          label: const Text('Disable routine'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPowerToggle() {
+    return GestureDetector(
+      onTap: () {
+        setState(() => _isOn = !_isOn);
+        EspConnection.I.setOn(_isOn);
+        _saveStateToDatabase(); // Save state when user toggles
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 80,
+        height: 42,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(21),
+          color: _isOn
+              ? const Color(0xFFFFC049)
+              : const Color(0xFFE0E0E0),
+          boxShadow: [
+            BoxShadow(
+              offset: const Offset(2, 2),
+              blurRadius: 4,
+              color: Colors.black.withValues(alpha: 0.1),
+            ),
+            BoxShadow(
+              offset: const Offset(-1, -1),
+              blurRadius: 3,
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
+          ],
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 200),
+          alignment: _isOn
+              ? Alignment.centerRight
+              : Alignment.centerLeft,
+          child: Container(
+            width: 36,
+            height: 36,
+            margin: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  offset: const Offset(1, 1),
+                  blurRadius: 2,
+                  color: Colors.black.withValues(alpha: 0.2),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTemperatureControl() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ControlCard(
+        icon: Icons.thermostat,
+        iconGradient: const [Color(0xFFFFC477), Color(0xFFFFD700)],
+        title: 'Color Temperature',
+        subtitle:
+            '${_tempK.round()}K - ${_tempK <= 3000 ? 'Warm' : _tempK >= 5000 ? 'Cool' : 'Mixed'}',
+        control: _buildTemperatureSlider(),
+      ),
+    );
+  }
+
+  Widget _buildTemperatureSlider() {
+    return Stack(
+      alignment: Alignment.centerLeft,
+      children: [
+        Container(
+          height: 18,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Color(0xFFFFC477), // warm
+                Color(0xFFBFD7FF), // cool
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                offset: const Offset(2, 2),
+                blurRadius: 6,
+                color: Colors.black.withValues(alpha: 0.08),
+              ),
+              BoxShadow(
+                offset: const Offset(-2, -2),
+                blurRadius: 6,
+                color: Colors.white.withValues(alpha: 0.3),
+              ),
+            ],
+          ),
+        ),
+        Builder(
+          builder: (context) {
+            // Calculate thumb color based on temperature position
+            final t = ((_tempK - 2700) / (6500 - 2700)).clamp(0.0, 1.0);
+            final thumbColor = Color.lerp(
+              const Color(0xFFFFC477), // warm
+              const Color(0xFFBFD7FF), // cool
+              t,
+            ) ?? const Color(0xFFEFEFEF);
+
+            return SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 18,
+                activeTrackColor: Colors.transparent,
+                inactiveTrackColor: Colors.transparent,
+                thumbColor: thumbColor,
+                overlayShape: const RoundSliderOverlayShape(
+                  overlayRadius: 0,
+                ),
+                thumbShape: const RoundSliderThumbShape(
+                  enabledThumbRadius: 12,
+                ),
+              ),
+              child: IgnorePointer(
+                ignoring: _controlsLocked,
+                child: Slider(
+                  min: 2700,
+                  max: 6500,
+                  value: _tempK,
+                  onChanged: (v) {
+                    setState(() => _tempK = v);
+                    _tempTimer?.cancel();
+                    _tempTimer = Timer(
+                      const Duration(milliseconds: 80),
+                      () {
+                        EspConnection.I.setMode(_modeFromTemp(_tempK));
+                        _saveStateToDatabase(); // Save state when user changes temperature
+                      },
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBrightnessControl() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ControlCard(
+        icon: Icons.brightness_6,
+        iconGradient: const [Color(0xFFFFC049), Color(0xFFFFD700)],
+        title: 'Brightness',
+        subtitle: '${(_brightness * 100).round()}% intensity',
+        control: _buildBrightnessSlider(),
+      ),
+    );
+  }
+
+  Widget _buildBrightnessSlider() {
+    return Stack(
+      alignment: Alignment.centerLeft,
+      children: [
+        Container(
+          height: 18,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Color(0xFF424242), // dark/dim
+                Color(0xFFFFFFFF), // bright/white
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                offset: const Offset(2, 2),
+                blurRadius: 6,
+                color: Colors.black.withValues(alpha: 0.08),
+              ),
+              BoxShadow(
+                offset: const Offset(-2, -2),
+                blurRadius: 6,
+                color: Colors.white.withValues(alpha: 0.3),
+              ),
+            ],
+          ),
+        ),
+        Builder(
+          builder: (context) {
+            // Calculate thumb color based on brightness position
+            final thumbColor = Color.lerp(
+              const Color(0xFF424242), // dark/dim
+              const Color(0xFFFFFFFF), // bright/white
+              _brightness,
+            ) ?? const Color(0xFFEFEFEF);
+
+            return SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 18,
+                activeTrackColor: Colors.transparent,
+                inactiveTrackColor: Colors.transparent,
+                thumbColor: thumbColor,
+                overlayShape: const RoundSliderOverlayShape(
+                  overlayRadius: 0,
+                ),
+                thumbShape: const RoundSliderThumbShape(
+                  enabledThumbRadius: 12,
+                ),
+              ),
+              child: IgnorePointer(
+                ignoring: _controlsLocked,
+                child: Slider(
+                  min: 0.0,
+                  max: 1.0,
+                  value: _brightness,
+                  onChanged: (v) {
+                    setState(() => _brightness = v);
+                    _brightTimer?.cancel();
+                    _brightTimer = Timer(
+                      const Duration(milliseconds: 60),
+                      () {
+                        final b = _mapBrightnessTo15(_brightness);
+                        EspConnection.I.setBrightness(b);
+                        _saveStateToDatabase(); // Save state when user changes brightness
+                      },
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -217,333 +556,25 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               // Connection status row
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: StreamBuilder<bool>(
-                  initialData: EspConnection.I.isConnected,
-                  stream: EspConnection.I.connection,
-                  builder: (context, snap) {
-                    final ok = snap.data == true;
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: ok ? Colors.green : Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          ok ? 'Connected' : 'Disconnected',
-                          style: TextStyle(
-                            color: ThemeManager.I.primaryTextColor,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              // const Text('Hi This is home Screen'),
-              NeumorphicPanel(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.rotationX(3.1416),
-                  child: const Flutter3DViewer(
-                    src: 'assets/models/Textured_Lamp_Small.glb',
-                  ),
-                ),
-              ),
+              _buildConnectionStatus(),
+              
+              // 3D Lamp Model
+              _build3DLampModel(),
+              
               const SizedBox(height: 24),
-              // Main Power Toggle
-              Center(
-                child: _activeRoutine != null
-                    ? Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${_activeRoutine!.name} is active',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: ThemeManager.I.secondaryTextColor,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 6),
-                          FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFC049),
-                              foregroundColor: const Color(0xFF3C3C3C),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 8,
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              elevation: 3,
-                              minimumSize: const Size(0, 0),
-                            ),
-                            onPressed: _disableActiveRoutine,
-                            icon: const Icon(
-                              Icons.pause_circle_filled,
-                              size: 18,
-                            ),
-                            label: const Text('Disable routine'),
-                          ),
-                        ],
-                      )
-                    : GestureDetector(
-                        onTap: () {
-                          setState(() => _isOn = !_isOn);
-                          EspConnection.I.setOn(_isOn);
-                          _saveStateToDatabase(); // Save state when user toggles
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 80,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(21),
-                            color: _isOn
-                                ? const Color(0xFFFFC049)
-                                : const Color(0xFFE0E0E0),
-                            boxShadow: [
-                              BoxShadow(
-                                offset: const Offset(2, 2),
-                                blurRadius: 4,
-                                color: Colors.black.withValues(alpha: 0.1),
-                              ),
-                              BoxShadow(
-                                offset: const Offset(-1, -1),
-                                blurRadius: 3,
-                                color: Colors.white.withValues(alpha: 0.7),
-                              ),
-                            ],
-                          ),
-                          child: AnimatedAlign(
-                            duration: const Duration(milliseconds: 200),
-                            alignment: _isOn
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              margin: const EdgeInsets.all(3),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    offset: const Offset(1, 1),
-                                    blurRadius: 2,
-                                    color: Colors.black.withValues(alpha: 0.2),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-              ),
+              
+              // Main Power Control (toggle or routine banner)
+              Center(child: _buildPowerControl()),
+              
               SizedBox(height: _activeRoutine != null ? 16 : 28),
+              
               // Color Temperature Card
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: ControlCard(
-                  icon: Icons.thermostat,
-                  iconGradient: const [Color(0xFFFFC477), Color(0xFFFFD700)],
-                  title: 'Color Temperature',
-                  subtitle:
-                      '${_tempK.round()}K - ${_tempK <= 3000
-                          ? 'Warm'
-                          : _tempK >= 5000
-                          ? 'Cool'
-                          : 'Mixed'}',
-                  control: Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [
-                      Container(
-                        height: 18,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Color(0xFFFFC477), // warm
-                              Color(0xFFBFD7FF), // cool
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              offset: const Offset(2, 2),
-                              blurRadius: 6,
-                              color: Colors.black.withValues(alpha: 0.08),
-                            ),
-                            BoxShadow(
-                              offset: const Offset(-2, -2),
-                              blurRadius: 6,
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Builder(
-                        builder: (context) {
-                          // Calculate thumb color based on temperature position
-                          final t = ((_tempK - 2700) / (6500 - 2700)).clamp(
-                            0.0,
-                            1.0,
-                          );
-                          final thumbColor =
-                              Color.lerp(
-                                const Color(0xFFFFC477), // warm
-                                const Color(0xFFBFD7FF), // cool
-                                t,
-                              ) ??
-                              const Color(0xFFEFEFEF);
-
-                          return SliderTheme(
-                            data: SliderTheme.of(context).copyWith(
-                              trackHeight: 18,
-                              activeTrackColor: Colors.transparent,
-                              inactiveTrackColor: Colors.transparent,
-                              thumbColor: thumbColor,
-                              overlayShape: const RoundSliderOverlayShape(
-                                overlayRadius: 0,
-                              ),
-                              thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 12,
-                              ),
-                            ),
-                            child: IgnorePointer(
-                              ignoring: _controlsLocked,
-                              child: Slider(
-                                min: 2700,
-                                max: 6500,
-                                value: _tempK,
-                                onChanged: (v) {
-                                  setState(() => _tempK = v);
-                                  _tempTimer?.cancel();
-                                  _tempTimer = Timer(
-                                    const Duration(milliseconds: 80),
-                                    () {
-                                      EspConnection.I.setMode(
-                                        _modeFromTemp(_tempK),
-                                      );
-                                      _saveStateToDatabase(); // Save state when user changes temperature
-                                    },
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
+              _buildTemperatureControl(),
+              
               const SizedBox(height: 16),
+              
               // Brightness Card
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: ControlCard(
-                  icon: Icons.brightness_6,
-                  iconGradient: const [Color(0xFFFFC049), Color(0xFFFFD700)],
-                  title: 'Brightness',
-                  subtitle: '${(_brightness * 100).round()}% intensity',
-                  control: Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [
-                      Container(
-                        height: 18,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Color(0xFF424242), // dark/dim
-                              Color(0xFFFFFFFF), // bright/white
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              offset: const Offset(2, 2),
-                              blurRadius: 6,
-                              color: Colors.black.withValues(alpha: 0.08),
-                            ),
-                            BoxShadow(
-                              offset: const Offset(-2, -2),
-                              blurRadius: 6,
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Builder(
-                        builder: (context) {
-                          // Calculate thumb color based on brightness position
-                          final thumbColor =
-                              Color.lerp(
-                                const Color(0xFF424242), // dark/dim
-                                const Color(0xFFFFFFFF), // bright/white
-                                _brightness,
-                              ) ??
-                              const Color(0xFFEFEFEF);
-
-                          return SliderTheme(
-                            data: SliderTheme.of(context).copyWith(
-                              trackHeight: 18,
-                              activeTrackColor: Colors.transparent,
-                              inactiveTrackColor: Colors.transparent,
-                              thumbColor: thumbColor,
-                              overlayShape: const RoundSliderOverlayShape(
-                                overlayRadius: 0,
-                              ),
-                              thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 12,
-                              ),
-                            ),
-                            child: IgnorePointer(
-                              ignoring: _controlsLocked,
-                              child: Slider(
-                                min: 0.0,
-                                max: 1.0,
-                                value: _brightness,
-                                onChanged: (v) {
-                                  setState(() => _brightness = v);
-                                  _brightTimer?.cancel();
-                                  _brightTimer = Timer(
-                                    const Duration(milliseconds: 60),
-                                    () {
-                                      final b = _mapBrightnessTo15(_brightness);
-                                      EspConnection.I.setBrightness(b);
-                                      _saveStateToDatabase(); // Save state when user changes brightness
-                                    },
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildBrightnessControl(),
             ],
           ),
         ),
