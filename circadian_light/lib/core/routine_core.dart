@@ -1,4 +1,5 @@
-// Core controller for managing routines and alarms with persistence and ESP32 synchronization
+// Core controller for managing routines and alarms
+// with persistence and ESP32 synchronization
 
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
@@ -28,7 +29,8 @@ class DuplicateAlarmException implements Exception {
 }
 
 // Core controller that encapsulates all routines/alarms logic and persistence.
-// UI layers (screens/widgets) should only consume this controller and display data.
+// UI layers (screens/widgets) should only consume this controller
+// and display data.
 class RoutineCore extends ChangeNotifier {
   RoutineCore();
 

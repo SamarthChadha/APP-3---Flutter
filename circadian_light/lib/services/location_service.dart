@@ -167,7 +167,8 @@ class LocationService {
       }
 
       _logger.info(
-        'Calculating sunrise/sunset for ${position.latitude}, ${position.longitude} on ${date.toString()}',
+        'Calculating sunrise/sunset for ${position.latitude}, '
+        '${position.longitude} on ${date.toString()}',
       );
 
       // Calculate sunrise and sunset using sunrisesunset.io API
@@ -188,7 +189,10 @@ class LocationService {
       _cachedSunset = result.sunset;
 
       _logger.info(
-        'Calculated sunrise: ${result.sunrise.hour}:${result.sunrise.minute.toString().padLeft(2, '0')}, sunset: ${result.sunset.hour}:${result.sunset.minute.toString().padLeft(2, '0')}',
+        'Calculated sunrise: ${result.sunrise.hour}:'
+        '${result.sunrise.minute.toString().padLeft(2, '0')}, '
+        'sunset: ${result.sunset.hour}:'
+        '${result.sunset.minute.toString().padLeft(2, '0')}',
       );
 
       return result;
@@ -207,7 +211,8 @@ class LocationService {
     try {
       // Format date as YYYY-MM-DD
       final dateString =
-          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-'
+          '${date.day.toString().padLeft(2, '0')}';
 
       // Build API URL
       final url = Uri.parse('https://api.sunrisesunset.io/json').replace(
@@ -236,7 +241,8 @@ class LocationService {
 
       if (response.statusCode != 200) {
         _logger.severe(
-          'API request failed with status ${response.statusCode}: ${response.body}',
+          'API request failed with status ${response.statusCode}: '
+          '${response.body}',
         );
         return null;
       }
@@ -265,7 +271,9 @@ class LocationService {
       }
 
       _logger.info(
-        'Successfully fetched times from API - Sunrise: ${sunrise.hour}:${sunrise.minute.toString().padLeft(2, '0')}, Sunset: ${sunset.hour}:${sunset.minute.toString().padLeft(2, '0')}',
+        'Successfully fetched times from API - Sunrise: ${sunrise.hour}:'
+        '${sunrise.minute.toString().padLeft(2, '0')}, '
+        'Sunset: ${sunset.hour}:${sunset.minute.toString().padLeft(2, '0')}',
       );
 
       return (sunrise: sunrise, sunset: sunset);

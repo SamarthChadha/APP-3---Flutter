@@ -140,6 +140,7 @@ class Routine {
 
   @override
   String toString() {
-    return 'Routine{id: $id, name: $name, startTime: $startTime, endTime: $endTime, enabled: $enabled}';
+    return 'Routine{id: $id, name: $name, startTime: $startTime, '
+        'endTime: $endTime, enabled: $enabled}';
   }
 }

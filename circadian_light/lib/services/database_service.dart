@@ -12,9 +12,10 @@ import '../models/lamp_state.dart';
 import 'esp_sync_service.dart';
 
 /// Database service for persistent data storage and synchronization.
-/// This service provides a  data persistence layer for my circadian
+/// This service provides a data persistence layer for my circadian
 /// lamp app, managing routines, alarms, user settings, and lamp state using
-/// SQLite for structured data and SharedPreferences for simple key-value storage.
+/// SQLite for structured data and SharedPreferences for simple
+/// key-value storage.
 /// Key features:
 /// - User settings persistence using SharedPreferences
 /// - Data export/import functionality for backup/restore
@@ -626,7 +627,8 @@ class DatabaseService {
     }
   }
 
-  /// Recreate the database from scratch (useful for fixing corruption or missing tables)
+  /// Recreate the database from scratch (useful for fixing corruption or
+  /// missing tables)
   Future<void> recreateDatabase() async {
     try {
       _logger.info('Recreating database from scratch...');

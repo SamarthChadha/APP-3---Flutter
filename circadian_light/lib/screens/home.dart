@@ -8,9 +8,10 @@ import 'package:circadian_light/services/database_service.dart';
 import '../core/theme_manager.dart';
 
 /// This screen serves as the primary interface for the circadian lighting app,
-/// featuring a 3D lamp model, brightness/temperature controls, connection status,
-/// and integration with automated routines. It provides real-time control of
-/// the ESP32 lamp device with visual feedback and state synchronization.
+/// featuring a 3D lamp model, brightness/temperature controls,
+/// connection status, and integration with automated routines.
+/// It provides real-time control of the ESP32 lamp device with visual feedback
+/// and state synchronization.
 ///
 /// Key features:
 /// - Interactive 3D lamp model with shader-based lighting effects
@@ -68,7 +69,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _saveStateToDatabase();
       _refreshActiveRoutine();
       debugPrint(
-        'Synced ESP state to app: isOn=${state.isOn}, brightness=${state.brightness}, mode=${state.mode}',
+        'Synced ESP state to app: isOn=${state.isOn}, '
+        'brightness=${state.brightness}, mode=${state.mode}',
       );
     });
   }
@@ -434,7 +436,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _tempTimer?.cancel();
                     _tempTimer = Timer(const Duration(milliseconds: 80), () {
                       EspConnection.I.setMode(_modeFromTemp(_tempK));
-                      _saveStateToDatabase(); // Save state when user changes temperature
+                      _saveStateToDatabase(); // Save state when user
+                      // changes temperature
                     });
                   },
                 ),
@@ -521,7 +524,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _brightTimer = Timer(const Duration(milliseconds: 60), () {
                       final b = _mapBrightnessTo15(_brightness);
                       EspConnection.I.setBrightness(b);
-                      _saveStateToDatabase(); // Save state when user changes brightness
+                      _saveStateToDatabase(); // Save state when user
+                      // changes brightness
                     });
                   },
                 ),

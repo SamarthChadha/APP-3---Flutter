@@ -10,7 +10,8 @@ import '../models/user_settings.dart';
 
 /// Settings screen for configuring app preferences and device connections.
 ///
-/// This screen provides centralized access to all application settings including:
+/// This screen provides centralized access to all application settings
+/// including:
 /// - ESP32 device connection management and WiFi reconfiguration
 /// - Sunrise/sunset synchronization with location-based time calculation
 /// - Dark/light theme toggle
@@ -25,8 +26,13 @@ class SettingsScreen extends StatefulWidget {
 /// State management for SettingsScreen.
 ///
 /// Handles loading and saving user settings, monitoring connection status,
-/// managing location permissions, and coordinating with various service managers.
+/// managing location permissions, and coordinating with various
+/// service managers.
 class _SettingsScreenState extends State<SettingsScreen> {
+  static const String _locationPermissionMessage = 'Location permission is required for Sun Sync.\n'
+
+      'You can enable it in Settings.';
+
   /// Current connection status of the ESP32 device.
   bool _isConnected = false;
 
@@ -402,7 +408,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 _sunriseSunsetEnabled
                                     ? _locationName != null
                                           ? 'Location: $_locationName'
-                                          : 'Automatically adjusts lamp brightness'
+                                          : 'Automatically adjusts '
+                                            'lamp brightness'
                                     : 'Manual control enabled',
                                 style: TextStyle(
                                   fontSize: 14,
@@ -419,7 +426,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           value: _sunriseSunsetEnabled,
                           onChanged: (value) async {
                             if (value) {
-                              // When enabling Sun Sync, automatically request location permission
+                              // When enabling Sun Sync, automatically request
+                              // location permission
                               final messenger = ScaffoldMessenger.of(context);
 
                               if (!_hasLocationPermission) {
@@ -443,7 +451,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   messenger.showSnackBar(
                                     const SnackBar(
                                       content: Text(
-                                        'Sun Sync enabled with location-based sunrise/sunset times!',
+                                        'Sun Sync enabled with location-based '
+                                        'sunrise/sunset times!',
                                       ),
                                       backgroundColor: Colors.green,
                                     ),
@@ -451,9 +460,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 } else {
                                   messenger.showSnackBar(
                                     SnackBar(
-                                      content: const Text(
-                                        'Location permission is required for Sun Sync. You can enable it in Settings.',
-                                      ),
+                                      content: const Text(_locationPermissionMessage),
                                       backgroundColor: Colors.orange,
                                       action: SnackBarAction(
                                         label: 'Settings',
@@ -464,7 +471,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ),
                                     ),
                                   );
-                                  return; // Don't enable Sun Sync if location permission denied
+                                  return; // Don't enable Sun Sync if location
+                                  // permission denied
                                 }
                               } else {
                                 // Already have permission, just enable Sun Sync
@@ -515,7 +523,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Current Status: ${SunriseSunsetManager.I.getCurrentStatus()}',
+                              'Current Status: '
+                              '${SunriseSunsetManager.I.getCurrentStatus()}',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
@@ -576,7 +585,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Note: When enabled, all other routines are disabled.',
+                              'Note: When enabled, all other '
+                              'routines are disabled.',
                               style: TextStyle(
                                 color: Colors.orange[700],
                                 fontSize: 12,

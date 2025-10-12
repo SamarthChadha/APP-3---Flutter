@@ -81,26 +81,26 @@ class EspSyncService {
       dev.log('  - Name: "${routine.name}"', name: _logTag);
       dev.log('  - ID: ${routine.id}', name: _logTag);
       dev.log('  - Enabled: ${routine.enabled}', name: _logTag);
-      dev.log(
-        '  - Start time: ${routine.startTime.hour.toString().padLeft(2, '0')}:${routine.startTime.minute.toString().padLeft(2, '0')}',
-        name: _logTag,
-      );
-      dev.log(
-        '  - End time: ${routine.endTime.hour.toString().padLeft(2, '0')}:${routine.endTime.minute.toString().padLeft(2, '0')}',
-        name: _logTag,
-      );
-      dev.log(
-        '  - Brightness: ${routine.brightness.toStringAsFixed(1)}% (ESP32: ${routineData['brightness']})',
-        name: _logTag,
-      );
+      final startTimeStr = '  - Start time: '
+          '${routine.startTime.hour.toString().padLeft(2, '0')}:'
+          '${routine.startTime.minute.toString().padLeft(2, '0')}';
+      dev.log(startTimeStr, name: _logTag);
+      final endTimeStr = '  - End time: '
+          '${routine.endTime.hour.toString().padLeft(2, '0')}:'
+          '${routine.endTime.minute.toString().padLeft(2, '0')}';
+      dev.log(endTimeStr, name: _logTag);
+      final brightnessStr = '  - Brightness: '
+          '${routine.brightness.toStringAsFixed(1)}% '
+          '(ESP32: ${routineData['brightness']})';
+      dev.log(brightnessStr, name: _logTag);
       dev.log(
         '  - Temperature: ${routine.temperature.toStringAsFixed(0)}K',
         name: _logTag,
       );
-      dev.log(
-        '  - Mode: ${_temperatureToMode(routine.temperature)} (${_getModeDescription(_temperatureToMode(routine.temperature))})',
-        name: _logTag,
-      );
+      final modeStr = '  - Mode: '
+          '${_temperatureToMode(routine.temperature)} '
+          '(${_getModeDescription(_temperatureToMode(routine.temperature))})';
+      dev.log(modeStr, name: _logTag);
 
       // Calculate time until routine starts (in Auckland timezone)
       final aucklandNow = DateTime.now().toUtc().add(
@@ -120,10 +120,10 @@ class EspSyncService {
       final timeUntilStart = nextStart.difference(aucklandNow);
 
       if (routine.enabled) {
-        dev.log(
-          '  - Next start: ${nextStart.toString()} NZDT (in ${_formatDuration(timeUntilStart)})',
-          name: _logTag,
-        );
+        final nextStartStr = '  - Next start: '
+            '${nextStart.toString()} NZDT '
+            '(in ${_formatDuration(timeUntilStart)})';
+        dev.log(nextStartStr, name: _logTag);
       } else {
         dev.log('  - Status: DISABLED - will not run', name: _logTag);
       }
@@ -162,14 +162,14 @@ class EspSyncService {
       dev.log('  - Name: "${alarm.name}"', name: _logTag);
       dev.log('  - ID: ${alarm.id}', name: _logTag);
       dev.log('  - Enabled: ${alarm.enabled}', name: _logTag);
-      dev.log(
-        '  - Wake-up time: ${alarm.wakeUpTime.hour.toString().padLeft(2, '0')}:${alarm.wakeUpTime.minute.toString().padLeft(2, '0')}',
-        name: _logTag,
-      );
-      dev.log(
-        '  - Start time: ${alarm.startTime.hour.toString().padLeft(2, '0')}:${alarm.startTime.minute.toString().padLeft(2, '0')}',
-        name: _logTag,
-      );
+      final wakeUpTimeStr = '  - Wake-up time: '
+          '${alarm.wakeUpTime.hour.toString().padLeft(2, '0')}:'
+          '${alarm.wakeUpTime.minute.toString().padLeft(2, '0')}';
+      dev.log(wakeUpTimeStr, name: _logTag);
+      final alarmStartTimeStr = '  - Start time: '
+          '${alarm.startTime.hour.toString().padLeft(2, '0')}:'
+          '${alarm.startTime.minute.toString().padLeft(2, '0')}';
+      dev.log(alarmStartTimeStr, name: _logTag);
       dev.log('  - Duration: ${alarm.durationMinutes} minutes', name: _logTag);
       dev.log('  - Mode: Warm light sunrise simulation', name: _logTag);
 
@@ -191,10 +191,10 @@ class EspSyncService {
       final timeUntilStart = nextStart.difference(aucklandNow);
 
       if (alarm.enabled) {
-        dev.log(
-          '  - Next start: ${nextStart.toString()} NZDT (in ${_formatDuration(timeUntilStart)})',
-          name: _logTag,
-        );
+        final alarmNextStartStr = '  - Next start: '
+            '${nextStart.toString()} NZDT '
+            '(in ${_formatDuration(timeUntilStart)})';
+        dev.log(alarmNextStartStr, name: _logTag);
       } else {
         dev.log('  - Status: DISABLED - will not run', name: _logTag);
       }
@@ -230,10 +230,9 @@ class EspSyncService {
       };
 
       EspConnection.I.send(allData);
-      dev.log(
-        'Synced ${routines.length} routines and ${alarms.length} alarms to ESP32 with time and state preservation',
-        name: _logTag,
-      );
+      final syncAllStr = 'Synced ${routines.length} routines and '
+          '${alarms.length} alarms to ESP32 with time and state preservation';
+      dev.log(syncAllStr, name: _logTag);
       return true;
     } catch (e) {
       dev.log('Failed to sync all data: $e', name: _logTag);
@@ -350,7 +349,8 @@ class EspSyncService {
   /// Format duration for human-readable display
   String _formatDuration(Duration duration) {
     if (duration.inDays > 0) {
-      return '${duration.inDays}d ${duration.inHours % 24}h ${duration.inMinutes % 60}m';
+      return '${duration.inDays}d ${duration.inHours % 24}h '
+          '${duration.inMinutes % 60}m';
     } else if (duration.inHours > 0) {
       return '${duration.inHours}h ${duration.inMinutes % 60}m';
     } else if (duration.inMinutes > 0) {

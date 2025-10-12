@@ -1,4 +1,5 @@
-// Manages WebSocket connection to ESP32 device for real-time control and state synchronization
+// Manages WebSocket connection to ESP32 device for real-time control
+// and state synchronization
 
 import 'dart:async';
 import 'dart:convert';
@@ -81,7 +82,8 @@ class EspConnection {
   final _stateUpdates = StreamController<EspState>.broadcast();
   Stream<EspState> get stateUpdates => _stateUpdates.stream;
 
-  // Connect to ESP32 via WebSocket, with automatic mDNS resolution and reconnection
+  // Connect to ESP32 via WebSocket, with automatic mDNS resolution
+  // and reconnection
   Future<void> connect({
     String? ipOrHost,
     Duration retry = const Duration(seconds: 2),
@@ -95,13 +97,15 @@ class EspConnection {
       if (ipOrHost != null) {
         target = ipOrHost;
       } else if (Platform.isIOS) {
-        // On iOS, rely on system Bonjour for .local hostnames to avoid multicast join errors
+        // On iOS, rely on system Bonjour for .local hostnames
+        // to avoid multicast join errors
         target = mdnsHost;
       } else {
         target = await _resolveMdnsHost(mdnsHost);
       }
     } catch (_) {
-      // Fallback: try the mDNS hostname directly; if that fails, we'll reconnect later
+      // Fallback: try the mDNS hostname directly; if that fails,
+      // we'll reconnect later
       target = mdnsHost;
     }
 
@@ -198,7 +202,8 @@ class EspConnection {
       }
       return null;
     } catch (_) {
-      // Any mDNS issue should not crash the app; return null so caller can fallback
+      // Any mDNS issue should not crash the app; return null
+      // so caller can fallback
       return null;
     } finally {
       try {

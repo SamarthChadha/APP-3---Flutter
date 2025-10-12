@@ -101,7 +101,8 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                'Device successfully connected to the ${ssidController.text} network',
+                'Device successfully connected to the '
+                '${ssidController.text} network',
               ),
               SizedBox.fromSize(size: const Size.fromHeight(20)),
               const Text('Device:'),
@@ -151,8 +152,10 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
               const SizedBox(height: 20),
               Text(
                 blocked
-                    ? 'SmartConfig needs a real iPhone (the iOS Simulator has no Wi‑Fi).'
-                    : 'Connect device to Wi‑Fi network using ESP‑Touch protocol',
+                    ? 'SmartConfig needs a real iPhone '
+                        '(the iOS Simulator has no Wi‑Fi).'
+                    : 'Connect device to Wi‑Fi network using '
+                        'ESP‑Touch protocol',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),

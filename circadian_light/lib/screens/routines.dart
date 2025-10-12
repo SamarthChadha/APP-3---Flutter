@@ -17,7 +17,8 @@ import '../core/theme_manager.dart';
 /// automated lighting schedules (routines) and gradual wake-up alarms.
 ///
 /// Key features:
-/// - Create/edit/delete lighting routines with custom time ranges, colors, and brightness
+/// - Create/edit/delete lighting routines with custom time ranges,
+///   colors, and brightness
 /// - Create/edit/delete wake-up alarms with configurable ramp-up durations
 /// - Automatic sunrise/sunset sync that disables manual routines when active
 /// - Undo functionality for deleted items
@@ -34,6 +35,14 @@ class RoutinesScreen extends StatefulWidget {
 /// including undo functionality, sunrise/sunset sync integration,
 /// and modal sheet presentations for editing items.
 class _RoutinesScreenState extends State<RoutinesScreen> {
+  static const String _sunSyncDisabledMessage = 'Manual routines are disabled while '
+
+      'sunrise/sunset sync is active. The lamp will automatically adjust '
+
+      'based on the time of day.\n\n'
+
+      'To use manual routines again, disable sunrise/sunset sync in Settings.';
+
   /// Core controller for routine and alarm data operations.
   late final RoutineCore _core;
 
@@ -1191,7 +1200,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Your lamp will gradually brighten from ${_formatTime(context, startTime)} to ${_formatTime(context, wakeUpTime)}, reaching full brightness at wake-up time.',
+                            'Your lamp will gradually brighten from '
+                            '${_formatTime(context, startTime)} to '
+                            '${_formatTime(context, wakeUpTime)}, '
+                            'reaching full brightness at wake-up time.',
                             style: TextStyle(color: Colors.blue.shade700),
                           ),
                         ],
@@ -1387,7 +1399,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'All manual routines are disabled while sunrise/sunset sync is active. '
+                    'All manual routines are disabled while '
+                    'sunrise/sunset sync is active. '
                     'You can disable this feature in Settings.',
                     style: TextStyle(
                       fontSize: 12,
@@ -1423,7 +1436,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                             (val) {}, // No-op when sunrise/sunset is active
                         onTap: null, // Disable editing
                         onDelete:
-                            null, // Disable deletion when sunrise/sunset is active
+                            null, // Disable deletion when sunrise/sunset
+                            // is active
                         isDisabledBySunriseSync: true,
                       ),
                     ),
@@ -1437,7 +1451,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                             (val) {}, // No-op when sunrise/sunset is active
                         onTap: null, // Disable editing
                         onDelete:
-                            null, // Disable deletion when sunrise/sunset is active
+                            null, // Disable deletion when sunrise/sunset
+                            // is active
                         isDisabledBySunriseSync: true,
                       ),
                     ),
@@ -1517,11 +1532,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       context: context,
                       builder: (context) => AlertDialog(
                         title: const Text('Sunrise/Sunset Sync'),
-                        content: const Text(
-                          'Manual routines are disabled while sunrise/sunset sync is active. '
-                          'The lamp will automatically adjust based on the time of day.\n\n'
-                          'To use manual routines again, disable sunrise/sunset sync in Settings.',
-                        ),
+                        content: const Text(_sunSyncDisabledMessage),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
@@ -1634,4 +1645,5 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
   }
 }
 
-// Old _RoutineCard and _AlarmCard were extracted to widgets/routine_card.dart and widgets/alarm_card.dart
+// Old _RoutineCard and _AlarmCard were extracted to
+// widgets/routine_card.dart and widgets/alarm_card.dart

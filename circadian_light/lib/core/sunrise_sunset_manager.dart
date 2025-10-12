@@ -1,4 +1,5 @@
-// Manages automatic sunrise/sunset lighting transitions based on time or location
+// Manages automatic sunrise/sunset lighting transitions
+// based on time or location
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -51,9 +52,9 @@ class SunriseSunsetManager {
       _startTimer();
     }
 
-    debugPrint(
-      'SunriseSunsetManager: Location-based times ${enabled ? 'enabled' : 'disabled'}',
-    );
+    final locationMsg = 'SunriseSunsetManager: Location-based times '
+        '${enabled ? 'enabled' : 'disabled'}';
+    debugPrint(locationMsg);
   }
 
   /// Update sunrise/sunset times based on current location
@@ -65,13 +66,14 @@ class SunriseSunsetManager {
       if (result != null) {
         sunriseTime = result.sunrise;
         sunsetTime = result.sunset;
-        debugPrint(
-          'SunriseSunsetManager: Updated to location-based times - Sunrise: ${sunriseTime.hour}:${sunriseTime.minute.toString().padLeft(2, '0')}, Sunset: ${sunsetTime.hour}:${sunsetTime.minute.toString().padLeft(2, '0')}',
-        );
+        debugPrint('SunriseSunsetManager: Updated to location-based times - '
+            'Sunrise: ${sunriseTime.hour}:'
+            '${sunriseTime.minute.toString().padLeft(2, '0')}, '
+            'Sunset: ${sunsetTime.hour}:'
+            '${sunsetTime.minute.toString().padLeft(2, '0')}');
       } else {
-        debugPrint(
-          'SunriseSunsetManager: Could not get location-based times, using defaults',
-        );
+        debugPrint('SunriseSunsetManager: Could not get location-based times, '
+            'using defaults');
       }
     } catch (e) {
       debugPrint(
@@ -144,9 +146,9 @@ class SunriseSunsetManager {
         'source': source,
       });
     }
-    debugPrint(
-      'SunriseSunsetManager: Disabled${source == 'hardware' ? ' by hardware override' : ''}',
-    );
+    final disableMsg = 'SunriseSunsetManager: Disabled'
+        '${source == 'hardware' ? ' by hardware override' : ''}';
+    debugPrint(disableMsg);
   }
 
   // Check current time and execute appropriate lighting transitions
@@ -260,12 +262,14 @@ class SunriseSunsetManager {
     int sunriseEndMinutes,
     int sunsetStartMinutes,
   ) {
-    // Between sunrise end and sunset start - gradually transition from both LEDs to warm-only
+    // Between sunrise end and sunset start - gradually transition
+    // from both LEDs to warm-only
     if (currentMinutes > sunriseEndMinutes &&
         currentMinutes < sunsetStartMinutes) {
       EspConnection.I.setOn(true);
 
-      // Calculate progress through the day (0.0 = just after sunrise, 1.0 = just before sunset)
+      // Calculate progress through the day
+      // (0.0 = just after sunrise, 1.0 = just before sunset)
       final dayProgress =
           (currentMinutes - sunriseEndMinutes) /
           (sunsetStartMinutes - sunriseEndMinutes);
@@ -283,7 +287,8 @@ class SunriseSunsetManager {
         EspConnection.I.setBrightness(15);
         debugPrint('Day state: Midday - Both LEDs, preparing for transition');
       } else {
-        // Late afternoon (70-100%): Switch to warm-only in preparation for sunset
+        // Late afternoon (70-100%): Switch to warm-only
+        // in preparation for sunset
         EspConnection.I.setMode(0); // MODE_WARM only
         EspConnection.I.setBrightness(15);
         debugPrint(

@@ -1,6 +1,6 @@
 // This is the main entry point for the Flutter circadian light app.
-// It initializes the app, sets up logging, database, theme manager, ESP connection,
-// and sunrise/sunset manager, then runs the main app widget.
+// It initializes the app, sets up logging, database, theme manager,
+// ESP connection, and sunrise/sunset manager, then runs the main app widget.
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';

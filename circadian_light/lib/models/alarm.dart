@@ -118,6 +118,7 @@ class Alarm {
 
   @override
   String toString() {
-    return 'Alarm{id: $id, name: $name, wakeUpTime: $wakeUpTime, duration: ${durationMinutes}m, enabled: $enabled}';
+    return 'Alarm{id: $id, name: $name, wakeUpTime: $wakeUpTime, '
+        'duration: ${durationMinutes}m, enabled: $enabled}';
   }
 }

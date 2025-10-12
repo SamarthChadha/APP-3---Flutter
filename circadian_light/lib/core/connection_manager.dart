@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'esp_connection.dart';
 import 'provisioning_screen.dart';
 
-// Widget that manages ESP32 connection, shows connection status or provisioning screen
+// Widget that manages ESP32 connection, shows connection status
+// or provisioning screen
 
 // Stateful widget for managing ESP connection and showing appropriate UI
 class ConnectionManager extends StatefulWidget {

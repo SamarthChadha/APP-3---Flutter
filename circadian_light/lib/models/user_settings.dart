@@ -81,6 +81,7 @@ class UserSettings {
 
   @override
   String toString() {
-    return 'UserSettings{sunriseSunsetEnabled: $sunriseSunsetEnabled, deviceName: $deviceName, firstTimeSetup: $firstTimeSetup}';
+    return 'UserSettings{sunriseSunsetEnabled: $sunriseSunsetEnabled, '
+        'deviceName: $deviceName, firstTimeSetup: $firstTimeSetup}';
   }
 }
