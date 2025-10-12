@@ -7,6 +7,28 @@ import 'package:logging/logging.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:http/http.dart' as http;
 
+/// Service for location-based operations and sunrise/sunset calculations.
+///
+/// This service handles device location permissions, GPS positioning, and
+/// calculates accurate sunrise/sunset times using external APIs. It provides
+/// caching for performance and integrates with the sunrise/sunset manager
+/// for automated lighting schedules.
+///
+/// Key features:
+/// - Location permission management with graceful degradation
+/// - GPS position acquisition with timeout handling
+/// - Sunrise/sunset calculation via sunrisesunset.io API
+/// - Result caching to minimize API calls and improve performance
+/// - Reverse geocoding for user-friendly location names
+/// - Comprehensive error handling and logging
+/// - Fallback to last known position when GPS unavailable
+///
+/// The service uses a singleton pattern and caches results to reduce API
+/// calls while maintaining accuracy. All operations are permission-aware
+/// and provide clear status messages for UI feedback.
+///
+/// Dependencies: geolocator, permission_handler, geocoding, http, logging
+
 class LocationService {
   LocationService._();
   static final LocationService I = LocationService._();
@@ -27,7 +49,10 @@ class LocationService {
   Position? get lastKnownPosition => _lastKnownPosition;
   String? get cachedLocationName => _cachedLocationName;
 
-  /// Request location permission from the user
+  /// Requests location permission from the user with proper error handling.
+  ///
+  /// Checks current permission status and requests access if needed.
+  /// Handles permanent denial by guiding users to app settings.
   Future<bool> requestLocationPermission() async {
     try {
       _logger.info('Requesting location permission...');

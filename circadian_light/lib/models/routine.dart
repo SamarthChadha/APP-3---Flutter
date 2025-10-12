@@ -1,3 +1,5 @@
+// Model representing a scheduled lighting routine with time range and settings
+
 import 'package:flutter/material.dart';
 
 class Routine {

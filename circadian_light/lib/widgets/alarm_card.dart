@@ -2,11 +2,44 @@ import 'package:flutter/material.dart';
 import '../models/alarm.dart';
 import '../core/theme_manager.dart';
 
+/// Neumorphic card widget for displaying and managing wake-up alarms.
+///
+/// This widget provides an interactive card interface for alarm management
+/// with swipe-to-delete functionality, enable/disable toggle, and visual
+/// feedback for sunrise/sunset synchronization states.
+///
+/// Key features:
+/// - Neumorphic design with gradient backgrounds and shadows
+/// - Swipe gesture for deletion with animated reveal
+/// - Enable/disable switch with theme-aware colors
+/// - Visual disabled state when sunrise sync is active
+/// - Tap handling for editing alarms
+/// - Responsive layout with alarm timing information
+///
+/// The card adapts its appearance and behavior based on the alarm's enabled
+/// state and whether sunrise/sunset sync is currently active, disabling
+/// manual controls when automated scheduling is in effect.
+///
+/// Dependencies: Alarm model, ThemeManager
+
+/// Interactive card widget for alarm display and management.
+///
+/// Displays alarm information with swipe-to-delete and toggle functionality.
+/// Supports disabled state visualization for sunrise/sunset synchronization.
 class AlarmCard extends StatefulWidget {
+  /// The alarm data to display and manage.
   final Alarm alarm;
+
+  /// Callback when the alarm's enabled state changes.
   final ValueChanged<bool> onChanged;
+
+  /// Callback when the card is tapped for editing.
   final VoidCallback? onTap;
+
+  /// Callback when the alarm should be deleted.
   final VoidCallback? onDelete;
+
+  /// Whether this alarm is disabled due to sunrise/sunset sync.
   final bool isDisabledBySunriseSync;
 
   const AlarmCard({
@@ -22,10 +55,19 @@ class AlarmCard extends StatefulWidget {
   State<AlarmCard> createState() => _AlarmCardState();
 }
 
+/// State management for AlarmCard with swipe animation support.
+///
+/// Handles horizontal swipe gestures for delete reveal, animation control,
+/// and gesture state management for smooth user interactions.
 class _AlarmCardState extends State<AlarmCard>
     with SingleTickerProviderStateMixin {
+  /// Controller for the swipe-to-delete slide animation.
   late AnimationController _slideController;
+
+  /// Animation for the card's horizontal slide offset.
   late Animation<double> _slideAnimation;
+
+  /// Whether the card is currently being swiped.
   bool _isSliding = false;
 
   @override
@@ -47,6 +89,10 @@ class _AlarmCardState extends State<AlarmCard>
     super.dispose();
   }
 
+  /// Handles horizontal drag updates for swipe-to-delete gesture.
+  ///
+  /// Updates the slide animation based on drag distance and screen width.
+  /// Only active when deletion is allowed and sunrise sync is disabled.
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
     final screenWidth = MediaQuery.of(context).size.width;

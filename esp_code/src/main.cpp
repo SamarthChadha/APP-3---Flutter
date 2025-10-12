@@ -1,3 +1,10 @@
+// This program controls an ESP32-based circadian light system.
+// It provides a web interface for configuration and real-time control via WebSocket.
+// Features include scheduled routines, alarms (sunrise simulation), manual controls,
+// and integration with a Flutter app for remote management.
+// Hardware: Rotary encoder for brightness, button for on/off and mode cycling,
+// two PWM LED channels for warm and cool white lighting.
+
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
@@ -7,10 +14,12 @@
 
 #include "wifi_credentials.h"
 
+// WiFi credentials and network configuration
 const char* SSID     = wifi_credentials::SSID;
 const char* PASSWORD = wifi_credentials::PASSWORD;
 
 
+// Hardware pin definitions for LEDs and rotary encoder
 #define LED_BUILTIN 2   // builtin LED (GPIO2)
 #define LED_A_PIN   16  // first LED group PWM (warm)
 #define LED_B_PIN   17  // second LED group PWM (white)
@@ -19,10 +28,12 @@ const char* PASSWORD = wifi_credentials::PASSWORD;
 #define ROTARY_CLK 33
 #define ROTARY_BTN 25
 
+// Network configuration for WebSocket connection
 const char* ESP_IP = "10.210.232.242";   // update if the ESP32 reboots with a new IP
 const char* WS_URL = "ws://10.210.232.242/ws";
 
 // Time zone configuration for Auckland, New Zealand
+// NTP server and timezone configuration for accurate timekeeping in Auckland, New Zealand
 const char* ntpServer = "pool.ntp.org";
 // POSIX timezone string for New Zealand (automatically handles NZST/NZDT transitions)
 // NZST-12: Standard time UTC+12, NZDT: Daylight time UTC+13
@@ -30,13 +41,17 @@ const char* ntpServer = "pool.ntp.org";
 const char* timezone = "NZST-12NZDT,M9.5.0,M4.1.0";
 
 // Create AsyncWebServer instance on port 80
+// Web server and WebSocket setup for remote control
 AsyncWebServer server(80);
 // Create AsyncWebSocket instance
 AsyncWebSocket ws("/ws");
 
+// Rotary encoder for brightness control
 RotaryEncoder encoder(ROTARY_DT, ROTARY_CLK);
 
 // ===== Schedule Data Structures =====
+
+// Data structures for storing scheduled routines and alarms
 struct Routine {
   int id;
   bool enabled;
@@ -55,6 +70,7 @@ struct Alarm {
 };
 
 // Storage for routines and alarms (limited for ESP32 memory)
+// Storage limits for routines and alarms due to ESP32 memory constraints
 const int MAX_ROUTINES = 10;
 const int MAX_ALARMS = 5;
 Routine routines[MAX_ROUTINES];
@@ -63,13 +79,16 @@ int routine_count = 0;
 int alarm_count = 0;
 
 // Schedule tracking
+// Timing variables for periodic schedule checking
 unsigned long lastScheduleCheck = 0;
 const unsigned long SCHEDULE_CHECK_INTERVAL = 1000; // Check every second for precise timing
 
 // ===== New simplified control state =====
+// Lighting mode enumeration: warm, cool, or both LEDs
 enum Mode { MODE_WARM = 0, MODE_WHITE = 1, MODE_BOTH = 2 };
 
 // ===== Routine state tracking =====
+// State tracking variables for active routines and alarms
 bool routineActive = false;          // Is a routine currently running?
 bool wasOffBeforeRoutine = false;    // Was the lamp off before routine started?
 int activeRoutineId = -1;            // ID of currently active routine
@@ -87,6 +106,7 @@ Mode alarmOriginalMode = MODE_BOTH;  // Mode before alarm
 bool alarmOriginalIsOn = true;       // On/off state before alarm
 int lastAlarmMinute = -1;            // Track last minute alarm was checked
 
+// Current lamp control state variables
 Mode mode = MODE_BOTH;                 // double-click cycles this
 int brightness = 0;                  // 0-15 master brightness (independent of on/off & mode)
 bool isOn = true;                      // single-click toggles this
@@ -102,6 +122,7 @@ bool sunSyncDisabledByHardware = false;
 unsigned long lastClickReleaseTime = 0;
 
 // Button click state (robust, polarity-agnostic)
+// Button click state for robust multi-click detection
 uint8_t clickCount = 0;                // 1 = single (after timeout), 2 = double
 unsigned long firstClickTime = 0;      // time of first click
 const uint16_t DEBOUNCE_MS     = 35;   // debounce time (ms)
@@ -111,6 +132,7 @@ const uint8_t OVERRIDE_BLINK_COUNT   = 2;
 const uint16_t OVERRIDE_BLINK_INTERVAL_MS = 150;
 
 // ===== Forward Declarations =====
+// Forward declarations for schedule management functions
 void handleRoutineSync(JsonDocument& doc);
 void handleAlarmSync(JsonDocument& doc);
 void handleFullSync(JsonDocument& doc);
@@ -131,6 +153,7 @@ void handleButtonClicks();
 void handleScheduleTick();
 
 // ===== Validation Helpers =====
+// Helper functions for validating and parsing JSON input fields
 bool readIntField(JsonObject obj, const char* key, int minValue, int maxValue, int& outValue) {
   JsonVariant valueVariant = obj[key];
   if (!valueVariant.is<int>() && !valueVariant.is<long>()) {
@@ -161,6 +184,7 @@ bool readBoolField(JsonObject obj, const char* key, bool& outValue) {
 }
 
 // ===== Helpers =====
+// Function to broadcast current lamp state to all connected WebSocket clients
 void sendStateUpdate() {
   // Send current state to all connected WebSocket clients
   JsonDocument doc;
@@ -183,6 +207,7 @@ void sendStateUpdate() {
   Serial.printf("Sent state update: %s\n", jsonString.c_str());
 }
 
+// Function to apply current brightness and mode settings to LED PWM outputs
 void applyOutput() {
   int ch0 = 15;
   int ch1 = 15;
@@ -223,6 +248,7 @@ void applyOutput() {
                 (int)isOn, (int)mode, brightness, safeBrightness, invertedBrightness, ch0, ch1);
 }
 
+// WebSocket message handler for processing commands from the Flutter app
 void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
              AwsEventType type, void *arg, uint8_t *data, size_t len) {
   // --- Debug: log connect / disconnect ---
@@ -918,6 +944,7 @@ void handleTimeSync(JsonDocument& doc) {
   }
 }
 
+// Main function to check and apply scheduled routines and alarms based on current time
 void checkSchedule() {
   // Only check schedule if we have a valid time
   struct tm timeinfo;
@@ -1103,6 +1130,7 @@ void checkSchedule() {
   }
 }
 
+// Arduino setup function: initialize hardware, WiFi, time, and web services
 void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
@@ -1164,6 +1192,7 @@ void setup() {
 
 // ===== Loop Helper Functions =====
 
+// Handle rotary encoder input for brightness adjustment
 void handleRotaryEncoder() {
   encoder.tick();
   static int lastPos = encoder.getPosition();
@@ -1191,6 +1220,7 @@ void handleRotaryEncoder() {
   }
 }
 
+// Handle button presses for on/off toggle, mode cycling, and triple-click override
 void handleButtonClicks() {
   static bool prevPressed = false;            // logical pressed state (polarity-agnostic)
   static unsigned long lastChange = 0;
@@ -1248,6 +1278,7 @@ void handleButtonClicks() {
   }
 }
 
+// Periodic schedule checking with timing control
 void handleScheduleTick() {
   if (millis() - lastScheduleCheck >= SCHEDULE_CHECK_INTERVAL) {
     lastScheduleCheck = millis();
@@ -1255,6 +1286,7 @@ void handleScheduleTick() {
   }
 }
 
+// Arduino main loop: handle user inputs, schedule checking, and WebSocket cleanup
 void loop() {
   // Handle hardware inputs
   handleRotaryEncoder();

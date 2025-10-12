@@ -1,3 +1,5 @@
+// Model representing the current state of the lamp including brightness, mode, and temperature
+
 /// Model representing the current state of the lamp
 /// This includes on/off status, brightness, and color temperature
 class LampState {

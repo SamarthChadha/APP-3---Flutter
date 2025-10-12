@@ -1,3 +1,7 @@
+// This is the main entry point for the Flutter circadian light app.
+// It initializes the app, sets up logging, database, theme manager, ESP connection,
+// and sunrise/sunset manager, then runs the main app widget.
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'screens/home.dart';
@@ -9,10 +13,12 @@ import 'core/theme_manager.dart';
 import 'services/database_service.dart';
 import 'services/esp_sync_service.dart';
 
+// Main function: entry point of the app
 void main() {
   runApp(const MainApp());
 }
 
+// Main app widget that manages initialization and theme
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
@@ -20,6 +26,7 @@ class MainApp extends StatefulWidget {
   State<MainApp> createState() => _MainAppState();
 }
 
+// State class for MainApp, handles app initialization and error states
 class _MainAppState extends State<MainApp> {
   late final List<Widget> _screens;
   bool _initializationFailed = false;
@@ -39,6 +46,7 @@ class _MainAppState extends State<MainApp> {
     ];
   }
 
+  // Setup logging configuration for the app
   void _setupLogging() {
     Logger.root.level = Level.INFO;
     Logger.root.onRecord.listen((record) {
@@ -47,6 +55,7 @@ class _MainAppState extends State<MainApp> {
     });
   }
 
+  // Initialize app services: database, theme, ESP connection, sunrise/sunset
   Future<void> _initializeApp() async {
     try {
       _logger.info('Starting app initialization...');

@@ -1,3 +1,5 @@
+// Model representing user preferences and app settings
+
 class UserSettings {
   final bool sunriseSunsetEnabled;
   final String? lastConnectedDeviceId;

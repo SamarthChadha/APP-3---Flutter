@@ -13,12 +13,44 @@ import '../core/theme_manager.dart';
 //   var program = await FragmentProgram.fromAsset('assets/shaders/lamp_shader.frag');
 // }
 
+/// Main home screen displaying 3D lamp model and lighting controls.
+///
+/// This screen serves as the primary interface for the circadian lighting app,
+/// featuring a 3D lamp model, brightness/temperature controls, connection status,
+/// and integration with automated routines. It provides real-time control of
+/// the ESP32 lamp device with visual feedback and state synchronization.
+///
+/// Key features:
+/// - Interactive 3D lamp model with shader-based lighting effects
+/// - Dual-slider controls for brightness and color temperature
+/// - Real-time ESP32 connection status and state synchronization
+/// - Automatic routine detection and control locking
+/// - Debounced slider updates to prevent excessive ESP communication
+/// - Neumorphic UI design with theme-aware styling
+/// - Navigation to settings and routines screens
+///
+/// The screen automatically detects and displays active routines, locking
+/// manual controls when automated scheduling is in effect. All changes
+/// are synchronized with the ESP32 device via WebSocket connection.
+///
+/// Dependencies: Flutter3DController, EspConnection, LampState, Routine models
+
+// Home screen widget displaying the 3D lamp model, controls, and connection status
+
+/// Main screen widget for lamp control and visualization.
+///
+/// Displays the 3D lamp model, control sliders, and connection status.
+/// Manages state synchronization between app and ESP32 device.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+/// State management for HomeScreen with lamp control and ESP synchronization.
+///
+/// Handles lamp state management, routine detection, slider controls,
+/// and real-time synchronization with the ESP32 device.
 class _HomeScreenState extends State<HomeScreen> {
   bool _isOn = true;
   double _brightness = 0.7; // 0..1

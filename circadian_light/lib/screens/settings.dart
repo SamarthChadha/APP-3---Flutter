@@ -8,17 +8,56 @@ import '../services/database_service.dart';
 import '../services/location_service.dart';
 import '../models/user_settings.dart';
 
+/// Settings screen for configuring app preferences and device connections.
+///
+/// This screen provides centralized access to all application settings including:
+/// - ESP32 device connection management and WiFi reconfiguration
+/// - Sunrise/sunset synchronization with location-based time calculation
+/// - Dark/light theme toggle
+/// - Help center access
+///
+/// The screen uses neumorphic design elements consistent with the app's theme
+/// and integrates with various managers (EspConnection, SunriseSunsetManager,
+/// ThemeManager) to provide real-time status updates and configuration options.
+///
+/// Key features:
+/// - Connection status monitoring with refresh capability
+/// - Location permission handling for sunrise/sunset features
+/// - Theme switching with immediate visual feedback
+/// - External link launching for help resources
+///
+/// Dependencies: EspConnection, SunriseSunsetManager, ThemeManager, LocationService
+
+/// Main screen widget for application settings and configuration.
+///
+/// Displays various setting cards in a scrollable layout, each handling
+/// a specific aspect of app configuration with appropriate status indicators
+/// and interactive controls.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
+/// State management for SettingsScreen.
+///
+/// Handles loading and saving user settings, monitoring connection status,
+/// managing location permissions, and coordinating with various service managers.
 class _SettingsScreenState extends State<SettingsScreen> {
+  /// Current connection status of the ESP32 device.
   bool _isConnected = false;
+
+  /// Whether sunrise/sunset synchronization is currently enabled.
   bool _sunriseSunsetEnabled = false;
+
+  /// Whether the app has location permission for sunrise/sunset calculations.
   bool _hasLocationPermission = false;
+
+  /// Current user settings loaded from persistent storage.
   UserSettings? _userSettings;
+
+  /// Cached location name for display when sunrise/sunset is enabled.
   String? _locationName;
 
   @override
@@ -27,6 +66,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadSettings();
   }
 
+  /// Loads user settings from database and initializes service states.
+  ///
+  /// Retrieves settings from persistent storage, checks connection status,
+  /// validates location permissions, and updates sunrise/sunset manager state.
+  /// Shows error messages if loading fails.
   Future<void> _loadSettings() async {
     try {
       await db.initialize();
@@ -65,6 +109,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Saves updated user settings to persistent storage.
+  ///
+  /// Updates the sunrise/sunset enabled flag in the user settings
+  /// and persists the changes to the database.
   Future<void> _saveSettings() async {
     if (_userSettings != null) {
       try {
@@ -85,12 +133,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Updates the connection status display.
+  ///
+  /// Refreshes the _isConnected flag to reflect current ESP32 connection state.
   void _checkConnection() {
     setState(() {
       _isConnected = EspConnection.I.isConnected;
     });
   }
 
+  /// Initiates device reconnection process.
+  ///
+  /// Navigates to the provisioning screen to allow users to reconnect
+  /// to their ESP32 device or reconfigure WiFi settings. Updates connection
+  /// status upon successful return from provisioning.
   Future<void> _reconnectDevice() async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -104,6 +160,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Launches the help center in an external browser.
+  ///
+  /// Opens the Flutter documentation website in the device's default
+  /// web browser. Shows an error message if the URL cannot be launched.
   Future<void> _launchHelpCenter() async {
     final Uri url = Uri.parse('https://docs.flutter.dev/');
     if (await canLaunchUrl(url)) {

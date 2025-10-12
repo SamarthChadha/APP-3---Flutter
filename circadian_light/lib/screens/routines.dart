@@ -11,17 +11,51 @@ import '../widgets/routine_card.dart';
 import '../widgets/alarm_card.dart';
 import '../core/theme_manager.dart';
 
+/// Screen for managing circadian lighting routines and wake-up alarms.
+///
+/// This screen provides a comprehensive interface for users to create, edit, and manage
+/// automated lighting schedules (routines) and gradual wake-up alarms. It integrates with
+/// the RoutineCore for data persistence and supports sunrise/sunset synchronization.
+///
+/// Key features:
+/// - Create/edit/delete lighting routines with custom time ranges, colors, and brightness
+/// - Create/edit/delete wake-up alarms with configurable ramp-up durations
+/// - Automatic sunrise/sunset sync that disables manual routines when active
+/// - Undo functionality for deleted items
+/// - Neumorphic UI design consistent with the app's theme
+/// - Real-time status display for sunrise/sunset synchronization
+///
+/// The screen adapts its UI based on whether sunrise/sunset sync is enabled:
+/// - When enabled: Shows sync status and disables manual routine controls
+/// - When disabled: Shows full CRUD interface for routines and alarms
+///
+/// Dependencies: RoutineCore, SunriseSunsetManager, ThemeManager, various widgets
+
+/// Main screen widget for routines and alarms management.
+///
+/// Displays a list of user-created routines and alarms with options to add,
+/// edit, delete, and toggle their enabled state. When sunrise/sunset sync
+/// is active, manual routines are disabled and the UI shows sync status.
 class RoutinesScreen extends StatefulWidget {
   const RoutinesScreen({super.key});
+
   @override
   State<RoutinesScreen> createState() => _RoutinesScreenState();
 }
 
+/// State management for RoutinesScreen.
+///
+/// Handles all business logic for routine and alarm CRUD operations,
+/// including undo functionality, sunrise/sunset sync integration,
+/// and modal sheet presentations for editing items.
 class _RoutinesScreenState extends State<RoutinesScreen> {
+  /// Core controller for routine and alarm data operations.
   late final RoutineCore _core;
 
-  // For undo functionality
+  /// Stores recently deleted routine for undo functionality.
   Routine? _recentlyDeletedRoutine;
+
+  /// Stores recently deleted alarm for undo functionality.
   Alarm? _recentlyDeletedAlarm;
 
   @override
@@ -41,6 +75,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     super.dispose();
   }
 
+  /// Saves a routine to persistent storage with error handling.
+  ///
+  /// Attempts to save the routine via RoutineCore and shows appropriate
+  /// snackbar messages for success or duplicate name errors.
   Future<void> _saveRoutine(Routine routine) async {
     try {
       await _core.saveRoutine(routine);
@@ -59,6 +97,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     }
   }
 
+  /// Deletes a routine with undo functionality.
+  ///
+  /// Removes the routine from storage, stores it for potential undo,
+  /// and shows a snackbar with undo option that expires after 4 seconds.
   Future<void> _deleteRoutine(int id) async {
     try {
       // Find the routine before deleting
@@ -113,6 +155,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     }
   }
 
+  /// Saves an alarm to persistent storage with error handling.
+  ///
+  /// Attempts to save the alarm via RoutineCore and shows appropriate
+  /// snackbar messages for success or duplicate name errors.
   Future<void> _saveAlarm(Alarm alarm) async {
     try {
       await _core.saveAlarm(alarm);
@@ -131,6 +177,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     }
   }
 
+  /// Deletes an alarm with undo functionality.
+  ///
+  /// Removes the alarm from storage, stores it for potential undo,
+  /// and shows a snackbar with undo option that expires after 4 seconds.
   Future<void> _deleteAlarm(int id) async {
     try {
       // Find the alarm before deleting
@@ -185,11 +235,15 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     }
   }
 
-  // Logic moved to RoutineCore
-
+  /// Formats a TimeOfDay for display using Material localization.
   String _formatTime(BuildContext context, TimeOfDay t) =>
       MaterialLocalizations.of(context).formatTimeOfDay(t);
 
+  /// Opens a modal bottom sheet for creating a new routine.
+  ///
+  /// Presents a form with controls for routine name, start/end times,
+  /// color temperature, and brightness. Uses StatefulBuilder to manage
+  /// local state within the modal sheet.
   void _openAddRoutineSheet() async {
     TimeOfDay start = const TimeOfDay(hour: 7, minute: 0);
     TimeOfDay end = const TimeOfDay(hour: 22, minute: 0);
@@ -451,6 +505,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     );
   }
 
+  /// Opens a modal bottom sheet for editing an existing routine.
+  ///
+  /// Pre-fills the form with the routine's current values and allows
+  /// modification of all properties. Saves changes back to the routine.
   void _openEditRoutineSheet(int index, Routine routine) {
     TimeOfDay start = routine.startTime;
     TimeOfDay end = routine.endTime;
@@ -692,6 +750,10 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
   // Time sheet moved to reusable widget (TimePickerSheet)
 
+  /// Opens a modal bottom sheet for editing an existing alarm.
+  ///
+  /// Pre-fills the form with the alarm's current wake-up time and duration,
+  /// allowing modification of these properties before saving changes.
   void _openEditAlarmSheet(int index, Alarm alarm) {
     TimeOfDay wakeUpTime = alarm.wakeUpTime;
     int durationMinutes = alarm.durationMinutes;
@@ -835,6 +897,11 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     );
   }
 
+  /// Opens a modal bottom sheet for creating a new wake-up alarm.
+  ///
+  /// Presents a form with controls for alarm name, wake-up time, and ramp-up
+  /// duration. Shows a preview of how the gradual lighting will work.
+  /// Uses StatefulBuilder to manage local state within the modal sheet.
   void _openAddAlarmSheet() async {
     TimeOfDay wakeUpTime = const TimeOfDay(hour: 6, minute: 0);
     int durationMinutes = 30; // Default to 30 minutes
@@ -1185,6 +1252,11 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
 
     Widget content;
 
+    /// Builds the UI content based on sunrise/sunset sync status.
+    ///
+    /// When sunrise/sunset sync is enabled, shows a status card with current
+    /// times and disables manual routine controls. When disabled, shows the
+    /// normal list of routines and alarms with full CRUD functionality.
     if (sunriseSunsetEnabled) {
       // Show sunrise/sunset status when enabled
       content = Padding(

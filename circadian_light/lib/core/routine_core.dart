@@ -1,3 +1,5 @@
+// Core controller for managing routines and alarms with persistence and ESP32 synchronization
+
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
@@ -7,7 +9,7 @@ import '../services/database_service.dart';
 import '../services/esp_sync_service.dart';
 import '../core/esp_connection.dart';
 
-/// Thrown when attempting to save a routine that duplicates another
+// Exception thrown when attempting to save a duplicate routine
 class DuplicateRoutineException implements Exception {
   final String message;
   DuplicateRoutineException([this.message = 'Routine already exists.']);
@@ -15,7 +17,7 @@ class DuplicateRoutineException implements Exception {
   String toString() => message;
 }
 
-/// Thrown when attempting to save an alarm that duplicates another
+// Exception thrown when attempting to save a duplicate alarm
 class DuplicateAlarmException implements Exception {
   final String message;
   DuplicateAlarmException([
@@ -25,8 +27,8 @@ class DuplicateAlarmException implements Exception {
   String toString() => message;
 }
 
-/// Core controller that encapsulates all routines/alarms logic and persistence.
-/// UI layers (screens/widgets) should only consume this controller and display data.
+// Core controller that encapsulates all routines/alarms logic and persistence.
+// UI layers (screens/widgets) should only consume this controller and display data.
 class RoutineCore extends ChangeNotifier {
   RoutineCore();
 

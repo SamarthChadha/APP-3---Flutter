@@ -9,8 +9,33 @@ import '../models/routine.dart';
 import '../models/alarm.dart';
 import '../models/user_settings.dart';
 import '../models/lamp_state.dart';
+
+/// Database service for persistent data storage and synchronization.
+///
+/// This service provides a comprehensive data persistence layer for the circadian
+/// lighting app, managing routines, alarms, user settings, and lamp state using
+/// SQLite for structured data and SharedPreferences for simple key-value storage.
+///
+/// Key features:
+/// - SQLite database with automatic schema management and migrations
+/// - Routine and alarm CRUD operations with ESP32 synchronization
+/// - User settings persistence using SharedPreferences
+/// - Lamp state tracking for UI restoration
+/// - Data export/import functionality for backup/restore
+/// - Database integrity checks and automatic table creation
+/// - Comprehensive logging for debugging and monitoring
+///
+/// The service uses a singleton pattern to ensure consistent database access
+/// across the app and includes automatic ESP32 synchronization for routines
+/// and alarms to maintain consistency between app and device state.
+///
+/// Dependencies: sqflite, shared_preferences, logging, path
 import 'esp_sync_service.dart';
 
+/// Singleton service for database operations and data persistence.
+///
+/// Manages SQLite database lifecycle, schema creation, migrations, and provides
+/// high-level CRUD operations for all app data with automatic ESP32 synchronization.
 class DatabaseService {
   static DatabaseService? _instance;
   static Database? _database;
@@ -28,7 +53,10 @@ class DatabaseService {
   static const int _databaseVersion = 1;
   static const String _databaseName = 'circadian_light.db';
 
-  // Initialize both SQLite database and SharedPreferences
+  /// Initializes both SQLite database and SharedPreferences.
+  ///
+  /// Must be called before any database operations. Sets up database connection
+  /// with proper schema and initializes SharedPreferences for settings storage.
   Future<void> initialize() async {
     _database ??= await _initDatabase();
     _prefs ??= await SharedPreferences.getInstance();
@@ -188,7 +216,11 @@ class DatabaseService {
 
   // ==================== ROUTINE OPERATIONS ====================
 
-  /// Save a routine to the database
+  /// Saves a routine to the database with ESP32 synchronization.
+  ///
+  /// Inserts new routines or updates existing ones, then attempts to sync
+  /// the routine to the connected ESP32 device. ESP sync failures are logged
+  /// but don't prevent the database save from succeeding.
   Future<int> saveRoutine(Routine routine) async {
     final db = await database;
 
@@ -230,7 +262,11 @@ class DatabaseService {
     return List.generate(maps.length, (i) => Routine.fromJson(maps[i]));
   }
 
-  /// Determine if there is an active routine for the provided time (defaults to now)
+  /// Determines the currently active routine based on time.
+  ///
+  /// Checks all enabled routines to find which one encompasses the current
+  /// time (or provided reference time). Returns the routine that will end
+  /// soonest if multiple routines overlap.
   Future<Routine?> getActiveRoutine({DateTime? at}) async {
     final referenceTime = at ?? DateTime.now();
     final routines = await getAllRoutines();
@@ -328,7 +364,11 @@ class DatabaseService {
 
   // ==================== ALARM OPERATIONS ====================
 
-  /// Save an alarm to the database
+  /// Saves an alarm to the database with ESP32 synchronization.
+  ///
+  /// Inserts new alarms or updates existing ones, then attempts to sync
+  /// the alarm to the connected ESP32 device. ESP sync failures are logged
+  /// but don't prevent the database save from succeeding.
   Future<int> saveAlarm(Alarm alarm) async {
     final db = await database;
 

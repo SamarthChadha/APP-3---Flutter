@@ -1,9 +1,12 @@
+// Screen for provisioning ESP32 device to WiFi network using ESP-Touch protocol
+
 import 'package:flutter/material.dart';
 import 'package:esp_smartconfig/esp_smartconfig.dart';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:logging/logging.dart';
 
+// Stateful widget for WiFi provisioning screen
 class ProvisioningScreen extends StatefulWidget {
   const ProvisioningScreen({super.key, required this.title});
 
@@ -13,6 +16,7 @@ class ProvisioningScreen extends StatefulWidget {
   State<ProvisioningScreen> createState() => _ProvisioningScreenState();
 }
 
+// State class handling provisioning logic and UI
 class _ProvisioningScreenState extends State<ProvisioningScreen> {
   final ssidController = TextEditingController();
   final passwordController = TextEditingController();
@@ -42,6 +46,7 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
     }
   }
 
+  // Start ESP-Touch provisioning process
   Future<void> _startProvisioning() async {
     // EspTouchV2 tends to be more reliable on modern phones/routers
     final provisioner = Provisioner.espTouchV2();
@@ -85,6 +90,7 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
     }
   }
 
+  // Handle successful device provisioning
   void _onDeviceProvisioned(ProvisioningResponse response) {
     showDialog(
       context: context,

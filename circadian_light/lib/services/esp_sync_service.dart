@@ -4,15 +4,43 @@ import '../models/routine.dart';
 import '../models/alarm.dart';
 import 'database_service.dart';
 
-/// Service responsible for synchronizing routines and alarms to ESP32
-/// Ensures the lamp can function independently even when app is disconnected
+/// Service for synchronizing routines and alarms between app and ESP32 device.
+///
+/// This service handles bidirectional communication to ensure the ESP32 lamp
+/// stays synchronized with the mobile app's routine and alarm configurations.
+/// It manages time synchronization, data format conversion, and provides
+/// detailed logging for debugging synchronization issues.
+///
+/// Key features:
+/// - Time synchronization with timezone handling (NZDT UTC+13)
+/// - Routine and alarm CRUD synchronization with ESP32
+/// - Automatic state preservation during sync operations
+/// - Bulk synchronization for initial setup or reconnection
+/// - Comprehensive logging with emoji indicators for easy debugging
+/// - Format conversion between Dart models and ESP32 protocol
+/// - Connection-aware operations that gracefully handle disconnections
+///
+/// The service uses a singleton pattern and integrates with EspConnection
+/// for WebSocket communication. All sync operations include time sync first
+/// to ensure accurate scheduling on the ESP32 device.
+///
+/// Dependencies: EspConnection, Routine, Alarm models, DatabaseService
+
+/// Singleton service for ESP32 synchronization operations.
+///
+/// Manages all communication with the ESP32 device to keep routines, alarms,
+/// and time synchronized. Provides detailed logging and error handling for
+/// reliable device communication.
 class EspSyncService {
   EspSyncService._();
   static final EspSyncService I = EspSyncService._();
 
   static const String _logTag = 'EspSyncService';
 
-  /// Send current time to ESP32 for synchronization
+  /// Synchronizes current time to ESP32 for accurate scheduling.
+  ///
+  /// Sends UTC timestamp to ESP32 and logs detailed time information
+  /// including expected Auckland time (NZDT UTC+13) for debugging.
   Future<void> syncTime() async {
     if (!EspConnection.I.isConnected) {
       dev.log('🚫 ESP not connected - cannot sync time', name: _logTag);

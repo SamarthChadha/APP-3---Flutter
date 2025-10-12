@@ -1,3 +1,5 @@
+// Manages WebSocket connection to ESP32 device for real-time control and state synchronization
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -5,6 +7,7 @@ import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as ws_status;
 import 'package:multicast_dns/multicast_dns.dart';
 
+// Data class representing the current state of the ESP32 lamp
 class EspState {
   final int brightness; // 0-15
   final int mode; // 0=warm, 1=white, 2=both
@@ -16,6 +19,7 @@ class EspState {
     required this.isOn,
   });
 
+  // Create EspState from JSON received from ESP32
   factory EspState.fromJson(Map<String, dynamic> json) {
     return EspState(
       brightness: json['brightness'] ?? 0,
@@ -24,7 +28,7 @@ class EspState {
     );
   }
 
-  // Convert to Flutter UI values
+  // Convert ESP brightness (1-15) to Flutter UI brightness (0.0-1.0)
   double get flutterBrightness {
     // Map ESP brightness 1-15 to Flutter 0.0-1.0
     // Ensure brightness of 1 maps to 0.0 for UI slider
@@ -32,6 +36,7 @@ class EspState {
     return (brightness - 1) / 14.0; // Map 1-15 to 0.0-1.0
   }
 
+  // Convert ESP mode to approximate color temperature in Kelvin
   double get flutterTemperature {
     // Map ESP32 modes to temperature values
     switch (mode) {
@@ -47,6 +52,7 @@ class EspState {
   }
 }
 
+// Singleton class managing WebSocket connection to ESP32
 class EspConnection {
   EspConnection._();
   static final EspConnection I = EspConnection._();
@@ -62,6 +68,7 @@ class EspConnection {
   final String path = '/ws';
   int port = 80;
 
+  // Stream of incoming messages from ESP32
   final _incoming = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get messages => _incoming.stream;
   bool get isConnected => _ch != null;
@@ -74,6 +81,7 @@ class EspConnection {
   final _stateUpdates = StreamController<EspState>.broadcast();
   Stream<EspState> get stateUpdates => _stateUpdates.stream;
 
+  // Connect to ESP32 via WebSocket, with automatic mDNS resolution and reconnection
   Future<void> connect({
     String? ipOrHost,
     Duration retry = const Duration(seconds: 2),
@@ -141,6 +149,7 @@ class EspConnection {
     }
   }
 
+  // Handle disconnection and schedule reconnection if not manually closed
   void _handleDisconnect(Duration retry) {
     _sub?.cancel();
     _sub = null;
@@ -198,6 +207,7 @@ class EspConnection {
     }
   }
 
+  // Send JSON message to ESP32
   void send(Map<String, dynamic> payload) {
     final c = _ch;
     if (c == null) return;
@@ -218,6 +228,7 @@ class EspConnection {
   // Request current state from ESP32
   void requestCurrentState() => send({'request_state': true});
 
+  // Close WebSocket connection and clean up resources
   Future<void> close() async {
     _manuallyClosed = true;
     _reconnectTimer?.cancel();

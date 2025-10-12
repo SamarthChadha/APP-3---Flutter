@@ -1,8 +1,11 @@
+// Manages automatic sunrise/sunset lighting transitions based on time or location
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'esp_connection.dart';
 import '../services/location_service.dart';
 
+// Singleton manager for sunrise/sunset automation
 class SunriseSunsetManager {
   SunriseSunsetManager._();
   static final SunriseSunsetManager I = SunriseSunsetManager._();
@@ -19,6 +22,7 @@ class SunriseSunsetManager {
   bool get isEnabled => _isEnabled;
   bool get useLocationBasedTimes => _useLocationBasedTimes;
 
+  // Enable sunrise/sunset automation
   void enable() {
     if (_isEnabled) return;
     _ensureEspMessageSubscription();
@@ -145,6 +149,7 @@ class SunriseSunsetManager {
     );
   }
 
+  // Check current time and execute appropriate lighting transitions
   void _checkAndExecuteTransitions() {
     if (!_isEnabled) return;
 

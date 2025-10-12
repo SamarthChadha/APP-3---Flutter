@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+// Model class representing an alarm for sunrise simulation
+
+// Data class for alarm configuration with wake time, duration, and enable state
 class Alarm {
   final int? id; // Database ID
   final String name;
