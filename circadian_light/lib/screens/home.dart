@@ -6,15 +6,7 @@ import 'package:circadian_light/models/lamp_state.dart';
 import 'package:circadian_light/models/routine.dart';
 import 'package:circadian_light/services/database_service.dart';
 import '../core/theme_manager.dart';
-// import 'package:flutter_gl/flutter_gl.dart';
-// import 'package:flutter_3d_controller/'
 
-// void loadMyShader() async {
-//   var program = await FragmentProgram.fromAsset('assets/shaders/lamp_shader.frag');
-// }
-
-/// Main home screen displaying 3D lamp model and lighting controls.
-///
 /// This screen serves as the primary interface for the circadian lighting app,
 /// featuring a 3D lamp model, brightness/temperature controls, connection status,
 /// and integration with automated routines. It provides real-time control of
@@ -23,24 +15,7 @@ import '../core/theme_manager.dart';
 /// Key features:
 /// - Interactive 3D lamp model with shader-based lighting effects
 /// - Dual-slider controls for brightness and color temperature
-/// - Real-time ESP32 connection status and state synchronization
-/// - Automatic routine detection and control locking
-/// - Debounced slider updates to prevent excessive ESP communication
-/// - Neumorphic UI design with theme-aware styling
-/// - Navigation to settings and routines screens
-///
-/// The screen automatically detects and displays active routines, locking
-/// manual controls when automated scheduling is in effect. All changes
-/// are synchronized with the ESP32 device via WebSocket connection.
-///
-/// Dependencies: Flutter3DController, EspConnection, LampState, Routine models
 
-// Home screen widget displaying the 3D lamp model, controls, and connection status
-
-/// Main screen widget for lamp control and visualization.
-///
-/// Displays the 3D lamp model, control sliders, and connection status.
-/// Manages state synchronization between app and ESP32 device.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
@@ -48,7 +23,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 /// State management for HomeScreen with lamp control and ESP synchronization.
-///
 /// Handles lamp state management, routine detection, slider controls,
 /// and real-time synchronization with the ESP32 device.
 class _HomeScreenState extends State<HomeScreen> {
@@ -262,9 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 8),
               Text(
                 ok ? 'Connected' : 'Disconnected',
-                style: TextStyle(
-                  color: ThemeManager.I.primaryTextColor,
-                ),
+                style: TextStyle(color: ThemeManager.I.primaryTextColor),
               ),
             ],
           );
@@ -312,10 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFFFFC049),
             foregroundColor: const Color(0xFF3C3C3C),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
             textStyle: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -327,10 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
             minimumSize: const Size(0, 0),
           ),
           onPressed: _disableActiveRoutine,
-          icon: const Icon(
-            Icons.pause_circle_filled,
-            size: 18,
-          ),
+          icon: const Icon(Icons.pause_circle_filled, size: 18),
           label: const Text('Disable routine'),
         ),
       ],
@@ -350,9 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
         height: 42,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(21),
-          color: _isOn
-              ? const Color(0xFFFFC049)
-              : const Color(0xFFE0E0E0),
+          color: _isOn ? const Color(0xFFFFC049) : const Color(0xFFE0E0E0),
           boxShadow: [
             BoxShadow(
               offset: const Offset(2, 2),
@@ -368,9 +332,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: AnimatedAlign(
           duration: const Duration(milliseconds: 200),
-          alignment: _isOn
-              ? Alignment.centerRight
-              : Alignment.centerLeft,
+          alignment: _isOn ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             width: 36,
             height: 36,
@@ -400,7 +362,11 @@ class _HomeScreenState extends State<HomeScreen> {
         iconGradient: const [Color(0xFFFFC477), Color(0xFFFFD700)],
         title: 'Color Temperature',
         subtitle:
-            '${_tempK.round()}K - ${_tempK <= 3000 ? 'Warm' : _tempK >= 5000 ? 'Cool' : 'Mixed'}',
+            '${_tempK.round()}K - ${_tempK <= 3000
+                ? 'Warm'
+                : _tempK >= 5000
+                ? 'Cool'
+                : 'Mixed'}',
         control: _buildTemperatureSlider(),
       ),
     );
@@ -440,11 +406,13 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context) {
             // Calculate thumb color based on temperature position
             final t = ((_tempK - 2700) / (6500 - 2700)).clamp(0.0, 1.0);
-            final thumbColor = Color.lerp(
-              const Color(0xFFFFC477), // warm
-              const Color(0xFFBFD7FF), // cool
-              t,
-            ) ?? const Color(0xFFEFEFEF);
+            final thumbColor =
+                Color.lerp(
+                  const Color(0xFFFFC477), // warm
+                  const Color(0xFFBFD7FF), // cool
+                  t,
+                ) ??
+                const Color(0xFFEFEFEF);
 
             return SliderTheme(
               data: SliderTheme.of(context).copyWith(
@@ -452,12 +420,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 activeTrackColor: Colors.transparent,
                 inactiveTrackColor: Colors.transparent,
                 thumbColor: thumbColor,
-                overlayShape: const RoundSliderOverlayShape(
-                  overlayRadius: 0,
-                ),
-                thumbShape: const RoundSliderThumbShape(
-                  enabledThumbRadius: 12,
-                ),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
               ),
               child: IgnorePointer(
                 ignoring: _controlsLocked,
@@ -468,13 +432,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   onChanged: (v) {
                     setState(() => _tempK = v);
                     _tempTimer?.cancel();
-                    _tempTimer = Timer(
-                      const Duration(milliseconds: 80),
-                      () {
-                        EspConnection.I.setMode(_modeFromTemp(_tempK));
-                        _saveStateToDatabase(); // Save state when user changes temperature
-                      },
-                    );
+                    _tempTimer = Timer(const Duration(milliseconds: 80), () {
+                      EspConnection.I.setMode(_modeFromTemp(_tempK));
+                      _saveStateToDatabase(); // Save state when user changes temperature
+                    });
                   },
                 ),
               ),
@@ -531,11 +492,13 @@ class _HomeScreenState extends State<HomeScreen> {
         Builder(
           builder: (context) {
             // Calculate thumb color based on brightness position
-            final thumbColor = Color.lerp(
-              const Color(0xFF424242), // dark/dim
-              const Color(0xFFFFFFFF), // bright/white
-              _brightness,
-            ) ?? const Color(0xFFEFEFEF);
+            final thumbColor =
+                Color.lerp(
+                  const Color(0xFF424242), // dark/dim
+                  const Color(0xFFFFFFFF), // bright/white
+                  _brightness,
+                ) ??
+                const Color(0xFFEFEFEF);
 
             return SliderTheme(
               data: SliderTheme.of(context).copyWith(
@@ -543,12 +506,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 activeTrackColor: Colors.transparent,
                 inactiveTrackColor: Colors.transparent,
                 thumbColor: thumbColor,
-                overlayShape: const RoundSliderOverlayShape(
-                  overlayRadius: 0,
-                ),
-                thumbShape: const RoundSliderThumbShape(
-                  enabledThumbRadius: 12,
-                ),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
               ),
               child: IgnorePointer(
                 ignoring: _controlsLocked,
@@ -559,14 +518,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   onChanged: (v) {
                     setState(() => _brightness = v);
                     _brightTimer?.cancel();
-                    _brightTimer = Timer(
-                      const Duration(milliseconds: 60),
-                      () {
-                        final b = _mapBrightnessTo15(_brightness);
-                        EspConnection.I.setBrightness(b);
-                        _saveStateToDatabase(); // Save state when user changes brightness
-                      },
-                    );
+                    _brightTimer = Timer(const Duration(milliseconds: 60), () {
+                      final b = _mapBrightnessTo15(_brightness);
+                      EspConnection.I.setBrightness(b);
+                      _saveStateToDatabase(); // Save state when user changes brightness
+                    });
                   },
                 ),
               ),
@@ -589,22 +545,22 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // Connection status row
               _buildConnectionStatus(),
-              
+
               // 3D Lamp Model
               _build3DLampModel(),
-              
+
               const SizedBox(height: 24),
-              
+
               // Main Power Control (toggle or routine banner)
               Center(child: _buildPowerControl()),
-              
+
               SizedBox(height: _activeRoutine != null ? 16 : 28),
-              
+
               // Color Temperature Card
               _buildTemperatureControl(),
-              
+
               const SizedBox(height: 16),
-              
+
               // Brightness Card
               _buildBrightnessControl(),
             ],

@@ -13,29 +13,14 @@ import '../core/theme_manager.dart';
 
 /// Screen for managing circadian lighting routines and wake-up alarms.
 ///
-/// This screen provides a comprehensive interface for users to create, edit, and manage
-/// automated lighting schedules (routines) and gradual wake-up alarms. It integrates with
-/// the RoutineCore for data persistence and supports sunrise/sunset synchronization.
+/// This screen provides a interface for users to create, edit, and manage
+/// automated lighting schedules (routines) and gradual wake-up alarms.
 ///
 /// Key features:
 /// - Create/edit/delete lighting routines with custom time ranges, colors, and brightness
 /// - Create/edit/delete wake-up alarms with configurable ramp-up durations
 /// - Automatic sunrise/sunset sync that disables manual routines when active
 /// - Undo functionality for deleted items
-/// - Neumorphic UI design consistent with the app's theme
-/// - Real-time status display for sunrise/sunset synchronization
-///
-/// The screen adapts its UI based on whether sunrise/sunset sync is enabled:
-/// - When enabled: Shows sync status and disables manual routine controls
-/// - When disabled: Shows full CRUD interface for routines and alarms
-///
-/// Dependencies: RoutineCore, SunriseSunsetManager, ThemeManager, various widgets
-
-/// Main screen widget for routines and alarms management.
-///
-/// Displays a list of user-created routines and alarms with options to add,
-/// edit, delete, and toggle their enabled state. When sunrise/sunset sync
-/// is active, manual routines are disabled and the UI shows sync status.
 class RoutinesScreen extends StatefulWidget {
   const RoutinesScreen({super.key});
 

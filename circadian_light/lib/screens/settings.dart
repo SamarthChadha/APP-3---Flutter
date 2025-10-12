@@ -15,24 +15,6 @@ import '../models/user_settings.dart';
 /// - Sunrise/sunset synchronization with location-based time calculation
 /// - Dark/light theme toggle
 /// - Help center access
-///
-/// The screen uses neumorphic design elements consistent with the app's theme
-/// and integrates with various managers (EspConnection, SunriseSunsetManager,
-/// ThemeManager) to provide real-time status updates and configuration options.
-///
-/// Key features:
-/// - Connection status monitoring with refresh capability
-/// - Location permission handling for sunrise/sunset features
-/// - Theme switching with immediate visual feedback
-/// - External link launching for help resources
-///
-/// Dependencies: EspConnection, SunriseSunsetManager, ThemeManager, LocationService
-
-/// Main screen widget for application settings and configuration.
-///
-/// Displays various setting cards in a scrollable layout, each handling
-/// a specific aspect of app configuration with appropriate status indicators
-/// and interactive controls.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 

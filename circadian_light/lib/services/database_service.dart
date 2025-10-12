@@ -9,33 +9,17 @@ import '../models/routine.dart';
 import '../models/alarm.dart';
 import '../models/user_settings.dart';
 import '../models/lamp_state.dart';
-
-/// Database service for persistent data storage and synchronization.
-///
-/// This service provides a comprehensive data persistence layer for the circadian
-/// lighting app, managing routines, alarms, user settings, and lamp state using
-/// SQLite for structured data and SharedPreferences for simple key-value storage.
-///
-/// Key features:
-/// - SQLite database with automatic schema management and migrations
-/// - Routine and alarm CRUD operations with ESP32 synchronization
-/// - User settings persistence using SharedPreferences
-/// - Lamp state tracking for UI restoration
-/// - Data export/import functionality for backup/restore
-/// - Database integrity checks and automatic table creation
-/// - Comprehensive logging for debugging and monitoring
-///
-/// The service uses a singleton pattern to ensure consistent database access
-/// across the app and includes automatic ESP32 synchronization for routines
-/// and alarms to maintain consistency between app and device state.
-///
-/// Dependencies: sqflite, shared_preferences, logging, path
 import 'esp_sync_service.dart';
 
-/// Singleton service for database operations and data persistence.
-///
-/// Manages SQLite database lifecycle, schema creation, migrations, and provides
-/// high-level CRUD operations for all app data with automatic ESP32 synchronization.
+/// Database service for persistent data storage and synchronization.
+/// This service provides a  data persistence layer for my circadian
+/// lamp app, managing routines, alarms, user settings, and lamp state using
+/// SQLite for structured data and SharedPreferences for simple key-value storage.
+/// Key features:
+/// - User settings persistence using SharedPreferences
+/// - Data export/import functionality for backup/restore
+/// - Database integrity checks and automatic table creation
+
 class DatabaseService {
   static DatabaseService? _instance;
   static Database? _database;
