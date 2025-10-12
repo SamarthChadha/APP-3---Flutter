@@ -130,6 +130,36 @@ void handleRotaryEncoder();
 void handleButtonClicks();
 void handleScheduleTick();
 
+// ===== Validation Helpers =====
+bool readIntField(JsonObject obj, const char* key, int minValue, int maxValue, int& outValue) {
+  JsonVariant valueVariant = obj[key];
+  if (!valueVariant.is<int>() && !valueVariant.is<long>()) {
+    Serial.printf("Validation error: '%s' missing or not an integer\n", key);
+    return false;
+  }
+
+  long value = valueVariant.as<long>();
+  if (value < minValue || value > maxValue) {
+    Serial.printf("Validation error: '%s' value %ld outside [%d, %d]\n",
+                  key, value, minValue, maxValue);
+    return false;
+  }
+
+  outValue = static_cast<int>(value);
+  return true;
+}
+
+bool readBoolField(JsonObject obj, const char* key, bool& outValue) {
+  JsonVariant valueVariant = obj[key];
+  if (!valueVariant.is<bool>()) {
+    Serial.printf("Validation error: '%s' missing or not a boolean\n", key);
+    return false;
+  }
+
+  outValue = valueVariant.as<bool>();
+  return true;
+}
+
 // ===== Helpers =====
 void sendStateUpdate() {
   // Send current state to all connected WebSocket clients
@@ -307,12 +337,55 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
 
 // ===== Schedule Management Functions =====
 void handleRoutineSync(JsonDocument& doc) {
-  const char* action = doc["action"];
-  
+  const char* action = doc["action"].is<const char*>() ? doc["action"].as<const char*>() : nullptr;
+  if (action == nullptr) {
+    Serial.println("📅 ERROR: Routine sync missing action field");
+    sendSyncResponse("routine_sync_response", false, "Missing action for routine sync");
+    return;
+  }
+
   if (strcmp(action, "upsert") == 0) {
-    JsonObject data = doc["data"];
-    int id = data["id"];
-    
+    if (!doc["data"].is<JsonObject>()) {
+      Serial.println("📅 ERROR: Routine sync missing data object");
+      sendSyncResponse("routine_sync_response", false, "Invalid routine payload (data missing)");
+      return;
+    }
+
+    JsonObject data = doc["data"].as<JsonObject>();
+
+    int id;
+    bool enabled;
+    int startHour;
+    int startMinute;
+    int endHour;
+    int endMinute;
+    int brightnessValue;
+    int modeValue;
+
+    if (!readIntField(data, "id", 0, 32767, id)) {
+      sendSyncResponse("routine_sync_response", false, "Invalid field: id");
+      return;
+    }
+    if (!readBoolField(data, "enabled", enabled)) {
+      sendSyncResponse("routine_sync_response", false, "Invalid field: enabled");
+      return;
+    }
+    if (!readIntField(data, "start_hour", 0, 23, startHour) ||
+        !readIntField(data, "start_minute", 0, 59, startMinute) ||
+        !readIntField(data, "end_hour", 0, 23, endHour) ||
+        !readIntField(data, "end_minute", 0, 59, endMinute)) {
+      sendSyncResponse("routine_sync_response", false, "Invalid start/end time");
+      return;
+    }
+    if (!readIntField(data, "brightness", 0, 15, brightnessValue)) {
+      sendSyncResponse("routine_sync_response", false, "Invalid field: brightness");
+      return;
+    }
+    if (!readIntField(data, "mode", 0, 2, modeValue)) {
+      sendSyncResponse("routine_sync_response", false, "Invalid field: mode");
+      return;
+    }
+
     // Find existing routine or add new one
     int index = -1;
     for (int i = 0; i < routine_count; i++) {
@@ -321,30 +394,31 @@ void handleRoutineSync(JsonDocument& doc) {
         break;
       }
     }
-    
+
     if (index == -1 && routine_count < MAX_ROUTINES) {
       index = routine_count++;
     }
-    
+
     if (index >= 0) {
       routines[index].id = id;
-      routines[index].enabled = data["enabled"];
-      routines[index].start_hour = data["start_hour"];
-      routines[index].start_minute = data["start_minute"];
-      routines[index].end_hour = data["end_hour"];
-      routines[index].end_minute = data["end_minute"];
-      routines[index].brightness = data["brightness"];
-      routines[index].mode = data["mode"];
-      
-      Serial.printf("📅 ROUTINE SYNC: ID=%d, Name=%s\n", id, data["name"].as<const char*>());
+      routines[index].enabled = enabled;
+      routines[index].start_hour = startHour;
+      routines[index].start_minute = startMinute;
+      routines[index].end_hour = endHour;
+      routines[index].end_minute = endMinute;
+      routines[index].brightness = brightnessValue;
+      routines[index].mode = modeValue;
+
+      const char* name = data["name"].is<const char*>() ? data["name"].as<const char*>() : "(unnamed)";
+      Serial.printf("📅 ROUTINE SYNC: ID=%d, Name=%s\n", id, name);
       Serial.printf("  - Enabled: %s\n", routines[index].enabled ? "YES" : "NO");
-      Serial.printf("  - Time: %02d:%02d to %02d:%02d\n", 
+      Serial.printf("  - Time: %02d:%02d to %02d:%02d\n",
                     routines[index].start_hour, routines[index].start_minute,
                     routines[index].end_hour, routines[index].end_minute);
       Serial.printf("  - Brightness: %d (1-15 scale)\n", routines[index].brightness);
       Serial.printf("  - Mode: %d (0=warm, 1=white, 2=both)\n", routines[index].mode);
       Serial.printf("  - Total routines: %d/%d\n", routine_count, MAX_ROUTINES);
-      
+
       sendSyncResponse("routine_sync_response", true, "Routine synced successfully");
     } else {
       Serial.println("📅 ERROR: Failed to sync routine: storage full");
@@ -352,8 +426,13 @@ void handleRoutineSync(JsonDocument& doc) {
     }
   }
   else if (strcmp(action, "delete") == 0) {
-    int id = doc["id"];
-    
+    JsonObject root = doc.as<JsonObject>();
+    int id;
+    if (!readIntField(root, "id", 0, 32767, id)) {
+      sendSyncResponse("routine_sync_response", false, "Invalid field: id");
+      return;
+    }
+
     // Find and remove routine
     for (int i = 0; i < routine_count; i++) {
       if (routines[i].id == id) {
@@ -369,16 +448,57 @@ void handleRoutineSync(JsonDocument& doc) {
     }
     Serial.printf("Routine %d not found for deletion\n", id);
     sendSyncResponse("routine_sync_response", false, "Routine not found");
+  } else {
+    Serial.printf("📅 ERROR: Unknown routine action '%s'\n", action);
+    sendSyncResponse("routine_sync_response", false, "Unknown routine action");
   }
 }
 
 void handleAlarmSync(JsonDocument& doc) {
-  const char* action = doc["action"];
-  
+  const char* action = doc["action"].is<const char*>() ? doc["action"].as<const char*>() : nullptr;
+  if (action == nullptr) {
+    Serial.println("⏰ ERROR: Alarm sync missing action field");
+    sendSyncResponse("alarm_sync_response", false, "Missing action for alarm sync");
+    return;
+  }
+
   if (strcmp(action, "upsert") == 0) {
-    JsonObject data = doc["data"];
-    int id = data["id"];
-    
+    if (!doc["data"].is<JsonObject>()) {
+      Serial.println("⏰ ERROR: Alarm sync missing data object");
+      sendSyncResponse("alarm_sync_response", false, "Invalid alarm payload (data missing)");
+      return;
+    }
+
+    JsonObject data = doc["data"].as<JsonObject>();
+
+    int id;
+    bool enabled;
+    int wakeHour;
+    int wakeMinute;
+    int startHour;
+    int startMinute;
+    int durationMinutes;
+
+    if (!readIntField(data, "id", 0, 32767, id)) {
+      sendSyncResponse("alarm_sync_response", false, "Invalid field: id");
+      return;
+    }
+    if (!readBoolField(data, "enabled", enabled)) {
+      sendSyncResponse("alarm_sync_response", false, "Invalid field: enabled");
+      return;
+    }
+    if (!readIntField(data, "wake_hour", 0, 23, wakeHour) ||
+        !readIntField(data, "wake_minute", 0, 59, wakeMinute) ||
+        !readIntField(data, "start_hour", 0, 23, startHour) ||
+        !readIntField(data, "start_minute", 0, 59, startMinute)) {
+      sendSyncResponse("alarm_sync_response", false, "Invalid start/wake time");
+      return;
+    }
+    if (!readIntField(data, "duration_minutes", 1, 240, durationMinutes)) {
+      sendSyncResponse("alarm_sync_response", false, "Invalid field: duration_minutes");
+      return;
+    }
+
     // Find existing alarm or add new one
     int index = -1;
     for (int i = 0; i < alarm_count; i++) {
@@ -387,20 +507,20 @@ void handleAlarmSync(JsonDocument& doc) {
         break;
       }
     }
-    
+
     if (index == -1 && alarm_count < MAX_ALARMS) {
       index = alarm_count++;
     }
-    
+
     if (index >= 0) {
       alarms[index].id = id;
-      alarms[index].enabled = data["enabled"];
-      alarms[index].wake_hour = data["wake_hour"];
-      alarms[index].wake_minute = data["wake_minute"];
-      alarms[index].start_hour = data["start_hour"];
-      alarms[index].start_minute = data["start_minute"];
-      alarms[index].duration_minutes = data["duration_minutes"];
-      
+      alarms[index].enabled = enabled;
+      alarms[index].wake_hour = wakeHour;
+      alarms[index].wake_minute = wakeMinute;
+      alarms[index].start_hour = startHour;
+      alarms[index].start_minute = startMinute;
+      alarms[index].duration_minutes = durationMinutes;
+
       Serial.printf("Alarm %d synced\n", id);
       sendSyncResponse("alarm_sync_response", true, "Alarm synced successfully");
     } else {
@@ -409,8 +529,13 @@ void handleAlarmSync(JsonDocument& doc) {
     }
   }
   else if (strcmp(action, "delete") == 0) {
-    int id = doc["id"];
-    
+    JsonObject root = doc.as<JsonObject>();
+    int id;
+    if (!readIntField(root, "id", 0, 32767, id)) {
+      sendSyncResponse("alarm_sync_response", false, "Invalid field: id");
+      return;
+    }
+
     // Find and remove alarm
     for (int i = 0; i < alarm_count; i++) {
       if (alarms[i].id == id) {
@@ -426,6 +551,9 @@ void handleAlarmSync(JsonDocument& doc) {
     }
     Serial.printf("Alarm %d not found for deletion\n", id);
     sendSyncResponse("alarm_sync_response", false, "Alarm not found");
+  } else {
+    Serial.printf("⏰ ERROR: Unknown alarm action '%s'\n", action);
+    sendSyncResponse("alarm_sync_response", false, "Unknown alarm action");
   }
 }
 
@@ -433,44 +561,119 @@ void handleFullSync(JsonDocument& doc) {
   // Clear existing data
   routine_count = 0;
   alarm_count = 0;
-  
+
+  int invalidRoutineCount = 0;
+  int invalidAlarmCount = 0;
+
   // Sync routines
   if (doc["routines"].is<JsonArray>()) {
-    JsonArray routineArray = doc["routines"];
-    for (JsonObject routine : routineArray) {
-      if (routine_count < MAX_ROUTINES) {
-        routines[routine_count].id = routine["id"];
-        routines[routine_count].enabled = routine["enabled"];
-        routines[routine_count].start_hour = routine["start_hour"];
-        routines[routine_count].start_minute = routine["start_minute"];
-        routines[routine_count].end_hour = routine["end_hour"];
-        routines[routine_count].end_minute = routine["end_minute"];
-        routines[routine_count].brightness = routine["brightness"];
-        routines[routine_count].mode = routine["mode"];
-        routine_count++;
+    JsonArray routineArray = doc["routines"].as<JsonArray>();
+    for (JsonObject routineObj : routineArray) {
+      int id;
+      bool enabled;
+      int startHour;
+      int startMinute;
+      int endHour;
+      int endMinute;
+      int brightnessValue;
+      int modeValue;
+
+      if (routine_count >= MAX_ROUTINES) {
+        Serial.println("📅 WARNING: Routine storage full during full sync");
+        break;
       }
+
+      if (!readIntField(routineObj, "id", 0, 32767, id) ||
+          !readBoolField(routineObj, "enabled", enabled) ||
+          !readIntField(routineObj, "start_hour", 0, 23, startHour) ||
+          !readIntField(routineObj, "start_minute", 0, 59, startMinute) ||
+          !readIntField(routineObj, "end_hour", 0, 23, endHour) ||
+          !readIntField(routineObj, "end_minute", 0, 59, endMinute) ||
+          !readIntField(routineObj, "brightness", 0, 15, brightnessValue) ||
+          !readIntField(routineObj, "mode", 0, 2, modeValue)) {
+        invalidRoutineCount++;
+        continue;
+      }
+
+      routines[routine_count].id = id;
+      routines[routine_count].enabled = enabled;
+      routines[routine_count].start_hour = startHour;
+      routines[routine_count].start_minute = startMinute;
+      routines[routine_count].end_hour = endHour;
+      routines[routine_count].end_minute = endMinute;
+      routines[routine_count].brightness = brightnessValue;
+      routines[routine_count].mode = modeValue;
+      routine_count++;
     }
+  } else if (doc.containsKey("routines")) {
+    Serial.println("📅 WARNING: Routines payload not an array");
+    invalidRoutineCount++;
   }
-  
+
   // Sync alarms
   if (doc["alarms"].is<JsonArray>()) {
-    JsonArray alarmArray = doc["alarms"];
-    for (JsonObject alarm : alarmArray) {
-      if (alarm_count < MAX_ALARMS) {
-        alarms[alarm_count].id = alarm["id"];
-        alarms[alarm_count].enabled = alarm["enabled"];
-        alarms[alarm_count].wake_hour = alarm["wake_hour"];
-        alarms[alarm_count].wake_minute = alarm["wake_minute"];
-        alarms[alarm_count].start_hour = alarm["start_hour"];
-        alarms[alarm_count].start_minute = alarm["start_minute"];
-        alarms[alarm_count].duration_minutes = alarm["duration_minutes"];
-        alarm_count++;
+    JsonArray alarmArray = doc["alarms"].as<JsonArray>();
+    for (JsonObject alarmObj : alarmArray) {
+      int id;
+      bool enabled;
+      int wakeHour;
+      int wakeMinute;
+      int startHour;
+      int startMinute;
+      int durationMinutes;
+
+      if (alarm_count >= MAX_ALARMS) {
+        Serial.println("⏰ WARNING: Alarm storage full during full sync");
+        break;
       }
+
+      if (!readIntField(alarmObj, "id", 0, 32767, id) ||
+          !readBoolField(alarmObj, "enabled", enabled) ||
+          !readIntField(alarmObj, "wake_hour", 0, 23, wakeHour) ||
+          !readIntField(alarmObj, "wake_minute", 0, 59, wakeMinute) ||
+          !readIntField(alarmObj, "start_hour", 0, 23, startHour) ||
+          !readIntField(alarmObj, "start_minute", 0, 59, startMinute) ||
+          !readIntField(alarmObj, "duration_minutes", 1, 240, durationMinutes)) {
+        invalidAlarmCount++;
+        continue;
+      }
+
+      alarms[alarm_count].id = id;
+      alarms[alarm_count].enabled = enabled;
+      alarms[alarm_count].wake_hour = wakeHour;
+      alarms[alarm_count].wake_minute = wakeMinute;
+      alarms[alarm_count].start_hour = startHour;
+      alarms[alarm_count].start_minute = startMinute;
+      alarms[alarm_count].duration_minutes = durationMinutes;
+      alarm_count++;
+    }
+  } else if (doc.containsKey("alarms")) {
+    Serial.println("⏰ WARNING: Alarms payload not an array");
+    invalidAlarmCount++;
+  }
+
+  Serial.printf("Full sync result: %d routines (%d invalid), %d alarms (%d invalid)\n",
+                routine_count, invalidRoutineCount, alarm_count, invalidAlarmCount);
+
+  const bool success = (invalidRoutineCount == 0 && invalidAlarmCount == 0);
+  String responseMessage;
+  if (success) {
+    responseMessage = "Full sync complete";
+  } else {
+    responseMessage.reserve(96);
+    responseMessage = "Full sync partial: ";
+    if (invalidRoutineCount > 0) {
+      responseMessage += String(invalidRoutineCount) + " routine(s) skipped";
+    }
+    if (invalidAlarmCount > 0) {
+      if (invalidRoutineCount > 0) {
+        responseMessage += ", ";
+      }
+      responseMessage += String(invalidAlarmCount) + " alarm(s) skipped";
     }
   }
-  
-  Serial.printf("Full sync complete: %d routines, %d alarms\n", routine_count, alarm_count);
-  sendSyncResponse("full_sync_response", true, "Full sync complete");
+
+  sendSyncResponse("full_sync_response", success, responseMessage.c_str());
 }
 
 void sendSyncResponse(const char* type, bool success, const char* message) {
