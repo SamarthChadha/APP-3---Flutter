@@ -638,7 +638,7 @@ void handleFullSync(JsonDocument& doc) {
       routines[routine_count].mode = modeValue;
       routine_count++;
     }
-  } else if (doc.containsKey("routines")) {
+  } else if (doc["routines"].is<JsonVariant>() && !doc["routines"].is<JsonArray>()) {
     Serial.println("📅 WARNING: Routines payload not an array");
     invalidRoutineCount++;
   }
@@ -680,7 +680,7 @@ void handleFullSync(JsonDocument& doc) {
       alarms[alarm_count].duration_minutes = durationMinutes;
       alarm_count++;
     }
-  } else if (doc.containsKey("alarms")) {
+  } else if (doc["alarms"].is<JsonVariant>() && !doc["alarms"].is<JsonArray>()) {
     Serial.println("⏰ WARNING: Alarms payload not an array");
     invalidAlarmCount++;
   }
