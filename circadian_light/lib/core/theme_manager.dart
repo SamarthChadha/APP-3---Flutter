@@ -1,6 +1,7 @@
 // Manages app theme (light/dark mode) with persistence and neumorphic styling
 
 import 'package:flutter/material.dart';
+
 import '../services/database_service.dart';
 
 // Singleton theme manager with persistence

@@ -1,14 +1,15 @@
 // Core controller for managing routines and alarms
 // with persistence and ESP32 synchronization
 
-import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
+import 'package:flutter/material.dart';
+
+import '../core/esp_connection.dart';
 import '../models/alarm.dart';
 import '../models/routine.dart';
 import '../services/database_service.dart';
 import '../services/esp_sync_service.dart';
-import '../core/esp_connection.dart';
 
 // Exception thrown when attempting to save a duplicate routine
 class DuplicateRoutineException implements Exception {

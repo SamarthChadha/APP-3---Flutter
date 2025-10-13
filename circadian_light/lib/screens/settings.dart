@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../core/provisioning_screen.dart';
+
 import '../core/esp_connection.dart';
+import '../core/provisioning_screen.dart';
 import '../core/sunrise_sunset_manager.dart';
 import '../core/theme_manager.dart';
+import '../models/user_settings.dart';
 import '../services/database_service.dart';
 import '../services/location_service.dart';
-import '../models/user_settings.dart';
 
 /// Settings screen for configuring app preferences and device connections.
 ///

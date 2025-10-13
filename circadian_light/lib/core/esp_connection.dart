@@ -4,9 +4,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:multicast_dns/multicast_dns.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as ws_status;
-import 'package:multicast_dns/multicast_dns.dart';
 
 // Data class representing the current state of the ESP32 lamp
 class EspState {

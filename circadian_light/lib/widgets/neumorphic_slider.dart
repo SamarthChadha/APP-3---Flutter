@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../core/theme_manager.dart';
 
 class NeumorphicSlider extends StatelessWidget {

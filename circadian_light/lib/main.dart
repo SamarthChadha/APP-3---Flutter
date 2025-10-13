@@ -4,12 +4,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'screens/home.dart';
-import 'screens/routines.dart';
-import 'screens/settings.dart';
+
 import 'core/esp_connection.dart';
 import 'core/sunrise_sunset_manager.dart';
 import 'core/theme_manager.dart';
+import 'screens/home.dart';
+import 'screens/routines.dart';
+import 'screens/settings.dart';
 import 'services/database_service.dart';
 import 'services/esp_sync_service.dart';
 

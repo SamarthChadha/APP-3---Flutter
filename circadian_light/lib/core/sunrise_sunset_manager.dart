@@ -2,9 +2,11 @@
 // based on time or location
 
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'esp_connection.dart';
+
 import '../services/location_service.dart';
+import 'esp_connection.dart';
 
 // Singleton manager for sunrise/sunset automation
 class SunriseSunsetManager {

@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:flutter_3d_controller/flutter_3d_controller.dart';
+
 import 'package:circadian_light/core/esp_connection.dart';
 import 'package:circadian_light/models/lamp_state.dart';
 import 'package:circadian_light/models/routine.dart';
 import 'package:circadian_light/services/database_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_3d_controller/flutter_3d_controller.dart';
+
 import '../core/theme_manager.dart';
 
 /// This screen serves as the primary interface for the circadian lighting app,

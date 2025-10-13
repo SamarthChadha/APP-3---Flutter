@@ -1,7 +1,8 @@
 import 'dart:developer' as dev;
+
 import '../core/esp_connection.dart';
-import '../models/routine.dart';
 import '../models/alarm.dart';
+import '../models/routine.dart';
 import 'database_service.dart';
 
 /// Service for synchronizing routines and alarms between app and ESP32 device.

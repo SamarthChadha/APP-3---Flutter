@@ -1,15 +1,16 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import '../core/sunrise_sunset_manager.dart';
-import '../models/routine.dart';
-import '../models/alarm.dart';
+import 'package:flutter/material.dart';
+
 import '../core/routine_core.dart';
-import '../widgets/neumorphic_slider.dart';
-import '../widgets/time_picker_sheet.dart';
-import '../widgets/alarm_duration_selector.dart';
-import '../widgets/routine_card.dart';
-import '../widgets/alarm_card.dart';
+import '../core/sunrise_sunset_manager.dart';
 import '../core/theme_manager.dart';
+import '../models/alarm.dart';
+import '../models/routine.dart';
+import '../widgets/alarm_card.dart';
+import '../widgets/alarm_duration_selector.dart';
+import '../widgets/neumorphic_slider.dart';
+import '../widgets/routine_card.dart';
+import '../widgets/time_picker_sheet.dart';
 
 /// Screen for managing circadian lighting routines and wake-up alarms.
 ///

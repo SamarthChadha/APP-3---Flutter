@@ -1,9 +1,10 @@
 // Screen for provisioning ESP32 device to WiFi network using ESP-Touch protocol
 
-import 'package:flutter/material.dart';
-import 'package:esp_smartconfig/esp_smartconfig.dart';
 import 'dart:io';
+
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:esp_smartconfig/esp_smartconfig.dart';
+import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 
 // Stateful widget for WiFi provisioning screen

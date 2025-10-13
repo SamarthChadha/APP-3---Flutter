@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/routine.dart';
+
 import '../core/theme_manager.dart';
+import '../models/routine.dart';
 
 class RoutineCard extends StatefulWidget {
   final Routine routine;
