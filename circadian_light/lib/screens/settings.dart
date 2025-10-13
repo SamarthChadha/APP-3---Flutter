@@ -168,6 +168,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentSunStatus = SunriseSunsetManager.instance.getCurrentStatus();
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: SingleChildScrollView(
@@ -533,8 +534,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Current Status: '
-                              '${SunriseSunsetManager.instance.getCurrentStatus()}',
+                              'Current Status: $currentSunStatus',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,

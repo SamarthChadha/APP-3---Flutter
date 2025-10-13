@@ -154,8 +154,9 @@ class _RoutineCardState extends State<RoutineCard>
 
   @override
   Widget build(BuildContext context) {
-    final timeRange =
-        '${_formatTime(context, widget.routine.startTime)} – ${_formatTime(context, widget.routine.endTime)}';
+    final startTime = _formatTime(context, widget.routine.startTime);
+    final endTime = _formatTime(context, widget.routine.endTime);
+    final timeRange = '$startTime – $endTime';
     final isEffectivelyDisabled =
         !widget.routine.enabled || widget.isDisabledBySunriseSync;
 

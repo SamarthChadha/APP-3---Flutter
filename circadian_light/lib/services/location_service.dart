@@ -14,7 +14,6 @@ import 'package:permission_handler/permission_handler.dart';
 /// for automated lighting schedules.
 /// - Sunrise/sunset calculation via sunrisesunset.io API
 
-
 class LocationService {
   LocationService._();
   static final LocationService instance = LocationService._();
