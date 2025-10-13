@@ -172,7 +172,7 @@ class LocationService {
       );
 
       // Calculate sunrise and sunset using sunrisesunset.io API
-      final result = await _fetchSunriseSunsetFromAPI(
+  final result = await _fetchSunriseSunsetFromApi(
         position.latitude,
         position.longitude,
         date,
@@ -203,7 +203,7 @@ class LocationService {
   }
 
   /// Fetch sunrise and sunset times from sunrisesunset.io API
-  Future<({TimeOfDay sunrise, TimeOfDay sunset})?> _fetchSunriseSunsetFromAPI(
+  Future<({TimeOfDay sunrise, TimeOfDay sunset})?> _fetchSunriseSunsetFromApi(
     double latitude,
     double longitude,
     DateTime date,
