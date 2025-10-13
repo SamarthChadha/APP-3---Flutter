@@ -146,11 +146,13 @@ Alarm* findAlarmById(int id);
 bool isWithinTimeRange(int startHour, int startMinute, int endHour, int endMinute, int currentTime);
 void updateSuppressionWindows(int currentTime);
 void blinkLamp(uint8_t count, uint16_t intervalMs);
+bool hardwareOverrideActiveAutomations(const char* source, bool shouldBlink);
 void broadcastOverrideEvent(const char* source, bool routineWasActive, bool alarmWasActive, bool sunSyncWasActive);
 void sendSunSyncState(bool active, const char* source);
 void handleRotaryEncoder();
 void handleButtonClicks();
 void handleScheduleTick();
+void handleWifiState();
 
 // ===== Validation Helpers =====
 // Helper functions for validating and parsing JSON input fields
@@ -723,6 +725,9 @@ void sendSyncResponse(const char* type, bool success, const char* message) {
 }
 
 bool isManualControlLocked() {
+  if (WiFi.status() != WL_CONNECTED) {
+    return false;
+  }
   return (routineActive || alarmActive || sunSyncActive);
 }
 
@@ -852,22 +857,25 @@ void handleSunSyncState(bool active, const char* source) {
   }
 }
 
-void handleTripleClick() {
+bool hardwareOverrideActiveAutomations(const char* source, bool shouldBlink) {
   bool routineWasActive = routineActive;
   bool alarmWasActive = alarmActive;
   bool sunSyncWasActive = sunSyncActive;
 
-  Serial.println("Triple click detected: disabling active schedules for current instance");
+  if (!routineWasActive && !alarmWasActive && !sunSyncWasActive) {
+    Serial.printf("Override requested by %s but no active automation\n", source);
+    return false;
+  }
 
-  if (routineActive) {
+  if (routineWasActive) {
     Routine* routinePtr = findRoutineById(activeRoutineId);
     if (routinePtr != nullptr) {
       suppressedRoutine = *routinePtr;
       routineSuppressed = true;
-      Serial.printf("Routine %d suppressed for current window\n", suppressedRoutine.id);
+      Serial.printf("Routine %d suppressed by %s override\n", suppressedRoutine.id, source);
     } else {
       routineSuppressed = false;
-      Serial.println("Warning: active routine ID not found for suppression");
+      Serial.printf("Warning: active routine ID %d not found during %s override\n", activeRoutineId, source);
     }
     routineActive = false;
     activeRoutineId = -1;
@@ -875,15 +883,15 @@ void handleTripleClick() {
     wasOffBeforeRoutine = false;
   }
 
-  if (alarmActive) {
+  if (alarmWasActive) {
     Alarm* alarmPtr = findAlarmById(activeAlarmId);
     if (alarmPtr != nullptr) {
       suppressedAlarm = *alarmPtr;
       alarmSuppressed = true;
-      Serial.printf("Alarm %d suppressed for current window\n", suppressedAlarm.id);
+      Serial.printf("Alarm %d suppressed by %s override\n", suppressedAlarm.id, source);
     } else {
       alarmSuppressed = false;
-      Serial.println("Warning: active alarm ID not found for suppression");
+      Serial.printf("Warning: active alarm ID %d not found during %s override\n", activeAlarmId, source);
     }
     alarmActive = false;
     activeAlarmId = -1;
@@ -891,21 +899,28 @@ void handleTripleClick() {
     wasOffBeforeAlarm = false;
   }
 
-  if (sunSyncActive) {
+  if (sunSyncWasActive) {
     sunSyncActive = false;
     sunSyncDisabledByHardware = true;
-    sendSunSyncState(false, "hardware");
+    sendSunSyncState(false, source);
+    Serial.printf("Sun sync disabled by %s override\n", source);
   }
 
-  if (routineWasActive || alarmWasActive || sunSyncWasActive) {
+  if (shouldBlink) {
     blinkLamp(OVERRIDE_BLINK_COUNT, OVERRIDE_BLINK_INTERVAL_MS);
-  } else {
-    Serial.println("Triple click detected but no active routine/alarm/sun sync to disable");
   }
 
   applyOutput();
   sendStateUpdate();
-  broadcastOverrideEvent("hardware", routineWasActive, alarmWasActive, sunSyncWasActive);
+  broadcastOverrideEvent(source, routineWasActive, alarmWasActive, sunSyncWasActive);
+  return true;
+}
+
+void handleTripleClick() {
+  Serial.println("Triple click detected: disabling active schedules for current instance");
+  if (!hardwareOverrideActiveAutomations("hardware", true)) {
+    Serial.println("Triple click detected but no active routine/alarm/sun sync to disable");
+  }
 }
 
 void handleTimeSync(JsonDocument& doc) {
@@ -947,6 +962,15 @@ void handleTimeSync(JsonDocument& doc) {
 // Main function to check and apply scheduled routines and alarms based on current time
 void checkSchedule() {
   // Only check schedule if we have a valid time
+  if (WiFi.status() != WL_CONNECTED) {
+    static unsigned long lastOfflineWarning = 0;
+    if (millis() - lastOfflineWarning > 30000) {
+      Serial.println("⚠️  SCHEDULE: Skipping schedule check (WiFi disconnected)");
+      lastOfflineWarning = millis();
+    }
+    return;
+  }
+
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
     static unsigned long lastTimeWarning = 0;
@@ -1202,20 +1226,27 @@ void handleRotaryEncoder() {
     lastPos = pos;
 
     if (isManualControlLocked()) {
-      Serial.println("Rotary input ignored: schedule or sun sync currently active");
-    } else {
-      // Determine brightness limits based on lamp on/off state
-      int minBrightness = isOn ? 1 : 0;  // Minimum 1 when on, can be 0 when off
-      int maxBrightness = 15;
-
-      int newBrightness = constrain(brightness + delta * 1, minBrightness, maxBrightness);
-      if (newBrightness != brightness) {
-        brightness = newBrightness;
-        Serial.printf("Brightness -> %d (limits: %d-%d, isOn: %s)\n", 
-                      brightness, minBrightness, maxBrightness, isOn ? "true" : "false");
-        applyOutput();
-        sendStateUpdate(); // Send update to Flutter app
+      if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("Rotary input forcing offline override (WiFi disconnected)");
+        hardwareOverrideActiveAutomations("hardware_offline_rotary", false);
       }
+      if (isManualControlLocked()) {
+        Serial.println("Rotary input ignored: schedule or sun sync currently active");
+        return;
+      }
+    }
+
+    // Determine brightness limits based on lamp on/off state
+    int minBrightness = isOn ? 1 : 0;  // Minimum 1 when on, can be 0 when off
+    int maxBrightness = 15;
+
+    int newBrightness = constrain(brightness + delta * 1, minBrightness, maxBrightness);
+    if (newBrightness != brightness) {
+      brightness = newBrightness;
+      Serial.printf("Brightness -> %d (limits: %d-%d, isOn: %s)\n", 
+                    brightness, minBrightness, maxBrightness, isOn ? "true" : "false");
+      applyOutput();
+      sendStateUpdate(); // Send update to Flutter app
     }
   }
 }
@@ -1257,6 +1288,10 @@ void handleButtonClicks() {
     if (clicks >= 3) {
       handleTripleClick();
     } else if (clicks == 2) {
+      if (isManualControlLocked() && WiFi.status() != WL_CONNECTED) {
+        Serial.println("Double click forcing offline override (WiFi disconnected)");
+        hardwareOverrideActiveAutomations("hardware_offline_button", false);
+      }
       if (isManualControlLocked()) {
         Serial.println("Double click ignored: schedule or sun sync active");
       } else {
@@ -1266,6 +1301,10 @@ void handleButtonClicks() {
         sendStateUpdate();
       }
     } else if (clicks == 1) {
+      if (isManualControlLocked() && WiFi.status() != WL_CONNECTED) {
+        Serial.println("Single click forcing offline override (WiFi disconnected)");
+        hardwareOverrideActiveAutomations("hardware_offline_button", false);
+      }
       if (isManualControlLocked()) {
         Serial.println("Single click ignored: schedule or sun sync active");
       } else {
@@ -1286,8 +1325,25 @@ void handleScheduleTick() {
   }
 }
 
+void handleWifiState() {
+  static wl_status_t lastStatus = WL_IDLE_STATUS;
+  wl_status_t status = WiFi.status();
+  if (status == lastStatus) {
+    return;
+  }
+
+  Serial.printf("WiFi status changed: %d -> %d\n", lastStatus, status);
+
+  if (status != WL_CONNECTED) {
+    hardwareOverrideActiveAutomations("hardware_wifi_loss", false);
+  }
+
+  lastStatus = status;
+}
+
 // Arduino main loop: handle user inputs, schedule checking, and WebSocket cleanup
 void loop() {
+  handleWifiState();
   // Handle hardware inputs
   handleRotaryEncoder();
   handleButtonClicks();
