@@ -48,17 +48,17 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadStateFromDatabase();
 
     // Listen for ESP connection changes
-    EspConnection.I.connection.listen((isConnected) {
+    EspConnection.instance.connection.listen((isConnected) {
       if (isConnected) {
         // When ESP reconnects, request its current state
         Timer(const Duration(milliseconds: 1000), () {
-          EspConnection.I.requestCurrentState();
+          EspConnection.instance.requestCurrentState();
         });
       }
     });
 
     // Listen for state updates from ESP32
-    _stateSubscription = EspConnection.I.stateUpdates.listen((state) {
+    _stateSubscription = EspConnection.instance.stateUpdates.listen((state) {
       setState(() {
         _isOn = state.isOn;
         _brightness = state.flutterBrightness;
@@ -94,10 +94,10 @@ class _HomeScreenState extends State<HomeScreen> {
         });
 
         // Sync loaded state to ESP if connected
-        if (EspConnection.I.isConnected) {
-          EspConnection.I.setOn(_isOn);
-          EspConnection.I.setBrightness(_mapBrightnessTo15(_brightness));
-          EspConnection.I.setMode(_modeFromTemp(_tempK));
+        if (EspConnection.instance.isConnected) {
+          EspConnection.instance.setOn(_isOn);
+          EspConnection.instance.setBrightness(_mapBrightnessTo15(_brightness));
+          EspConnection.instance.setMode(_modeFromTemp(_tempK));
         }
       }
     } catch (e) {
@@ -220,8 +220,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: StreamBuilder<bool>(
-        initialData: EspConnection.I.isConnected,
-        stream: EspConnection.I.connection,
+        initialData: EspConnection.instance.isConnected,
+        stream: EspConnection.instance.connection,
         builder: (context, snap) {
           final ok = snap.data == true;
           return Row(
@@ -238,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 8),
               Text(
                 ok ? 'Connected' : 'Disconnected',
-                style: TextStyle(color: ThemeManager.I.primaryTextColor),
+                style: TextStyle(color: ThemeManager.instance.primaryTextColor),
               ),
             ],
           );
@@ -277,7 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: ThemeManager.I.secondaryTextColor,
+            color: ThemeManager.instance.secondaryTextColor,
           ),
           textAlign: TextAlign.center,
         ),
@@ -309,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: () {
         setState(() => _isOn = !_isOn);
-        EspConnection.I.setOn(_isOn);
+        EspConnection.instance.setOn(_isOn);
         _saveStateToDatabase(); // Save state when user toggles
       },
       child: AnimatedContainer(
@@ -435,7 +435,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     setState(() => _tempK = v);
                     _tempTimer?.cancel();
                     _tempTimer = Timer(const Duration(milliseconds: 80), () {
-                      EspConnection.I.setMode(_modeFromTemp(_tempK));
+                      EspConnection.instance.setMode(_modeFromTemp(_tempK));
                       _saveStateToDatabase(); // Save state when user
                       // changes temperature
                     });
@@ -523,7 +523,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _brightTimer?.cancel();
                     _brightTimer = Timer(const Duration(milliseconds: 60), () {
                       final b = _mapBrightnessTo15(_brightness);
-                      EspConnection.I.setBrightness(b);
+                      EspConnection.instance.setBrightness(b);
                       _saveStateToDatabase(); // Save state when user
                       // changes brightness
                     });
@@ -751,9 +751,9 @@ class ControlCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: ThemeManager.I.neumorphicGradient,
+          colors: ThemeManager.instance.neumorphicGradient,
         ),
-        boxShadow: ThemeManager.I.neumorphicShadows,
+        boxShadow: ThemeManager.instance.neumorphicShadows,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -786,7 +786,7 @@ class ControlCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: ThemeManager.I.primaryTextColor,
+                        color: ThemeManager.instance.primaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -797,7 +797,8 @@ class ControlCard extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.2,
                         color:
-                            subtitleColor ?? ThemeManager.I.secondaryTextColor,
+                            subtitleColor ??
+                            ThemeManager.instance.secondaryTextColor,
                       ),
                     ),
                   ],

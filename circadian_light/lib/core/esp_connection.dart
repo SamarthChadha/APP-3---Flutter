@@ -56,7 +56,7 @@ class EspState {
 // Singleton class managing WebSocket connection to ESP32
 class EspConnection {
   EspConnection._();
-  static final EspConnection I = EspConnection._();
+  static final EspConnection instance = EspConnection._();
 
   IOWebSocketChannel? _ch;
   StreamSubscription? _sub;

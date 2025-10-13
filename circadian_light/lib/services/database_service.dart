@@ -227,7 +227,7 @@ class DatabaseService {
     // Sync to ESP32 after successful database save
     try {
       final routineWithId = routine.copyWith(id: routineId);
-      await EspSyncService.I.syncRoutine(routineWithId);
+      await EspSyncService.instance.syncRoutine(routineWithId);
     } catch (e) {
       // Don't fail the save operation if ESP sync fails
       _logger.warning('Failed to sync routine to ESP32: $e');
@@ -334,7 +334,7 @@ class DatabaseService {
 
     // Sync deletion to ESP32
     try {
-      await EspSyncService.I.deleteRoutineFromEsp(id);
+      await EspSyncService.instance.deleteRoutineFromEsp(id);
     } catch (e) {
       // Don't fail the delete operation if ESP sync fails
       _logger.warning('Failed to sync routine deletion to ESP32: $e');
@@ -375,7 +375,7 @@ class DatabaseService {
     // Sync to ESP32 after successful database save
     try {
       final alarmWithId = alarm.copyWith(id: alarmId);
-      await EspSyncService.I.syncAlarm(alarmWithId);
+      await EspSyncService.instance.syncAlarm(alarmWithId);
     } catch (e) {
       // Don't fail the save operation if ESP sync fails
       _logger.warning('Failed to sync alarm to ESP32: $e');
@@ -418,7 +418,7 @@ class DatabaseService {
 
     // Sync deletion to ESP32
     try {
-      await EspSyncService.I.deleteAlarmFromEsp(id);
+      await EspSyncService.instance.deleteAlarmFromEsp(id);
     } catch (e) {
       // Don't fail the delete operation if ESP sync fails
       _logger.warning('Failed to sync alarm deletion to ESP32: $e');

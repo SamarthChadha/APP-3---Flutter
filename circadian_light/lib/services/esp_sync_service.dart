@@ -14,7 +14,7 @@ import 'database_service.dart';
 
 class EspSyncService {
   EspSyncService._();
-  static final EspSyncService I = EspSyncService._();
+  static final EspSyncService instance = EspSyncService._();
 
   static const String _logTag = 'EspSyncService';
 
@@ -23,7 +23,7 @@ class EspSyncService {
   /// Sends UTC timestamp to ESP32 and logs detailed time information
   /// including expected Auckland time (NZDT UTC+13) for debugging.
   Future<void> syncTime() async {
-    if (!EspConnection.I.isConnected) {
+    if (!EspConnection.instance.isConnected) {
       dev.log('🚫 ESP not connected - cannot sync time', name: _logTag);
       return;
     }
@@ -47,7 +47,7 @@ class EspSyncService {
     final message = {'action': 'time_sync', 'timestamp': timestamp};
 
     try {
-      EspConnection.I.send(message);
+      EspConnection.instance.send(message);
       dev.log('✅ Time sync sent to ESP32', name: _logTag);
     } catch (e) {
       dev.log('❌ Failed to sync time: $e', name: _logTag);
@@ -57,7 +57,7 @@ class EspSyncService {
   /// Sync a single routine to ESP32 with time sync and state preservation
   Future<bool> syncRoutine(Routine routine) async {
     try {
-      if (!EspConnection.I.isConnected) {
+      if (!EspConnection.instance.isConnected) {
         dev.log('Cannot sync routine: ESP32 not connected', name: _logTag);
         return false;
       }
@@ -74,22 +74,25 @@ class EspSyncService {
             true, // Tell ESP32 to preserve current state before routine starts
       };
 
-      EspConnection.I.send(syncMessage);
+      EspConnection.instance.send(syncMessage);
 
       // Detailed logging for debugging
       dev.log('📅 Routine sync sent to ESP32:', name: _logTag);
       dev.log('  - Name: "${routine.name}"', name: _logTag);
       dev.log('  - ID: ${routine.id}', name: _logTag);
       dev.log('  - Enabled: ${routine.enabled}', name: _logTag);
-      final startTimeStr = '  - Start time: '
+      final startTimeStr =
+          '  - Start time: '
           '${routine.startTime.hour.toString().padLeft(2, '0')}:'
           '${routine.startTime.minute.toString().padLeft(2, '0')}';
       dev.log(startTimeStr, name: _logTag);
-      final endTimeStr = '  - End time: '
+      final endTimeStr =
+          '  - End time: '
           '${routine.endTime.hour.toString().padLeft(2, '0')}:'
           '${routine.endTime.minute.toString().padLeft(2, '0')}';
       dev.log(endTimeStr, name: _logTag);
-      final brightnessStr = '  - Brightness: '
+      final brightnessStr =
+          '  - Brightness: '
           '${routine.brightness.toStringAsFixed(1)}% '
           '(ESP32: ${routineData['brightness']})';
       dev.log(brightnessStr, name: _logTag);
@@ -97,7 +100,8 @@ class EspSyncService {
         '  - Temperature: ${routine.temperature.toStringAsFixed(0)}K',
         name: _logTag,
       );
-      final modeStr = '  - Mode: '
+      final modeStr =
+          '  - Mode: '
           '${_temperatureToMode(routine.temperature)} '
           '(${_getModeDescription(_temperatureToMode(routine.temperature))})';
       dev.log(modeStr, name: _logTag);
@@ -120,7 +124,8 @@ class EspSyncService {
       final timeUntilStart = nextStart.difference(aucklandNow);
 
       if (routine.enabled) {
-        final nextStartStr = '  - Next start: '
+        final nextStartStr =
+            '  - Next start: '
             '${nextStart.toString()} NZDT '
             '(in ${_formatDuration(timeUntilStart)})';
         dev.log(nextStartStr, name: _logTag);
@@ -138,7 +143,7 @@ class EspSyncService {
   /// Sync a single alarm to ESP32 with time sync and state preservation
   Future<bool> syncAlarm(Alarm alarm) async {
     try {
-      if (!EspConnection.I.isConnected) {
+      if (!EspConnection.instance.isConnected) {
         dev.log('Cannot sync alarm: ESP32 not connected', name: _logTag);
         return false;
       }
@@ -155,18 +160,20 @@ class EspSyncService {
             true, // Tell ESP32 to preserve current state before alarm starts
       };
 
-      EspConnection.I.send(syncMessage);
+      EspConnection.instance.send(syncMessage);
 
       // Detailed logging for debugging
       dev.log('⏰ Alarm sync sent to ESP32:', name: _logTag);
       dev.log('  - Name: "${alarm.name}"', name: _logTag);
       dev.log('  - ID: ${alarm.id}', name: _logTag);
       dev.log('  - Enabled: ${alarm.enabled}', name: _logTag);
-      final wakeUpTimeStr = '  - Wake-up time: '
+      final wakeUpTimeStr =
+          '  - Wake-up time: '
           '${alarm.wakeUpTime.hour.toString().padLeft(2, '0')}:'
           '${alarm.wakeUpTime.minute.toString().padLeft(2, '0')}';
       dev.log(wakeUpTimeStr, name: _logTag);
-      final alarmStartTimeStr = '  - Start time: '
+      final alarmStartTimeStr =
+          '  - Start time: '
           '${alarm.startTime.hour.toString().padLeft(2, '0')}:'
           '${alarm.startTime.minute.toString().padLeft(2, '0')}';
       dev.log(alarmStartTimeStr, name: _logTag);
@@ -191,7 +198,8 @@ class EspSyncService {
       final timeUntilStart = nextStart.difference(aucklandNow);
 
       if (alarm.enabled) {
-        final alarmNextStartStr = '  - Next start: '
+        final alarmNextStartStr =
+            '  - Next start: '
             '${nextStart.toString()} NZDT '
             '(in ${_formatDuration(timeUntilStart)})';
         dev.log(alarmNextStartStr, name: _logTag);
@@ -209,7 +217,7 @@ class EspSyncService {
   /// Sync all routines and alarms to ESP32 with time sync
   Future<bool> syncAll() async {
     try {
-      if (!EspConnection.I.isConnected) {
+      if (!EspConnection.instance.isConnected) {
         dev.log('Cannot sync all: ESP32 not connected', name: _logTag);
         return false;
       }
@@ -229,8 +237,9 @@ class EspSyncService {
         'preserve_state': true, // Tell ESP32 to preserve current state
       };
 
-      EspConnection.I.send(allData);
-      final syncAllStr = 'Synced ${routines.length} routines and '
+      EspConnection.instance.send(allData);
+      final syncAllStr =
+          'Synced ${routines.length} routines and '
           '${alarms.length} alarms to ESP32 with time and state preservation';
       dev.log(syncAllStr, name: _logTag);
       return true;
@@ -243,12 +252,12 @@ class EspSyncService {
   /// Delete a routine from ESP32
   Future<bool> deleteRoutineFromEsp(int routineId) async {
     try {
-      if (!EspConnection.I.isConnected) {
+      if (!EspConnection.instance.isConnected) {
         dev.log('Cannot delete routine: ESP32 not connected', name: _logTag);
         return false;
       }
 
-      EspConnection.I.send({
+      EspConnection.instance.send({
         'type': 'routine_sync',
         'action': 'delete',
         'id': routineId,
@@ -265,12 +274,12 @@ class EspSyncService {
   /// Delete an alarm from ESP32
   Future<bool> deleteAlarmFromEsp(int alarmId) async {
     try {
-      if (!EspConnection.I.isConnected) {
+      if (!EspConnection.instance.isConnected) {
         dev.log('Cannot delete alarm: ESP32 not connected', name: _logTag);
         return false;
       }
 
-      EspConnection.I.send({
+      EspConnection.instance.send({
         'type': 'alarm_sync',
         'action': 'delete',
         'id': alarmId,

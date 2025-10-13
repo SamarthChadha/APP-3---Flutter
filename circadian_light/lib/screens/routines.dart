@@ -35,12 +35,10 @@ class RoutinesScreen extends StatefulWidget {
 /// including undo functionality, sunrise/sunset sync integration,
 /// and modal sheet presentations for editing items.
 class _RoutinesScreenState extends State<RoutinesScreen> {
-  static const String _sunSyncDisabledMessage = 'Manual routines are disabled while '
-
+  static const String _sunSyncDisabledMessage =
+      'Manual routines are disabled while '
       'sunrise/sunset sync is active. The lamp will automatically adjust '
-
       'based on the time of day.\n\n'
-
       'To use manual routines again, disable sunrise/sunset sync in Settings.';
 
   /// Core controller for routine and alarm data operations.
@@ -252,7 +250,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: ThemeManager.I.sheetBackgroundColor,
+      backgroundColor: ThemeManager.instance.sheetBackgroundColor,
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -313,13 +311,13 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
-                          color: ThemeManager.I.primaryTextColor,
+                          color: ThemeManager.instance.primaryTextColor,
                         ),
                       ),
                       IconButton(
                         icon: Icon(
                           Icons.close,
-                          color: ThemeManager.I.primaryTextColor,
+                          color: ThemeManager.instance.primaryTextColor,
                         ),
                         onPressed: () => Navigator.of(ctx).pop(),
                       ),
@@ -348,7 +346,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                             Text(
                               'Routine start time',
                               style: TextStyle(
-                                color: ThemeManager.I.primaryTextColor,
+                                color: ThemeManager.instance.primaryTextColor,
                               ),
                             ),
                             const SizedBox(height: 10),
@@ -368,7 +366,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                             Text(
                               'Routine end time',
                               style: TextStyle(
-                                color: ThemeManager.I.primaryTextColor,
+                                color: ThemeManager.instance.primaryTextColor,
                               ),
                             ),
                             const SizedBox(height: 10),
@@ -387,7 +385,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w600,
-                      color: ThemeManager.I.primaryTextColor,
+                      color: ThemeManager.instance.primaryTextColor,
                       letterSpacing: 0.2,
                     ),
                   ),
@@ -402,7 +400,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.2,
-                      color: ThemeManager.I.secondaryTextColor,
+                      color: ThemeManager.instance.secondaryTextColor,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -431,7 +429,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w600,
-                      color: ThemeManager.I.primaryTextColor,
+                      color: ThemeManager.instance.primaryTextColor,
                       letterSpacing: 0.2,
                     ),
                   ),
@@ -442,7 +440,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.2,
-                      color: ThemeManager.I.secondaryTextColor,
+                      color: ThemeManager.instance.secondaryTextColor,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -515,7 +513,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: ThemeManager.I.sheetBackgroundColor,
+      backgroundColor: ThemeManager.instance.sheetBackgroundColor,
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -570,13 +568,13 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
-                            color: ThemeManager.I.primaryTextColor,
+                            color: ThemeManager.instance.primaryTextColor,
                           ),
                         ),
                         IconButton(
                           icon: Icon(
                             Icons.close,
-                            color: ThemeManager.I.primaryTextColor,
+                            color: ThemeManager.instance.primaryTextColor,
                           ),
                           onPressed: () => Navigator.pop(ctx),
                         ),
@@ -602,7 +600,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                               Text(
                                 'Start',
                                 style: TextStyle(
-                                  color: ThemeManager.I.primaryTextColor,
+                                  color: ThemeManager.instance.primaryTextColor,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -622,7 +620,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                               Text(
                                 'End',
                                 style: TextStyle(
-                                  color: ThemeManager.I.primaryTextColor,
+                                  color: ThemeManager.instance.primaryTextColor,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -642,7 +640,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: ThemeManager.I.primaryTextColor,
+                        color: ThemeManager.instance.primaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -656,7 +654,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.2,
-                        color: ThemeManager.I.secondaryTextColor,
+                        color: ThemeManager.instance.secondaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -678,7 +676,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: ThemeManager.I.primaryTextColor,
+                        color: ThemeManager.instance.primaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -688,7 +686,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.2,
-                        color: ThemeManager.I.secondaryTextColor,
+                        color: ThemeManager.instance.secondaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -757,7 +755,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: ThemeManager.I.sheetBackgroundColor,
+      backgroundColor: ThemeManager.instance.sheetBackgroundColor,
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -796,13 +794,13 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
-                            color: ThemeManager.I.primaryTextColor,
+                            color: ThemeManager.instance.primaryTextColor,
                           ),
                         ),
                         IconButton(
                           icon: Icon(
                             Icons.close,
-                            color: ThemeManager.I.primaryTextColor,
+                            color: ThemeManager.instance.primaryTextColor,
                           ),
                           onPressed: () => Navigator.of(ctx).pop(),
                         ),
@@ -829,7 +827,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: ThemeManager.I.primaryTextColor,
+                            color: ThemeManager.instance.primaryTextColor,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -849,7 +847,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: ThemeManager.I.primaryTextColor,
+                        color: ThemeManager.instance.primaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -907,7 +905,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: ThemeManager.I.sheetBackgroundColor,
+      backgroundColor: ThemeManager.instance.sheetBackgroundColor,
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
@@ -953,13 +951,13 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
-                            color: ThemeManager.I.primaryTextColor,
+                            color: ThemeManager.instance.primaryTextColor,
                           ),
                         ),
                         IconButton(
                           icon: Icon(
                             Icons.close,
-                            color: ThemeManager.I.primaryTextColor,
+                            color: ThemeManager.instance.primaryTextColor,
                           ),
                           onPressed: () => Navigator.of(ctx).pop(),
                         ),
@@ -986,7 +984,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: ThemeManager.I.primaryTextColor,
+                            color: ThemeManager.instance.primaryTextColor,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -1013,7 +1011,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: ThemeManager.I.primaryTextColor,
+                        color: ThemeManager.instance.primaryTextColor,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -1245,7 +1243,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
   @override
   Widget build(BuildContext context) {
     final bottomClearance = kBottomNavigationBarHeight + 24;
-    final bool sunriseSunsetEnabled = SunriseSunsetManager.I.isEnabled;
+    final bool sunriseSunsetEnabled = SunriseSunsetManager.instance.isEnabled;
 
     Widget content;
 
@@ -1269,9 +1267,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: ThemeManager.I.neumorphicGradient,
+                  colors: ThemeManager.instance.neumorphicGradient,
                 ),
-                boxShadow: ThemeManager.I.neumorphicShadows,
+                boxShadow: ThemeManager.instance.neumorphicShadows,
               ),
               child: Column(
                 children: [
@@ -1310,7 +1308,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
-                                color: ThemeManager.I.primaryTextColor,
+                                color: ThemeManager.instance.primaryTextColor,
                               ),
                             ),
                           ],
@@ -1321,11 +1319,11 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                   const SizedBox(height: 16),
                   // Status text
                   Text(
-                    SunriseSunsetManager.I.getCurrentStatus(),
+                    SunriseSunsetManager.instance.getCurrentStatus(),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: ThemeManager.I.secondaryTextColor,
+                      color: ThemeManager.instance.secondaryTextColor,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -1337,7 +1335,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: ThemeManager.I.infoBackgroundColor,
+                      color: ThemeManager.instance.infoBackgroundColor,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: const [
                         BoxShadow(
@@ -1357,18 +1355,18 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
-                                color: ThemeManager.I.secondaryTextColor,
+                                color: ThemeManager.instance.secondaryTextColor,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              SunriseSunsetManager.I.sunriseTime.format(
+                              SunriseSunsetManager.instance.sunriseTime.format(
                                 context,
                               ),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: ThemeManager.I.primaryTextColor,
+                                color: ThemeManager.instance.primaryTextColor,
                               ),
                             ),
                           ],
@@ -1380,16 +1378,18 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
-                                color: ThemeManager.I.secondaryTextColor,
+                                color: ThemeManager.instance.secondaryTextColor,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              SunriseSunsetManager.I.sunsetTime.format(context),
+                              SunriseSunsetManager.instance.sunsetTime.format(
+                                context,
+                              ),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: ThemeManager.I.primaryTextColor,
+                                color: ThemeManager.instance.primaryTextColor,
                               ),
                             ),
                           ],
@@ -1404,7 +1404,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                     'You can disable this feature in Settings.',
                     style: TextStyle(
                       fontSize: 12,
-                      color: ThemeManager.I.tertiaryTextColor,
+                      color: ThemeManager.instance.tertiaryTextColor,
                       fontStyle: FontStyle.italic,
                     ),
                     textAlign: TextAlign.center,
@@ -1419,7 +1419,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: ThemeManager.I.tertiaryTextColor,
+                  color: ThemeManager.instance.tertiaryTextColor,
                 ),
               ),
               const SizedBox(height: 12),
@@ -1435,9 +1435,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         onChanged:
                             (val) {}, // No-op when sunrise/sunset is active
                         onTap: null, // Disable editing
-                        onDelete:
-                            null, // Disable deletion when sunrise/sunset
-                            // is active
+                        onDelete: null, // Disable deletion when sunrise/sunset
+                        // is active
                         isDisabledBySunriseSync: true,
                       ),
                     ),
@@ -1450,9 +1449,8 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                         onChanged:
                             (val) {}, // No-op when sunrise/sunset is active
                         onTap: null, // Disable editing
-                        onDelete:
-                            null, // Disable deletion when sunrise/sunset
-                            // is active
+                        onDelete: null, // Disable deletion when sunrise/sunset
+                        // is active
                         isDisabledBySunriseSync: true,
                       ),
                     ),
@@ -1572,9 +1570,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: ThemeManager.I.neumorphicGradient,
+                            colors: ThemeManager.instance.neumorphicGradient,
                           ),
-                          boxShadow: ThemeManager.I.neumorphicShadows,
+                          boxShadow: ThemeManager.instance.neumorphicShadows,
                         ),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(18),
@@ -1587,7 +1585,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 16,
-                                  color: ThemeManager.I.primaryTextColor,
+                                  color: ThemeManager.instance.primaryTextColor,
                                 ),
                               ),
                             ),
@@ -1612,9 +1610,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: ThemeManager.I.neumorphicGradient,
+                            colors: ThemeManager.instance.neumorphicGradient,
                           ),
-                          boxShadow: ThemeManager.I.neumorphicShadows,
+                          boxShadow: ThemeManager.instance.neumorphicShadows,
                         ),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(18),
@@ -1627,7 +1625,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 16,
-                                  color: ThemeManager.I.primaryTextColor,
+                                  color: ThemeManager.instance.primaryTextColor,
                                 ),
                               ),
                             ),

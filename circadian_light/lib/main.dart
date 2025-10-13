@@ -67,20 +67,20 @@ class _MainAppState extends State<MainApp> {
 
       // Initialize theme manager
       _logger.info('Initializing theme manager...');
-      await ThemeManager.I.init();
+      await ThemeManager.instance.init();
       _logger.info('Theme manager initialized successfully');
 
       // Start ESP connection - this is optional, app should work without it
       _logger.info('Starting ESP connection...');
       try {
-        await EspConnection.I.connect();
+        await EspConnection.instance.connect();
         _logger.info('ESP connection attempt completed');
 
         // Listen for ESP connection changes and sync when connected
-        EspConnection.I.connection.listen((isConnected) {
+        EspConnection.instance.connection.listen((isConnected) {
           if (isConnected) {
             _logger.info('ESP32 connected, triggering full sync...');
-            EspSyncService.I.onEspConnected();
+            EspSyncService.instance.onEspConnected();
           }
         });
       } catch (espError) {
@@ -131,7 +131,7 @@ class _MainAppState extends State<MainApp> {
   @override
   void dispose() {
     // Clean up the sunrise/sunset manager when app is disposed
-    SunriseSunsetManager.I.dispose();
+    SunriseSunsetManager.instance.dispose();
     super.dispose();
   }
 
@@ -195,12 +195,12 @@ class _MainAppState extends State<MainApp> {
     }
 
     return ListenableBuilder(
-      listenable: ThemeManager.I,
+      listenable: ThemeManager.instance,
       builder: (context, child) {
         return MaterialApp(
-          theme: ThemeManager.I.lightTheme,
-          darkTheme: ThemeManager.I.darkTheme,
-          themeMode: ThemeManager.I.isDarkMode
+          theme: ThemeManager.instance.lightTheme,
+          darkTheme: ThemeManager.instance.darkTheme,
+          themeMode: ThemeManager.instance.isDarkMode
               ? ThemeMode.dark
               : ThemeMode.light,
           home: Scaffold(
@@ -213,9 +213,9 @@ class _MainAppState extends State<MainApp> {
                 height: 60,
                 margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
                 decoration: BoxDecoration(
-                  color: ThemeManager.I.navigationBarColor,
+                  color: ThemeManager.instance.navigationBarColor,
                   borderRadius: BorderRadius.circular(22),
-                  boxShadow: ThemeManager.I.navigationBarShadow,
+                  boxShadow: ThemeManager.instance.navigationBarShadow,
                 ),
                 child: BottomNavigationBar(
                   backgroundColor: const Color.fromARGB(0, 22, 59, 31),
@@ -224,8 +224,8 @@ class _MainAppState extends State<MainApp> {
                   currentIndex: myIndex,
                   showSelectedLabels: false,
                   showUnselectedLabels: false,
-                  selectedItemColor: ThemeManager.I.currentAccentColor,
-                  unselectedItemColor: ThemeManager.I.secondaryTextColor,
+                  selectedItemColor: ThemeManager.instance.currentAccentColor,
+                  unselectedItemColor: ThemeManager.instance.secondaryTextColor,
                   items: const [
                     BottomNavigationBarItem(
                       icon: Icon(Icons.home),

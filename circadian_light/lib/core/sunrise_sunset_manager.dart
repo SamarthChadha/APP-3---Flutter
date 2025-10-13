@@ -9,7 +9,7 @@ import '../services/location_service.dart';
 // Singleton manager for sunrise/sunset automation
 class SunriseSunsetManager {
   SunriseSunsetManager._();
-  static final SunriseSunsetManager I = SunriseSunsetManager._();
+  static final SunriseSunsetManager instance = SunriseSunsetManager._();
 
   Timer? _timer;
   StreamSubscription<Map<String, dynamic>>? _espMessagesSub;
@@ -29,8 +29,8 @@ class SunriseSunsetManager {
     _ensureEspMessageSubscription();
     _isEnabled = true;
     _startTimer();
-    if (EspConnection.I.isConnected) {
-      EspConnection.I.send({
+    if (EspConnection.instance.isConnected) {
+      EspConnection.instance.send({
         'type': 'sun_sync_state',
         'active': true,
         'source': 'app',
@@ -52,7 +52,8 @@ class SunriseSunsetManager {
       _startTimer();
     }
 
-    final locationMsg = 'SunriseSunsetManager: Location-based times '
+    final locationMsg =
+        'SunriseSunsetManager: Location-based times '
         '${enabled ? 'enabled' : 'disabled'}';
     debugPrint(locationMsg);
   }
@@ -62,18 +63,22 @@ class SunriseSunsetManager {
     if (!_useLocationBasedTimes) return;
 
     try {
-      final result = await LocationService.I.calculateSunriseSunset();
+      final result = await LocationService.instance.calculateSunriseSunset();
       if (result != null) {
         sunriseTime = result.sunrise;
         sunsetTime = result.sunset;
-        debugPrint('SunriseSunsetManager: Updated to location-based times - '
-            'Sunrise: ${sunriseTime.hour}:'
-            '${sunriseTime.minute.toString().padLeft(2, '0')}, '
-            'Sunset: ${sunsetTime.hour}:'
-            '${sunsetTime.minute.toString().padLeft(2, '0')}');
+        debugPrint(
+          'SunriseSunsetManager: Updated to location-based times - '
+          'Sunrise: ${sunriseTime.hour}:'
+          '${sunriseTime.minute.toString().padLeft(2, '0')}, '
+          'Sunset: ${sunsetTime.hour}:'
+          '${sunsetTime.minute.toString().padLeft(2, '0')}',
+        );
       } else {
-        debugPrint('SunriseSunsetManager: Could not get location-based times, '
-            'using defaults');
+        debugPrint(
+          'SunriseSunsetManager: Could not get location-based times, '
+          'using defaults',
+        );
       }
     } catch (e) {
       debugPrint(
@@ -109,7 +114,9 @@ class SunriseSunsetManager {
   }
 
   void _ensureEspMessageSubscription() {
-    _espMessagesSub ??= EspConnection.I.messages.listen(_handleEspMessage);
+    _espMessagesSub ??= EspConnection.instance.messages.listen(
+      _handleEspMessage,
+    );
   }
 
   void _handleEspMessage(Map<String, dynamic> message) {
@@ -139,14 +146,15 @@ class SunriseSunsetManager {
     }
     _isEnabled = false;
     _stopTimer();
-    if (notifyEsp && EspConnection.I.isConnected) {
-      EspConnection.I.send({
+    if (notifyEsp && EspConnection.instance.isConnected) {
+      EspConnection.instance.send({
         'type': 'sun_sync_state',
         'active': false,
         'source': source,
       });
     }
-    final disableMsg = 'SunriseSunsetManager: Disabled'
+    final disableMsg =
+        'SunriseSunsetManager: Disabled'
         '${source == 'hardware' ? ' by hardware override' : ''}';
     debugPrint(disableMsg);
   }
@@ -221,9 +229,9 @@ class SunriseSunsetManager {
     );
 
     // Send commands to lamp - both warm and white for sunrise
-    EspConnection.I.setOn(true);
-    EspConnection.I.setMode(2); // MODE_BOTH (warm + white)
-    EspConnection.I.setBrightness(brightness);
+    EspConnection.instance.setOn(true);
+    EspConnection.instance.setMode(2); // MODE_BOTH (warm + white)
+    EspConnection.instance.setBrightness(brightness);
   }
 
   void _executeSunsetTransition(
@@ -238,20 +246,20 @@ class SunriseSunsetManager {
 
     if (clampedProgress == 0.0) {
       // Just started sunset - switch to warm only
-      EspConnection.I.setMode(0); // MODE_WARM only
-      EspConnection.I.setBrightness(15); // Full brightness initially
+      EspConnection.instance.setMode(0); // MODE_WARM only
+      EspConnection.instance.setBrightness(15); // Full brightness initially
       debugPrint('Sunset started: switched to warm mode');
     } else {
       // Gradually dim the warm light
       final brightness = (15 * (1.0 - _smoothStep(clampedProgress))).round();
-      EspConnection.I.setBrightness(brightness);
+      EspConnection.instance.setBrightness(brightness);
       debugPrint(
         'Sunset transition: progress=$clampedProgress, brightness=$brightness',
       );
 
       if (clampedProgress >= 1.0) {
         // Sunset complete - turn off
-        EspConnection.I.setOn(false);
+        EspConnection.instance.setOn(false);
         debugPrint('Sunset complete: turned off');
       }
     }
@@ -266,7 +274,7 @@ class SunriseSunsetManager {
     // from both LEDs to warm-only
     if (currentMinutes > sunriseEndMinutes &&
         currentMinutes < sunsetStartMinutes) {
-      EspConnection.I.setOn(true);
+      EspConnection.instance.setOn(true);
 
       // Calculate progress through the day
       // (0.0 = just after sunrise, 1.0 = just before sunset)
@@ -278,19 +286,19 @@ class SunriseSunsetManager {
       // Create a gradual transition throughout the day
       if (clampedProgress < 0.3) {
         // Morning (0-30%): Full both LEDs
-        EspConnection.I.setMode(2); // MODE_BOTH
-        EspConnection.I.setBrightness(15);
+        EspConnection.instance.setMode(2); // MODE_BOTH
+        EspConnection.instance.setBrightness(15);
         debugPrint('Day state: Morning - Both LEDs full brightness');
       } else if (clampedProgress < 0.7) {
         // Mid-day (30-70%): Still both LEDs but preparing for transition
-        EspConnection.I.setMode(2); // MODE_BOTH
-        EspConnection.I.setBrightness(15);
+        EspConnection.instance.setMode(2); // MODE_BOTH
+        EspConnection.instance.setBrightness(15);
         debugPrint('Day state: Midday - Both LEDs, preparing for transition');
       } else {
         // Late afternoon (70-100%): Switch to warm-only
         // in preparation for sunset
-        EspConnection.I.setMode(0); // MODE_WARM only
-        EspConnection.I.setBrightness(15);
+        EspConnection.instance.setMode(0); // MODE_WARM only
+        EspConnection.instance.setBrightness(15);
         debugPrint(
           'Day state: Late afternoon - Warm only, preparing for sunset',
         );
@@ -298,7 +306,7 @@ class SunriseSunsetManager {
     }
     // Before sunrise start or after sunset end - keep off
     else {
-      EspConnection.I.setOn(false);
+      EspConnection.instance.setOn(false);
     }
   }
 

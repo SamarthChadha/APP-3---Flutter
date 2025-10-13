@@ -30,14 +30,14 @@ class _ConnectionManagerState extends State<ConnectionManager> {
 
     // Try to connect to ESP32
     try {
-      await EspConnection.I.connect();
+      await EspConnection.instance.connect();
       await Future.delayed(
         const Duration(seconds: 3),
       ); // Give it time to connect
 
       if (mounted) {
         setState(() {
-          _isConnected = EspConnection.I.isConnected;
+          _isConnected = EspConnection.instance.isConnected;
           _isChecking = false;
         });
       }
@@ -136,7 +136,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
 
   @override
   void dispose() {
-    EspConnection.I.close();
+    EspConnection.instance.close();
     super.dispose();
   }
 }

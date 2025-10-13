@@ -29,8 +29,8 @@ class SettingsScreen extends StatefulWidget {
 /// managing location permissions, and coordinating with various
 /// service managers.
 class _SettingsScreenState extends State<SettingsScreen> {
-  static const String _locationPermissionMessage = 'Location permission is required for Sun Sync.\n'
-
+  static const String _locationPermissionMessage =
+      'Location permission is required for Sun Sync.\n'
       'You can enable it in Settings.';
 
   /// Current connection status of the ESP32 device.
@@ -66,13 +66,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _checkConnection();
 
       // Check location permission status
-      final hasLocationPermission = await LocationService.I
+      final hasLocationPermission = await LocationService.instance
           .checkLocationPermission();
 
       // Get location name if sun sync is enabled and we have permission
       String? locationName;
       if (settings.sunriseSunsetEnabled && hasLocationPermission) {
-        locationName = await LocationService.I.getLocationName();
+        locationName = await LocationService.instance.getLocationName();
       }
 
       setState(() {
@@ -84,9 +84,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       // Update the sunrise/sunset manager state
       if (_sunriseSunsetEnabled) {
-        SunriseSunsetManager.I.enable();
+        SunriseSunsetManager.instance.enable();
       } else {
-        SunriseSunsetManager.I.disable();
+        SunriseSunsetManager.instance.disable();
       }
     } catch (e) {
       if (mounted) {
@@ -126,7 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Refreshes the _isConnected flag to reflect current ESP32 connection state.
   void _checkConnection() {
     setState(() {
-      _isConnected = EspConnection.I.isConnected;
+      _isConnected = EspConnection.instance.isConnected;
     });
   }
 
@@ -187,9 +187,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: ThemeManager.I.neumorphicGradient,
+                    colors: ThemeManager.instance.neumorphicGradient,
                   ),
-                  boxShadow: ThemeManager.I.neumorphicShadows,
+                  boxShadow: ThemeManager.instance.neumorphicShadows,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +238,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
-                                  color: ThemeManager.I.primaryTextColor,
+                                  color: ThemeManager.instance.primaryTextColor,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -251,8 +251,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   fontWeight: FontWeight.w500,
                                   letterSpacing: 0.2,
                                   color: _isConnected
-                                      ? ThemeManager.I.successColor
-                                      : ThemeManager.I.errorColor,
+                                      ? ThemeManager.instance.successColor
+                                      : ThemeManager.instance.errorColor,
                                 ),
                               ),
                             ],
@@ -308,12 +308,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
-                            color: ThemeManager.I.elevatedSurfaceColor,
+                            color: ThemeManager.instance.elevatedSurfaceColor,
                             boxShadow: [
                               BoxShadow(
                                 offset: const Offset(2, 2),
                                 blurRadius: 8,
-                                color: ThemeManager.I.isDarkMode
+                                color: ThemeManager.instance.isDarkMode
                                     ? const Color(0x20000000)
                                     : const Color(0x0A000000),
                               ),
@@ -334,7 +334,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 16,
-                                    color: ThemeManager.I.secondaryTextColor,
+                                    color: ThemeManager
+                                        .instance
+                                        .secondaryTextColor,
                                   ),
                                 ),
                               ),
@@ -359,9 +361,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: ThemeManager.I.neumorphicGradient,
+                    colors: ThemeManager.instance.neumorphicGradient,
                   ),
-                  boxShadow: ThemeManager.I.neumorphicShadows,
+                  boxShadow: ThemeManager.instance.neumorphicShadows,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,7 +402,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
-                                  color: ThemeManager.I.primaryTextColor,
+                                  color: ThemeManager.instance.primaryTextColor,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -409,13 +411,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     ? _locationName != null
                                           ? 'Location: $_locationName'
                                           : 'Automatically adjusts '
-                                            'lamp brightness'
+                                                'lamp brightness'
                                     : 'Manual control enabled',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                   letterSpacing: 0.2,
-                                  color: ThemeManager.I.secondaryTextColor,
+                                  color:
+                                      ThemeManager.instance.secondaryTextColor,
                                 ),
                               ),
                             ],
@@ -431,13 +434,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               final messenger = ScaffoldMessenger.of(context);
 
                               if (!_hasLocationPermission) {
-                                final granted = await LocationService.I
+                                final granted = await LocationService.instance
                                     .requestLocationPermission();
                                 if (!mounted) return;
 
                                 if (granted) {
                                   // Get location name
-                                  final locationName = await LocationService.I
+                                  final locationName = await LocationService
+                                      .instance
                                       .getLocationName();
 
                                   setState(() {
@@ -445,8 +449,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     _sunriseSunsetEnabled = true;
                                     _locationName = locationName;
                                   });
-                                  SunriseSunsetManager.I.enable();
-                                  await SunriseSunsetManager.I
+                                  SunriseSunsetManager.instance.enable();
+                                  await SunriseSunsetManager.instance
                                       .setLocationBasedTimes(true);
                                   messenger.showSnackBar(
                                     const SnackBar(
@@ -460,12 +464,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 } else {
                                   messenger.showSnackBar(
                                     SnackBar(
-                                      content: const Text(_locationPermissionMessage),
+                                      content: const Text(
+                                        _locationPermissionMessage,
+                                      ),
                                       backgroundColor: Colors.orange,
                                       action: SnackBarAction(
                                         label: 'Settings',
                                         onPressed: () {
-                                          LocationService.I
+                                          LocationService.instance
                                               .openLocationSettings();
                                         },
                                       ),
@@ -477,15 +483,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               } else {
                                 // Already have permission, just enable Sun Sync
                                 // Get location name
-                                final locationName = await LocationService.I
+                                final locationName = await LocationService
+                                    .instance
                                     .getLocationName();
 
                                 setState(() {
                                   _sunriseSunsetEnabled = true;
                                   _locationName = locationName;
                                 });
-                                SunriseSunsetManager.I.enable();
-                                await SunriseSunsetManager.I
+                                SunriseSunsetManager.instance.enable();
+                                await SunriseSunsetManager.instance
                                     .setLocationBasedTimes(true);
                               }
                             } else {
@@ -494,7 +501,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 _sunriseSunsetEnabled = false;
                                 _locationName = null;
                               });
-                              SunriseSunsetManager.I.disable();
+                              SunriseSunsetManager.instance.disable();
                             }
 
                             await _saveSettings();
@@ -507,13 +514,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: ThemeManager.I.infoBackgroundColor,
+                          color: ThemeManager.instance.infoBackgroundColor,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
                               offset: const Offset(2, 2),
                               blurRadius: 8,
-                              color: ThemeManager.I.isDarkMode
+                              color: ThemeManager.instance.isDarkMode
                                   ? const Color(0x20000000)
                                   : const Color(0x0A000000),
                             ),
@@ -524,11 +531,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           children: [
                             Text(
                               'Current Status: '
-                              '${SunriseSunsetManager.I.getCurrentStatus()}',
+                              '${SunriseSunsetManager.instance.getCurrentStatus()}',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
-                                color: ThemeManager.I.primaryTextColor,
+                                color: ThemeManager.instance.primaryTextColor,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -547,9 +554,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ),
                                     ),
                                     Text(
-                                      SunriseSunsetManager.I.sunriseTime.format(
-                                        context,
-                                      ),
+                                      SunriseSunsetManager.instance.sunriseTime
+                                          .format(context),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
@@ -570,9 +576,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ),
                                     ),
                                     Text(
-                                      SunriseSunsetManager.I.sunsetTime.format(
-                                        context,
-                                      ),
+                                      SunriseSunsetManager.instance.sunsetTime
+                                          .format(context),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
@@ -603,7 +608,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 16),
               // Dark Mode Toggle Card
               ListenableBuilder(
-                listenable: ThemeManager.I,
+                listenable: ThemeManager.instance,
                 builder: (context, child) {
                   return Container(
                     margin: const EdgeInsets.symmetric(vertical: 8),
@@ -616,9 +621,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: ThemeManager.I.neumorphicGradient,
+                        colors: ThemeManager.instance.neumorphicGradient,
                       ),
-                      boxShadow: ThemeManager.I.neumorphicShadows,
+                      boxShadow: ThemeManager.instance.neumorphicShadows,
                     ),
                     child: Row(
                       children: [
@@ -628,7 +633,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
-                              colors: ThemeManager.I.isDarkMode
+                              colors: ThemeManager.instance.isDarkMode
                                   ? [
                                       const Color(0xFF6A5ACD),
                                       const Color(0xFF9370DB),
@@ -641,7 +646,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             boxShadow: [
                               BoxShadow(
                                 color:
-                                    (ThemeManager.I.isDarkMode
+                                    (ThemeManager.instance.isDarkMode
                                             ? Colors.deepPurple
                                             : Colors.amber)
                                         .withValues(alpha: 0.45),
@@ -651,7 +656,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ],
                           ),
                           child: Icon(
-                            ThemeManager.I.isDarkMode
+                            ThemeManager.instance.isDarkMode
                                 ? Icons.dark_mode
                                 : Icons.light_mode,
                             color: Colors.white,
@@ -668,19 +673,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
-                                  color: ThemeManager.I.primaryTextColor,
+                                  color: ThemeManager.instance.primaryTextColor,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                ThemeManager.I.isDarkMode
+                                ThemeManager.instance.isDarkMode
                                     ? 'Dark theme is active'
                                     : 'Light theme is active',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                   letterSpacing: 0.2,
-                                  color: ThemeManager.I.secondaryTextColor,
+                                  color:
+                                      ThemeManager.instance.secondaryTextColor,
                                 ),
                               ),
                             ],
@@ -688,9 +694,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         const SizedBox(width: 12),
                         Switch(
-                          value: ThemeManager.I.isDarkMode,
+                          value: ThemeManager.instance.isDarkMode,
                           onChanged: (value) async {
-                            await ThemeManager.I.setDarkMode(value);
+                            await ThemeManager.instance.setDarkMode(value);
                           },
                         ),
                       ],
@@ -708,7 +714,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
-                    color: ThemeManager.I.secondaryTextColor,
+                    color: ThemeManager.instance.secondaryTextColor,
                   ),
                 ),
               ),
@@ -721,9 +727,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: ThemeManager.I.neumorphicGradient,
+                    colors: ThemeManager.instance.neumorphicGradient,
                   ),
-                  boxShadow: ThemeManager.I.neumorphicShadows,
+                  boxShadow: ThemeManager.instance.neumorphicShadows,
                 ),
                 child: Material(
                   color: Colors.transparent,
@@ -766,14 +772,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
-                                color: ThemeManager.I.primaryTextColor,
+                                color: ThemeManager.instance.primaryTextColor,
                               ),
                             ),
                           ),
                           Icon(
                             Icons.arrow_forward_ios,
                             size: 16,
-                            color: ThemeManager.I.secondaryTextColor,
+                            color: ThemeManager.instance.secondaryTextColor,
                           ),
                         ],
                       ),

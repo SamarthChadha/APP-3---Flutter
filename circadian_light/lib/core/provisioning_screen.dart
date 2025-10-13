@@ -153,9 +153,9 @@ class _ProvisioningScreenState extends State<ProvisioningScreen> {
               Text(
                 blocked
                     ? 'SmartConfig needs a real iPhone '
-                        '(the iOS Simulator has no Wi‑Fi).'
+                          '(the iOS Simulator has no Wi‑Fi).'
                     : 'Connect device to Wi‑Fi network using '
-                        'ESP‑Touch protocol',
+                          'ESP‑Touch protocol',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),

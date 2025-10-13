@@ -31,7 +31,7 @@ import 'package:http/http.dart' as http;
 
 class LocationService {
   LocationService._();
-  static final LocationService I = LocationService._();
+  static final LocationService instance = LocationService._();
 
   static final Logger _logger = Logger('LocationService');
   Position? _lastKnownPosition;

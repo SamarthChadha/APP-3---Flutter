@@ -106,8 +106,8 @@ class _RoutineCardState extends State<RoutineCard>
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: isOn
-              ? ThemeManager.I.currentAccentColor
-              : (ThemeManager.I.isDarkMode
+              ? ThemeManager.instance.currentAccentColor
+              : (ThemeManager.instance.isDarkMode
                     ? const Color(0xFF424242)
                     : const Color(0xFFE0E0E0)),
           border: isEffectivelyDisabled
@@ -127,10 +127,10 @@ class _RoutineCardState extends State<RoutineCard>
               color: isEffectivelyDisabled
                   ? Colors.grey
                   : (isOn
-                        ? (ThemeManager.I.isDarkMode
+                        ? (ThemeManager.instance.isDarkMode
                               ? Colors.black
                               : Colors.white)
-                        : (ThemeManager.I.isDarkMode
+                        : (ThemeManager.instance.isDarkMode
                               ? const Color(0xFF9E9E9E)
                               : Colors.white)),
               boxShadow: [
@@ -165,12 +165,12 @@ class _RoutineCardState extends State<RoutineCard>
           end: Alignment.bottomRight,
           colors: isEffectivelyDisabled
               ? [
-                  ThemeManager.I.disabledColor,
-                  ThemeManager.I.disabledColor.withValues(alpha: 0.8),
+                  ThemeManager.instance.disabledColor,
+                  ThemeManager.instance.disabledColor.withValues(alpha: 0.8),
                 ]
-              : ThemeManager.I.neumorphicGradient,
+              : ThemeManager.instance.neumorphicGradient,
         ),
-        boxShadow: ThemeManager.I.neumorphicShadows,
+        boxShadow: ThemeManager.instance.neumorphicShadows,
       ),
       child: Row(
         children: [
@@ -210,7 +210,7 @@ class _RoutineCardState extends State<RoutineCard>
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: ThemeManager.I.primaryTextColor.withValues(
+                    color: ThemeManager.instance.primaryTextColor.withValues(
                       alpha: isEffectivelyDisabled ? 0.4 : 1,
                     ),
                   ),
@@ -222,7 +222,7 @@ class _RoutineCardState extends State<RoutineCard>
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.2,
-                    color: ThemeManager.I.secondaryTextColor.withValues(
+                    color: ThemeManager.instance.secondaryTextColor.withValues(
                       alpha: isEffectivelyDisabled ? 0.4 : 1,
                     ),
                   ),

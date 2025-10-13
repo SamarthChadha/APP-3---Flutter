@@ -148,12 +148,12 @@ class _AlarmCardState extends State<AlarmCard>
           end: Alignment.bottomRight,
           colors: isEffectivelyDisabled
               ? [
-                  ThemeManager.I.disabledColor,
-                  ThemeManager.I.disabledColor.withValues(alpha: 0.8),
+                  ThemeManager.instance.disabledColor,
+                  ThemeManager.instance.disabledColor.withValues(alpha: 0.8),
                 ]
-              : ThemeManager.I.neumorphicGradient,
+              : ThemeManager.instance.neumorphicGradient,
         ),
-        boxShadow: ThemeManager.I.neumorphicShadows,
+        boxShadow: ThemeManager.instance.neumorphicShadows,
       ),
       child: Row(
         children: [
@@ -185,8 +185,8 @@ class _AlarmCardState extends State<AlarmCard>
             child: Icon(
               Icons.alarm,
               color: isEffectivelyDisabled
-                  ? ThemeManager.I.tertiaryTextColor
-                  : ThemeManager.I.primaryTextColor,
+                  ? ThemeManager.instance.tertiaryTextColor
+                  : ThemeManager.instance.primaryTextColor,
               size: 22,
             ),
           ),
@@ -200,7 +200,7 @@ class _AlarmCardState extends State<AlarmCard>
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: ThemeManager.I.primaryTextColor.withValues(
+                    color: ThemeManager.instance.primaryTextColor.withValues(
                       alpha: isEffectivelyDisabled ? 0.4 : 1,
                     ),
                   ),
@@ -211,7 +211,7 @@ class _AlarmCardState extends State<AlarmCard>
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: ThemeManager.I.secondaryTextColor.withValues(
+                    color: ThemeManager.instance.secondaryTextColor.withValues(
                       alpha: isEffectivelyDisabled ? 0.4 : 1,
                     ),
                   ),
@@ -221,7 +221,7 @@ class _AlarmCardState extends State<AlarmCard>
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: ThemeManager.I.tertiaryTextColor.withValues(
+                    color: ThemeManager.instance.tertiaryTextColor.withValues(
                       alpha: isEffectivelyDisabled ? 0.4 : 1,
                     ),
                   ),
@@ -233,12 +233,12 @@ class _AlarmCardState extends State<AlarmCard>
             Switch(
               value: widget.alarm.enabled,
               onChanged: widget.onChanged,
-              activeColor: ThemeManager.I.currentAccentColor,
+              activeColor: ThemeManager.instance.currentAccentColor,
             )
           else
             Icon(
               Icons.lock_outline,
-              color: ThemeManager.I.tertiaryTextColor,
+              color: ThemeManager.instance.tertiaryTextColor,
               size: 20,
             ),
         ],

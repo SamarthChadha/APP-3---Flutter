@@ -11,7 +11,7 @@ class ThemeManager extends ChangeNotifier {
 
   ThemeManager._internal();
 
-  static ThemeManager get I {
+  static ThemeManager get instance {
     _instance ??= ThemeManager._internal();
     return _instance!;
   }

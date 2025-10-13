@@ -110,8 +110,8 @@ class RoutineCore extends ChangeNotifier {
     notifyListeners();
 
     // Sync to ESP32 if connected and enabled
-    if (EspConnection.I.isConnected && saved.enabled) {
-      EspSyncService.I.syncRoutine(saved);
+    if (EspConnection.instance.isConnected && saved.enabled) {
+      EspSyncService.instance.syncRoutine(saved);
     }
 
     return saved;
@@ -169,8 +169,8 @@ class RoutineCore extends ChangeNotifier {
     notifyListeners();
 
     // Sync to ESP32 if connected and enabled
-    if (EspConnection.I.isConnected && saved.enabled) {
-      EspSyncService.I.syncAlarm(saved);
+    if (EspConnection.instance.isConnected && saved.enabled) {
+      EspSyncService.instance.syncAlarm(saved);
     }
 
     return saved;
@@ -249,8 +249,8 @@ class RoutineCore extends ChangeNotifier {
         }
 
         // Sync disabled state to ESP32 if connected
-        if (EspConnection.I.isConnected) {
-          EspSyncService.I.syncRoutine(disabled);
+        if (EspConnection.instance.isConnected) {
+          EspSyncService.instance.syncRoutine(disabled);
         }
       }
     }
@@ -280,8 +280,8 @@ class RoutineCore extends ChangeNotifier {
         }
 
         // Sync disabled state to ESP32 if connected
-        if (EspConnection.I.isConnected) {
-          EspSyncService.I.syncAlarm(disabled);
+        if (EspConnection.instance.isConnected) {
+          EspSyncService.instance.syncAlarm(disabled);
         }
       }
     }

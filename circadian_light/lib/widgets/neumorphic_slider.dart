@@ -21,7 +21,7 @@ class NeumorphicSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = ThemeManager.I.isDarkMode
+    final base = ThemeManager.instance.isDarkMode
         ? const Color(0xFF2A2A2A)
         : const Color(0xFFEFEFEF);
 
@@ -37,7 +37,7 @@ class NeumorphicSlider extends StatelessWidget {
       color: gradient == null ? (solidColor ?? base) : null,
       gradient: gradient,
       borderRadius: BorderRadius.circular(20),
-      boxShadow: ThemeManager.I.neumorphicShadows,
+      boxShadow: ThemeManager.instance.neumorphicShadows,
     );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
