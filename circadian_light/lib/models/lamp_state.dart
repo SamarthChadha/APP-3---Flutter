@@ -96,8 +96,12 @@ class LampState {
   }
 
   static int _modeFromTemperature(double temperature) {
-    if (temperature <= 3000) return 0; // MODE_WARM
-    if (temperature >= 5000) return 1; // MODE_WHITE
+    if (temperature <= 3000) {
+      return 0; // MODE_WARM
+    }
+    if (temperature >= 5000) {
+      return 1; // MODE_WHITE
+    }
     return 2; // MODE_BOTH
   }
 

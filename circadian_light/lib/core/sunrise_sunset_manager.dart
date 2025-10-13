@@ -27,7 +27,9 @@ class SunriseSunsetManager {
 
   // Enable sunrise/sunset automation
   void enable() {
-    if (_isEnabled) return;
+    if (_isEnabled) {
+      return;
+    }
     _ensureEspMessageSubscription();
     _isEnabled = true;
     _startTimer();
@@ -62,7 +64,9 @@ class SunriseSunsetManager {
 
   /// Update sunrise/sunset times based on current location
   Future<void> _updateLocationBasedTimes() async {
-    if (!_useLocationBasedTimes) return;
+    if (!_useLocationBasedTimes) {
+      return;
+    }
 
     try {
       final result = await LocationService.instance.calculateSunriseSunset();
@@ -163,7 +167,9 @@ class SunriseSunsetManager {
 
   // Check current time and execute appropriate lighting transitions
   void _checkAndExecuteTransitions() {
-    if (!_isEnabled) return;
+    if (!_isEnabled) {
+      return;
+    }
 
     final now = TimeOfDay.now();
     final currentMinutes = now.hour * 60 + now.minute;
@@ -338,7 +344,9 @@ class SunriseSunsetManager {
 
   // Get current status for UI display
   String getCurrentStatus() {
-    if (!_isEnabled) return 'Disabled';
+    if (!_isEnabled) {
+      return 'Disabled';
+    }
 
     final locationStatus = _useLocationBasedTimes
         ? ' (Location-based)'
@@ -384,8 +392,12 @@ class SunriseSunsetManager {
 
   // Update sunrise/sunset times (for future location-based feature)
   void updateTimes({TimeOfDay? sunrise, TimeOfDay? sunset}) {
-    if (sunrise != null) sunriseTime = sunrise;
-    if (sunset != null) sunsetTime = sunset;
+    if (sunrise != null) {
+      sunriseTime = sunrise;
+    }
+    if (sunset != null) {
+      sunsetTime = sunset;
+    }
 
     // If enabled, restart timer to apply new times immediately
     if (_isEnabled) {

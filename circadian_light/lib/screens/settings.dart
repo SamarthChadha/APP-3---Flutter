@@ -437,7 +437,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               if (!_hasLocationPermission) {
                                 final granted = await LocationService.instance
                                     .requestLocationPermission();
-                                if (!mounted) return;
+                                if (!mounted) {
+                                  return;
+                                }
 
                                 if (granted) {
                                   // Get location name

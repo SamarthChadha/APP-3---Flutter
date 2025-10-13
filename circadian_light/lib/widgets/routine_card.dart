@@ -49,7 +49,9 @@ class _RoutineCardState extends State<RoutineCard>
   }
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
-    if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
+    if (widget.isDisabledBySunriseSync || widget.onDelete == null) {
+      return;
+    }
 
     final screenWidth = MediaQuery.of(context).size.width;
     final dragAmount = details.delta.dx / screenWidth;
@@ -63,7 +65,9 @@ class _RoutineCardState extends State<RoutineCard>
   }
 
   void _onHorizontalDragEnd(DragEndDetails details) {
-    if (widget.isDisabledBySunriseSync || widget.onDelete == null) return;
+    if (widget.isDisabledBySunriseSync || widget.onDelete == null) {
+      return;
+    }
     if (_slideController.value > 0.5) {
       _slideController.forward();
       setState(() => _isSliding = true);

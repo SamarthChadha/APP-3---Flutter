@@ -56,7 +56,9 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
     super.initState();
     _core = RoutineCore();
     _core.addListener(() {
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
     });
     // Fire and forget initialization
     _core.init();

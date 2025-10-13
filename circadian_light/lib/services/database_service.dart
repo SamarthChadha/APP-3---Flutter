@@ -257,7 +257,9 @@ class DatabaseService {
   Future<Routine?> getActiveRoutine({DateTime? at}) async {
     final referenceTime = at ?? DateTime.now();
     final routines = await getAllRoutines();
-    if (routines.isEmpty) return null;
+    if (routines.isEmpty) {
+      return null;
+    }
 
     final time = TimeOfDay(
       hour: referenceTime.hour,
@@ -267,7 +269,9 @@ class DatabaseService {
     Duration? shortestUntilEnd;
 
     for (final routine in routines) {
-      if (!routine.enabled) continue;
+      if (!routine.enabled) {
+        continue;
+      }
       if (_isTimeWithinRange(time, routine.startTime, routine.endTime)) {
         final untilEnd = _durationUntilEnd(referenceTime, routine.endTime);
         if (active == null || untilEnd < (shortestUntilEnd ?? untilEnd)) {

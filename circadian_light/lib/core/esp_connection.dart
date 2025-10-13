@@ -34,7 +34,9 @@ class EspState {
   double get flutterBrightness {
     // Map ESP brightness 1-15 to Flutter 0.0-1.0
     // Ensure brightness of 1 maps to 0.0 for UI slider
-    if (brightness <= 1) return 0.0;
+    if (brightness <= 1) {
+      return 0.0;
+    }
     return (brightness - 1) / 14.0; // Map 1-15 to 0.0-1.0
   }
 
@@ -89,7 +91,9 @@ class EspConnection {
     String? ipOrHost,
     Duration retry = const Duration(seconds: 2),
   }) async {
-    if (_connecting || _ch != null) return;
+    if (_connecting || _ch != null) {
+      return;
+    }
     _connecting = true;
     _manuallyClosed = false;
 
@@ -161,7 +165,9 @@ class EspConnection {
     _ch = null;
     // Notify disconnected
     _connection.add(false);
-    if (!_manuallyClosed) _scheduleReconnect(retry);
+    if (!_manuallyClosed) {
+      _scheduleReconnect(retry);
+    }
   }
 
   void _scheduleReconnect(Duration retry) {
@@ -179,7 +185,9 @@ class EspConnection {
             ResourceRecordQuery.addressIPv4(host),
           )
           .toList();
-      if (addrs.isNotEmpty) return addrs.first.address.address;
+      if (addrs.isNotEmpty) {
+        return addrs.first.address.address;
+      }
 
       // Fallback: discover the _ws._tcp service and read SRV/A
       final services = await client
@@ -216,7 +224,9 @@ class EspConnection {
   // Send JSON message to ESP32
   void send(Map<String, dynamic> payload) {
     final c = _ch;
-    if (c == null) return;
+    if (c == null) {
+      return;
+    }
     c.sink.add(jsonEncode(payload));
   }
 

@@ -81,13 +81,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadStateFromDatabase() async {
     try {
       final Routine? routine = await db.getActiveRoutine();
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (routine != null) {
         _applyActiveRoutine(routine);
       } else {
         final lampState = await db.getLampState();
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         setState(() {
           _activeRoutine = null;
           _isOn = lampState.isOn;
@@ -124,11 +128,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshActiveRoutine() async {
-    if (_isCheckingRoutine) return;
+    if (_isCheckingRoutine) {
+      return;
+    }
     _isCheckingRoutine = true;
     try {
       final Routine? routine = await db.getActiveRoutine();
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (routine != null) {
         final bool brightnessChanged =
@@ -146,7 +154,9 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       } else if (_activeRoutine != null) {
         final lampState = await db.getLampState();
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         setState(() {
           _activeRoutine = null;
           _isOn = lampState.isOn;
@@ -163,7 +173,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _disableActiveRoutine() async {
     final routine = _activeRoutine;
-    if (routine == null || routine.id == null) return;
+    if (routine == null || routine.id == null) {
+      return;
+    }
 
     try {
       await db.saveRoutine(routine.copyWith(enabled: false));
@@ -174,7 +186,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ).showSnackBar(SnackBar(content: Text('${routine.name} disabled')));
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to disable routine: $e')));
@@ -211,8 +225,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _modeFromTemp(double k) {
     // Simple split: <=3000 warm (0), >=5000 white (1), else both (2)
-    if (k <= 3000) return 0; // MODE_WARM
-    if (k >= 5000) return 1; // MODE_WHITE
+    if (k <= 3000) {
+      return 0; // MODE_WARM
+    }
+    if (k >= 5000) {
+      return 1; // MODE_WHITE
+    }
     return 2; // MODE_BOTH
   }
 

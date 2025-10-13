@@ -228,10 +228,14 @@ class RoutineCore extends ChangeNotifier {
     // Find overlapping routines
     for (final routine in _routines) {
       // Skip the routine being saved
-      if (excludeType == 'routine' && routine.id == excludeId) continue;
+      if (excludeType == 'routine' && routine.id == excludeId) {
+        continue;
+      }
 
       // Skip if already disabled
-      if (!routine.enabled) continue;
+      if (!routine.enabled) {
+        continue;
+      }
 
       // Check for overlap
       if (_timeRangesOverlap(
@@ -259,10 +263,14 @@ class RoutineCore extends ChangeNotifier {
     // Find overlapping alarms
     for (final alarm in _alarms) {
       // Skip the alarm being saved
-      if (excludeType == 'alarm' && alarm.id == excludeId) continue;
+      if (excludeType == 'alarm' && alarm.id == excludeId) {
+        continue;
+      }
 
       // Skip if already disabled
-      if (!alarm.enabled) continue;
+      if (!alarm.enabled) {
+        continue;
+      }
 
       // Check for overlap
       if (_timeRangesOverlap(
@@ -305,7 +313,9 @@ class RoutineCore extends ChangeNotifier {
 
   bool _isDuplicateAlarm(Alarm newAlarm) {
     return _alarms.any((existingAlarm) {
-      if (newAlarm.id != null && existingAlarm.id == newAlarm.id) return false;
+      if (newAlarm.id != null && existingAlarm.id == newAlarm.id) {
+        return false;
+      }
       return existingAlarm.wakeUpTime == newAlarm.wakeUpTime &&
           existingAlarm.durationMinutes == newAlarm.durationMinutes;
     });
