@@ -4,3 +4,7 @@
 .vscode/launch.json
 .vscode/ipch
 .DS_Store
+
+.github/copilot-instructions.md
+circadian_light/.claude/
+esp_code/.claude/
