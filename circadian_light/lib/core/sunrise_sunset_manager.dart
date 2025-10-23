@@ -127,6 +127,22 @@ class SunriseSunsetManager {
         );
         _disableInternal(notifyEsp: false, source: 'hardware');
       }
+    } else if (type == 'test_sequence_response') {
+      final bool success = message['success'] == true;
+      final String responseMessage = (message['message'] as String?) ?? '';
+      debugPrint('Test sequence response: $responseMessage (success: $success)');
+    }
+    
+    // Handle state updates from ESP32 that include test_sequence_active
+    if (message.containsKey('state')) {
+      final state = message['state'] as Map<String, dynamic>?;
+      if (state != null && state.containsKey('test_sequence_active')) {
+        final bool testActive = state['test_sequence_active'] == true;
+        if (testActive != _isTestSequenceRunning) {
+          _isTestSequenceRunning = testActive;
+          debugPrint('Test sequence state updated from ESP32: $testActive');
+        }
+      }
     }
   }
 
@@ -396,69 +412,15 @@ class SunriseSunsetManager {
     debugPrint('Starting 10-minute sun sync test sequence');
     _isTestSequenceRunning = true;
 
-    // Stop the regular sun sync timer to prevent interference
-    _stopTimer();
-
-    // Total duration: 10 minutes (600 seconds)
-    // Phase breakdown:
-    // 0-60s: Sunrise (1 min) - brightness 0->15, mode both
-    // 60-180s: Morning (2 min) - brightness 15, mode both
-    // 180-300s: Midday (2 min) - brightness 15, mode both
-    // 300-420s: Late afternoon (2 min) - brightness 15, mode warm only
-    // 420-480s: Sunset (1 min) - brightness 15->0, mode warm only, then off
-    // 480-600s: Night (2 min) - off
-
-    final startTime = DateTime.now();
-
-    _testSequenceTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      final elapsed = DateTime.now().difference(startTime).inSeconds;
-
-      if (elapsed < 60) {
-        // Sunrise phase (0-60s)
-        final progress = elapsed / 60.0;
-        final brightness = (15 * _smoothStep(progress)).round();
-        debugPrint('Test: Sunrise - ${elapsed}s, brightness=$brightness');
-        EspConnection.I.setOn(true);
-        EspConnection.I.setMode(2); // MODE_BOTH
-        EspConnection.I.setBrightness(brightness);
-      } else if (elapsed < 180) {
-        // Morning phase (60-180s)
-        debugPrint('Test: Morning - ${elapsed}s');
-        EspConnection.I.setOn(true);
-        EspConnection.I.setMode(2); // MODE_BOTH
-        EspConnection.I.setBrightness(15);
-      } else if (elapsed < 300) {
-        // Midday phase (180-300s)
-        debugPrint('Test: Midday - ${elapsed}s');
-        EspConnection.I.setOn(true);
-        EspConnection.I.setMode(2); // MODE_BOTH
-        EspConnection.I.setBrightness(15);
-      } else if (elapsed < 420) {
-        // Late afternoon phase (300-420s)
-        debugPrint('Test: Late afternoon - ${elapsed}s');
-        EspConnection.I.setOn(true);
-        EspConnection.I.setMode(0); // MODE_WARM only
-        EspConnection.I.setBrightness(15);
-      } else if (elapsed < 480) {
-        // Sunset phase (420-480s)
-        final progress = (elapsed - 420) / 60.0;
-        final brightness = (15 * (1.0 - _smoothStep(progress))).round();
-        debugPrint('Test: Sunset - ${elapsed}s, brightness=$brightness');
-        EspConnection.I.setMode(0); // MODE_WARM only
-        EspConnection.I.setBrightness(brightness);
-        if (progress >= 1.0) {
-          EspConnection.I.setOn(false);
-        }
-      } else if (elapsed < 600) {
-        // Night phase (480-600s)
-        debugPrint('Test: Night - ${elapsed}s');
-        EspConnection.I.setOn(false);
-      } else {
-        // Sequence complete
-        debugPrint('Test sequence complete');
-        _stopTestSequence();
-      }
-    });
+    // Send command to ESP32 to start the test sequence
+    if (EspConnection.I.isConnected) {
+      EspConnection.I.send({
+        'type': 'start_test_sequence',
+      });
+      debugPrint('Sent start_test_sequence command to ESP32');
+    } else {
+      debugPrint('Warning: ESP32 not connected, test sequence may not start');
+    }
   }
 
   /// Stop the test sequence
@@ -467,6 +429,13 @@ class SunriseSunsetManager {
     _testSequenceTimer = null;
     _isTestSequenceRunning = false;
     debugPrint('Test sequence stopped');
+
+    // Send command to ESP32 to stop the test sequence
+    if (EspConnection.I.isConnected) {
+      EspConnection.I.send({
+        'type': 'stop_test_sequence',
+      });
+    }
 
     // Restart the regular sun sync timer if sun sync is still enabled
     if (_isEnabled) {

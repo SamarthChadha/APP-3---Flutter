@@ -98,6 +98,11 @@ Alarm suppressedAlarm = {};
 bool sunSyncActive = false;
 bool sunSyncDisabledByHardware = false;
 
+// ===== Test Sequence State =====
+bool testSequenceActive = false;
+unsigned long testSequenceStartTime = 0;
+const unsigned long TEST_SEQUENCE_DURATION_MS = 600000; // 10 minutes in milliseconds
+
 unsigned long lastClickReleaseTime = 0;
 
 // Button click state (robust, polarity-agnostic)
@@ -125,6 +130,10 @@ void updateSuppressionWindows(int currentTime);
 void blinkLamp(uint8_t count, uint16_t intervalMs);
 void broadcastOverrideEvent(const char* source, bool routineWasActive, bool alarmWasActive, bool sunSyncWasActive);
 void sendSunSyncState(bool active, const char* source);
+void startTestSequence();
+void stopTestSequence();
+void handleTestSequence();
+double smoothStep(double x);
 
 // ===== Helpers =====
 void sendStateUpdate() {
@@ -141,6 +150,7 @@ void sendStateUpdate() {
   state["alarm_suppressed"] = alarmSuppressed;
   state["sun_sync_disabled_by_hw"] = sunSyncDisabledByHardware;
   state["manual_control_locked"] = isManualControlLocked();
+  state["test_sequence_active"] = testSequenceActive;
   
   String jsonString;
   serializeJson(doc, jsonString);
@@ -287,6 +297,14 @@ void onWSMsg(AsyncWebSocket *ws, AsyncWebSocketClient *client,
       bool active = doc["active"].is<bool>() ? doc["active"].as<bool>() : false;
       const char* source = doc["source"].is<const char*>() ? doc["source"].as<const char*>() : "app";
       handleSunSyncState(active, source);
+      recognized = true;
+    }
+    else if (strcmp(msgType, "start_test_sequence") == 0) {
+      startTestSequence();
+      recognized = true;
+    }
+    else if (strcmp(msgType, "stop_test_sequence") == 0) {
+      stopTestSequence();
       recognized = true;
     }
   }
@@ -483,7 +501,7 @@ void sendSyncResponse(const char* type, bool success, const char* message) {
 }
 
 bool isManualControlLocked() {
-  return (routineActive || alarmActive || sunSyncActive);
+  return (routineActive || alarmActive || sunSyncActive || testSequenceActive);
 }
 
 Routine* findRoutineById(int id) {
@@ -616,6 +634,7 @@ void handleTripleClick() {
   bool routineWasActive = routineActive;
   bool alarmWasActive = alarmActive;
   bool sunSyncWasActive = sunSyncActive;
+  bool testWasActive = testSequenceActive;
 
   Serial.println("Triple click detected: disabling active schedules for current instance");
 
@@ -657,10 +676,14 @@ void handleTripleClick() {
     sendSunSyncState(false, "hardware");
   }
 
-  if (routineWasActive || alarmWasActive || sunSyncWasActive) {
+  if (testSequenceActive) {
+    stopTestSequence();
+  }
+
+  if (routineWasActive || alarmWasActive || sunSyncWasActive || testWasActive) {
     blinkLamp(OVERRIDE_BLINK_COUNT, OVERRIDE_BLINK_INTERVAL_MS);
   } else {
-    Serial.println("Triple click detected but no active routine/alarm/sun sync to disable");
+    Serial.println("Triple click detected but no active routine/alarm/sun sync/test to disable");
   }
 
   applyOutput();
@@ -704,7 +727,174 @@ void handleTimeSync(JsonDocument& doc) {
   }
 }
 
+// ===== Test Sequence Functions =====
+
+double smoothStep(double x) {
+  // Smooth interpolation function (ease-in-out)
+  if (x <= 0.0) return 0.0;
+  if (x >= 1.0) return 1.0;
+  return x * x * (3.0 - 2.0 * x);
+}
+
+void startTestSequence() {
+  if (testSequenceActive) {
+    Serial.println("Test sequence already running");
+    sendSyncResponse("test_sequence_response", false, "Test sequence already running");
+    return;
+  }
+
+  Serial.println("🧪 Starting 10-minute sun sync test sequence");
+  testSequenceActive = true;
+  testSequenceStartTime = millis();
+
+  // Disable any active schedules
+  if (routineActive) {
+    routineActive = false;
+    activeRoutineId = -1;
+    Serial.println("Disabled active routine for test sequence");
+  }
+  if (alarmActive) {
+    alarmActive = false;
+    activeAlarmId = -1;
+    Serial.println("Disabled active alarm for test sequence");
+  }
+
+  sendStateUpdate();
+  sendSyncResponse("test_sequence_response", true, "Test sequence started");
+}
+
+void stopTestSequence() {
+  if (!testSequenceActive) {
+    Serial.println("No test sequence running");
+    sendSyncResponse("test_sequence_response", false, "No test sequence running");
+    return;
+  }
+
+  Serial.println("🧪 Stopping test sequence");
+  testSequenceActive = false;
+  testSequenceStartTime = 0;
+
+  sendStateUpdate();
+  sendSyncResponse("test_sequence_response", true, "Test sequence stopped");
+}
+
+void handleTestSequence() {
+  if (!testSequenceActive) return;
+
+  unsigned long elapsed = millis() - testSequenceStartTime;
+  int elapsedSeconds = elapsed / 1000;
+
+  // Phase breakdown (10 minutes = 600 seconds):
+  // 0-60s: Sunrise (1 min) - brightness 0->15, mode both
+  // 60-180s: Morning (2 min) - brightness 15, mode both
+  // 180-300s: Midday (2 min) - brightness 15, mode both
+  // 300-420s: Late afternoon (2 min) - brightness 15, mode warm only
+  // 420-480s: Sunset (1 min) - brightness 15->0, mode warm only, then off
+  // 480-600s: Night (2 min) - off
+
+  if (elapsedSeconds < 60) {
+    // Sunrise phase (0-60s)
+    double progress = elapsedSeconds / 60.0;
+    int newBrightness = (int)(15 * smoothStep(progress));
+    if (newBrightness < 1) newBrightness = 1; // Minimum brightness when on
+    
+    static int lastBrightness = -1;
+    if (newBrightness != lastBrightness) {
+      brightness = newBrightness;
+      mode = MODE_BOTH;
+      isOn = true;
+      applyOutput();
+      Serial.printf("🧪 Test Sunrise: %ds, brightness=%d\n", elapsedSeconds, brightness);
+      sendStateUpdate();
+      lastBrightness = newBrightness;
+    }
+  }
+  else if (elapsedSeconds < 180) {
+    // Morning phase (60-180s)
+    static bool morningSet = false;
+    if (!morningSet) {
+      brightness = 15;
+      mode = MODE_BOTH;
+      isOn = true;
+      applyOutput();
+      Serial.printf("🧪 Test Morning: %ds\n", elapsedSeconds);
+      sendStateUpdate();
+      morningSet = true;
+    }
+  }
+  else if (elapsedSeconds < 300) {
+    // Midday phase (180-300s)
+    static bool middaySet = false;
+    if (!middaySet) {
+      brightness = 15;
+      mode = MODE_BOTH;
+      isOn = true;
+      applyOutput();
+      Serial.printf("🧪 Test Midday: %ds\n", elapsedSeconds);
+      sendStateUpdate();
+      middaySet = true;
+    }
+  }
+  else if (elapsedSeconds < 420) {
+    // Late afternoon phase (300-420s)
+    static bool afternoonSet = false;
+    if (!afternoonSet) {
+      brightness = 15;
+      mode = MODE_WARM;
+      isOn = true;
+      applyOutput();
+      Serial.printf("🧪 Test Late Afternoon: %ds\n", elapsedSeconds);
+      sendStateUpdate();
+      afternoonSet = true;
+    }
+  }
+  else if (elapsedSeconds < 480) {
+    // Sunset phase (420-480s)
+    double progress = (elapsedSeconds - 420) / 60.0;
+    int newBrightness = (int)(15 * (1.0 - smoothStep(progress)));
+    
+    static int lastBrightness = -1;
+    if (newBrightness != lastBrightness) {
+      if (newBrightness < 1) {
+        brightness = 0;
+        isOn = false;
+      } else {
+        brightness = newBrightness;
+        isOn = true;
+      }
+      mode = MODE_WARM;
+      applyOutput();
+      Serial.printf("🧪 Test Sunset: %ds, brightness=%d, isOn=%s\n", 
+                    elapsedSeconds, brightness, isOn ? "true" : "false");
+      sendStateUpdate();
+      lastBrightness = newBrightness;
+    }
+  }
+  else if (elapsedSeconds < 600) {
+    // Night phase (480-600s)
+    static bool nightSet = false;
+    if (!nightSet) {
+      brightness = 0;
+      isOn = false;
+      applyOutput();
+      Serial.printf("🧪 Test Night: %ds\n", elapsedSeconds);
+      sendStateUpdate();
+      nightSet = true;
+    }
+  }
+  else {
+    // Sequence complete
+    Serial.println("🧪 Test sequence complete!");
+    stopTestSequence();
+  }
+}
+
 void checkSchedule() {
+  // Skip schedule checking if test sequence is running
+  if (testSequenceActive) {
+    return;
+  }
+
   // Only check schedule if we have a valid time
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
@@ -1036,6 +1226,9 @@ void loop() {
     lastScheduleCheck = millis();
     checkSchedule();
   }
+
+  // Handle test sequence
+  handleTestSequence();
 
   ws.cleanupClients();
 }
